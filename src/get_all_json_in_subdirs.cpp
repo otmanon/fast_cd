@@ -9,17 +9,23 @@
 //to valid directories, and adds that json filename (without the extension) to json_name.
 void get_all_json_in_subdirs(const std::string& query_directory, std::vector<std::string>& valid_directories, std::vector<std::string>& json_names)
 {
+#ifdef WIN32
+    namespace fs = std::filesystem;
+#else
+    namespace fs = std::experimental::filesystem;
+#endif
+
     json_names.clear();
     valid_directories.clear();
-    if (!std::filesystem::exists(std::filesystem::path(query_directory)))
+    if (!fs::exists(fs::path(query_directory)))
     {
-        std::filesystem::create_directories(std::filesystem::path(query_directory));
+        fs::create_directories(fs::path(query_directory));
     }
-    for (const auto& entry : std::filesystem::directory_iterator(query_directory))
+    for (const auto& entry : fs::directory_iterator(query_directory))
     {
         if (entry.is_directory())
         {
-            for (const auto& sub_entry : std::filesystem::directory_iterator(entry.path()))
+            for (const auto& sub_entry : fs::directory_iterator(entry.path()))
             {
                 const std::string ext = sub_entry.path().extension().string();
                 if (ext == ".json")
@@ -35,13 +41,19 @@ void get_all_json_in_subdirs(const std::string& query_directory, std::vector<std
 
 void get_all_json_in_dir(const std::string& query_directory, std::vector<std::string>& valid_directories, std::vector<std::string>& json_names)
 {
+#ifdef WIN32
+    namespace fs = std::filesystem;
+#else
+    namespace fs = std::experimental::filesystem;
+#endif
+
     json_names.clear();
     valid_directories.clear();
-    if (!std::filesystem::exists(std::filesystem::path(query_directory)))
+    if (!fs::exists(fs::path(query_directory)))
     {
-        std::filesystem::create_directories(std::filesystem::path(query_directory));
+        fs::create_directories(fs::path(query_directory));
     }
-    for (const auto& entry : std::filesystem::directory_iterator(query_directory))
+    for (const auto& entry : fs::directory_iterator(query_directory))
     {
         const std::string ext = entry.path().extension().string();
         if (ext == ".json")

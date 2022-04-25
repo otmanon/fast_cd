@@ -226,7 +226,7 @@ void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepa
     std::string rig_type_str;
     as.rig_type = get_rig_type(rig_file, rig_type_str);
 
-    bool rig_file_exists = fs::exists(std::filesystem::path(rig_file)); //assume this rig file exists otherwise we quite the program.
+    bool rig_file_exists = fs::exists(fs::path(rig_file)); //assume this rig file exists otherwise we quite the program.
   
     std::cout << "Using " << rig_type_str << " rig type..." << std::endl;
     

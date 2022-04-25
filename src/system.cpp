@@ -13,11 +13,17 @@
 
 void InteractiveCDHook::save_params(std::string custom_init_file)
 {
+#ifdef WIN32
+    namespace fs = std::filesystem;
+#else
+    namespace fs = std::experimental::filesystem;
+#endif
+
     //write current state to json
     std::ofstream o(custom_init_file + ".json");
     json j;
 
-    std::string mesh_file = std::filesystem::relative(std::filesystem::path(as.mesh_file_path), std::filesystem::path("../data/scene_data/")).string();
+    std::string mesh_file = fs::relative(fs::path(as.mesh_file_path), fs::path("../data/scene_data/")).string();
     //in case on windows:
     std::replace(mesh_file.begin(), mesh_file.end(), '\\', '/');
     j["mesh_file"] = mesh_file;
@@ -32,7 +38,7 @@ void InteractiveCDHook::save_params(std::string custom_init_file)
     //what kind of rig are we using? default is affine rig for now
     j["rig_type"] = as.rig_type;
     j["animation_mode"] = as.animation_mode;
-    std::string rig_file = std::filesystem::relative(std::filesystem::path(as.rig_file_path), std::filesystem::path("../data/scene_data/")).string();
+    std::string rig_file = fs::relative(fs::path(as.rig_file_path), fs::path("../data/scene_data/")).string();
     std::replace(rig_file.begin(), rig_file.end(), '\\', '/');
     j["rig_file_dir"] = rig_file;
 

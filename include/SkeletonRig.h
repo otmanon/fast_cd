@@ -35,7 +35,7 @@ public:
 	bool write_rig_to_json(std::string filename);		
 
 
-	bool SkeletonRig::read_rig_from_json(std::string filename);
+	bool read_rig_from_json(std::string filename);
 
 
 public:
