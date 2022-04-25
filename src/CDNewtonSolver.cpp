@@ -92,7 +92,7 @@ Eigen::VectorXd CDNewtonSolver::solve(const Eigen::VectorXd& z, std::function<do
        {
            alpha *= 0.5;
            z_next = z_prev +  alpha*dz.topRows(z_next.rows());
-           energy = f(z_next);
+           energy = f(z_next); 
         //   printf("line_search_iter : %i, energy0 : %e, energy : %e,  alpha : %e , threshold : %e\n", line_search_step, energy0, energy, alpha, threshold);
            line_search_step += 1;
        } while (energy > energy0 );
