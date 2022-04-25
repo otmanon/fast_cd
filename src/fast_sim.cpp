@@ -4,7 +4,7 @@
 #include "grouping_matrix_from_clusters.h"
 #include "interweaving_matrix.h"
 #include "kmeans.h"
-#include "compute_modes.h"
+#include "compute_modes_matlab.h"
 #include "arap_hessian.h"
 
 #include <igl/polar_svd3x3.h>
@@ -162,7 +162,7 @@ void FastSim::init_modes(int num_modes){
 
 		//compute modes and load into S_full and B_full
 		Eigen::MatrixXd modes;
-		compute_modes(H, M, num_modes, modes, L_full);
+		compute_modes_matlab(H, M, num_modes, modes, L_full);
 		B_full = modes.block(0, 0, 3*X.rows(), num_modes);
 		namespace fs = std::filesystem;
 		

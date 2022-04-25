@@ -21,7 +21,7 @@
 #include "grouping_matrix_from_clusters.h"
 #include "fast_complementary_dynamics_constrained_gevp.h"
 #include "complementary_equality_constraint.h"
-#include "compute_modes.h"
+#include "compute_modes_matlab.h"
 #include "deformation_gradient_from_u_prefactorized_matrices.h"
 #include <filesystem>
 #include "igl/sum.h"
@@ -430,7 +430,7 @@ void FastCDSim::init_modes(int num_modes)
 
 		//compute modes and load into S_full and B_full
 		Eigen::MatrixXd modes;
-		compute_modes(H, M, num_modes, modes, L_full);
+		compute_modes_matlab(H, M, num_modes, modes, L_full);
 		B_full = modes.block(0, 0, 3*X.rows(), num_modes);
 		namespace fs = std::filesystem;
 		if (!fs::exists(fs::path(B_file_path).parent_path()))
