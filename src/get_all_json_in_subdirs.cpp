@@ -22,8 +22,8 @@ void get_all_json_in_subdirs(const std::string& query_directory, std::vector<std
         fs::create_directories(fs::path(query_directory));
     }
     for (const auto& entry : fs::directory_iterator(query_directory))
-    {
-        if (entry.is_directory())
+    {        
+        if (fs::is_directory(entry))
         {
             for (const auto& sub_entry : fs::directory_iterator(entry.path()))
             {
