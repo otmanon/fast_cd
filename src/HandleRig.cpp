@@ -261,10 +261,12 @@ bool HandleRig::write_rig_to_json(std::string filename)
 		namespace fs = std::experimental::filesystem;
 	#endif
 	filename = fs::path(filename).extension().string() == ".json" ? filename : filename + ".json";
-	if (!fs::exists(fs::path(filename).parent_path()))
-	{
-		fs::create_directories(fs::path(filename).parent_path());
-	}
+	std::string parent_path = fs::path(filename).parent_path().string();
+	//if (!fs::exists(fs::path(filename).parent_path()))
+	//{
+	//	
+	//	fs::create_directories(fs::path(filename).parent_path());
+	//}
 
 	//write rig to json
 	std::ofstream o(filename);
