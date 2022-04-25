@@ -4,11 +4,9 @@
 #include <igl/boundary_facets.h>
 #include <igl/centroid.h>
 #include <igl/unique.h>
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
+
 #include "matrix_to_2D_list.h"
 #include "list_2D_to_matrix.h"
 #include "igl/repdiag.h"
@@ -255,21 +253,18 @@ void HandleRig::get_rig_motion(Eigen::VectorXd& p, Eigen::VectorXd& ur)
 bool HandleRig::write_rig_to_json(std::string filename)
 {
 	
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+	
 	filename = fs::path(filename).extension().string() == ".json" ? filename : filename + ".json";
 
-	fs::path p = fs::path(filename);
+	//fs::path p = fs::path(filename);
 	
-	std::string parent_path = p.parent_path().string();
-	//if (!fs::exists(fs::path(filename).parent_path()))
-	//{
-	//	
-	//	fs::create_directories(fs::path(filename).parent_path());
-	//}
+	//std::string parent_path = p.parent_path().string();
+	if (!fs::exists(fs::path(filename).parent_path()))
+	{
+		
+		fs::create_directories(fs::path(filename).parent_path());
+	}
 
 	//write rig to json
 	std::ofstream o(filename);
@@ -295,11 +290,8 @@ bool HandleRig::write_rig_to_json(std::string filename)
 
 bool HandleRig::read_rig_from_json(std::string filename)
 {
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+
 
 	json j;
 

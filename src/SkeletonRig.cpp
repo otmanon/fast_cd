@@ -16,20 +16,15 @@
 #include <igl/setdiff.h>
 #include <igl/slice_into.h>
 
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
+
 #include <Eigen/Geometry>
 std::string get_rig_file_format(std::string filename)
 {
 	//open surface_file as json
-#ifdef WIN32
-	namespace fs = std::filesystem;
-#else
-	namespace fs = std::experimental::filesystem;
-#endif
+namespace fs = std::filesystem;
+
 	json j;
 	std::ifstream i(filename);
 	i >> j;
@@ -107,11 +102,8 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 				"Then, we will diffuse surface weight values to volume weight values via a diffusion...\n");
 
 		//open surface_file as json
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+
 	json j;
 	std::ifstream i(surface_file_name);
 	i >> j;
@@ -201,11 +193,8 @@ SkeletonRig::SkeletonRig(std::string volume_file_name)
 
 bool SkeletonRig::read_rig_from_json(std::string filename)
 {
-#ifdef WIN32
-	namespace fs = std::filesystem;
-#else
-	namespace fs = std::experimental::filesystem;
-#endif
+namespace fs = std::filesystem;
+
 	json j;
 
 	std::ifstream i(filename);
@@ -229,11 +218,8 @@ bool SkeletonRig::read_rig_from_json(std::string filename)
 
 bool SkeletonRig::write_rig_to_json(std::string filename)
 {
-#ifdef WIN32
-	namespace fs = std::filesystem;
-#else
-	namespace fs = std::experimental::filesystem;
-#endif
+    namespace fs = std::filesystem;
+
 	filename = fs::path(filename).extension().string() == ".json" ? filename : filename + ".json";
 	if (!fs::exists(fs::path(filename).parent_path()))
 	{

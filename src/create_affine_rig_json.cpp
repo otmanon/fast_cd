@@ -1,11 +1,10 @@
 #include "create_affine_rig_json.h"
 #include <fstream>
 #include <stdio.h>
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
+
+
 #include <ostream>
 #include "json.hpp"
 #include <iomanip>

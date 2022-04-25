@@ -23,18 +23,13 @@
 #include "skeleton_visualization_mesh.h"
 #include "get_all_json_in_subdirs.h"
 
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
+
 LBSRig::LBSRig(std::string filename, Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::VectorXi& bI , std::string anim_file_dir)
 {
-#ifdef WIN32
-	namespace fs = std::filesystem;
-#else
-	namespace fs = std::experimental::filesystem;
-#endif
+namespace fs = std::filesystem;
+
 	//classic
 	this->X = X;
 	this->bI = bI;

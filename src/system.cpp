@@ -1,9 +1,6 @@
 #include "InteractiveCDHook.h"
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
 #include <stdio.h>
 #include <cassert>
 #include <json.hpp>
@@ -13,12 +10,8 @@
 
 void InteractiveCDHook::save_params(std::string custom_init_file)
 {
-    /*
-#ifdef WIN32
+
     namespace fs = std::filesystem;
-#else
-    namespace fs = std::experimental::filesystem;
-#endif
 
     //write current state to json
     std::ofstream o(custom_init_file + ".json");
@@ -43,16 +36,13 @@ void InteractiveCDHook::save_params(std::string custom_init_file)
     std::replace(rig_file.begin(), rig_file.end(), '\\', '/');
     j["rig_file_dir"] = rig_file;
 
-    o << std::setw(4) << j << std::endl;*/
+    o << std::setw(4) << j << std::endl;
 }
 
 void InteractiveCDHook::save_results()
 {
-    #ifdef WIN32
-        namespace fs = std::filesystem;
-    #else
-        namespace fs = std::experimental::filesystem;
-    #endif
+    namespace fs = std::filesystem;
+
     if (!fs::exists(as.results_dir))
     {
         fs::create_directories(fs::path(as.results_dir));
@@ -67,11 +57,8 @@ void InteractiveCDHook::save_results()
 
 RIG_TYPE InteractiveCDHook::get_rig_type(std::string rig_path, std::string& rig_type)
 {
-#ifdef WIN32
-    namespace fs = std::filesystem;
-#else
-    namespace fs = std::experimental::filesystem;
-#endif
+namespace fs = std::filesystem;
+
     std::ifstream i(rig_path);
     json j;
     i >> j;

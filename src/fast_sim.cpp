@@ -18,11 +18,9 @@
 #include <igl/writeDMAT.h>
 #include <igl/average_onto_faces.h>
 
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
+
 #include <igl/get_seconds.h>
 //TODO: need to  implement all these methods... yikes
 FastSim::FastSim(){}
@@ -30,11 +28,8 @@ FastSim::FastSim(){}
 FastSim::FastSim(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, const Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction, bool do_clustering, int num_modal_features)
 : X(X), T(T), J(J), dt(dt), num_modes(num_modes), num_clusters(num_clusters), modes_file_dir(modes_file_dir), clusters_file_dir(clusters_file_dir), do_reduction(do_reduction), do_clustering(do_clustering), num_modal_features(num_modal_features)
 {
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+
 
 	stiffness = ym / (2.0 * (1.0 + pr));
 	incompressibility = ym * pr / ((1.0 + pr) * (1.0 - 2.0 * pr));
@@ -144,11 +139,8 @@ Eigen::VectorXd FastSim::full_step(const Eigen::VectorXd& u_curr, const Eigen::V
 
 void FastSim::init_modes(int num_modes){
 
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+	
 
 	std::string B_file_path = modes_file_dir + "B.DMAT";
 	std::string L_file_path = modes_file_dir + "J.DMAT";
@@ -199,11 +191,8 @@ void FastSim::init_modes(int num_modes){
 
 void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 {
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+	
 	const int l = do_clustering ? num_clusters : T.rows();
 	std::string labels_file_path = clusters_file_dir + "labels_" + std::to_string(l) + "_features_" + std::to_string(num_feature_modes) + ".DMAT";
 

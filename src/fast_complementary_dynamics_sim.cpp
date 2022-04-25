@@ -29,11 +29,8 @@
 #include <igl/volume.h>
 #include <igl/get_seconds.h>
 
-#ifdef WIN32
-	#include <filesystem>
-#else
-	#include <experimental/filesystem>
-#endif
+#include <filesystem>
+
 
 FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction, bool do_clustering, int num_modal_features)
 {
@@ -414,11 +411,9 @@ void FastCDSim::update_positional_constraints(Eigen::MatrixXd& bc)
 void FastCDSim::init_modes(int num_modes)
 {
 
-#ifdef WIN32
-		namespace fs = std::filesystem;
-#else
-	namespace fs = std::experimental::filesystem;
-#endif
+
+	namespace fs = std::filesystem;
+
 	std::string B_file_path = modes_file_dir + "B.DMAT";
 	std::string L_file_path = modes_file_dir + "S.DMAT";
 	bool found_modes = igl::readDMAT(B_file_path, B_full);
@@ -461,11 +456,8 @@ void FastCDSim::init_modes(int num_modes)
 void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 {
 
-	#ifdef WIN32
-		namespace fs = std::filesystem;
-	#else
-		namespace fs = std::experimental::filesystem;
-	#endif
+	namespace fs = std::filesystem;
+
 	const int l = do_clustering ? num_clusters : T.rows();
 	std::string labels_file_path = clusters_file_dir + "labels_" + std::to_string(l) + "_features_" + std::to_string(num_feature_modes) + ".DMAT";
 

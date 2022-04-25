@@ -9,11 +9,9 @@
 
 #include <GLFW/glfw3.h>
 #include <iostream>
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
+
 #include "create_two_handle_rig.h"
 
 //Render UI related

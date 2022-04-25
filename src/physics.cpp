@@ -11,11 +11,8 @@
 
 #include <chrono>
 #include <cassert>
-#ifdef WIN32
+
 #include <filesystem>
-#else
-#include <experimental/filesystem>
-#endif
 
 #include "igl/repdiag.h"
 #include "igl/cat.h"
