@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen\Core>
+#include <Eigen/Core>
 /*
 Creates a rig for a mesh that has two handles, one on the lft most and one on the right most part of the mesh.
 

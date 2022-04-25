@@ -1,5 +1,5 @@
 #include "surface_to_volume_weights.h"
-#include <Eigen\Sparse>
+#include <Eigen/Sparse>
 #include "igl/min_quad_with_fixed.h"
 #include "igl/cotmatrix.h"
 Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::VectorXi& bI, Eigen::MatrixXd& X, Eigen::MatrixXi& T)

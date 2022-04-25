@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen\Core>
+#include <Eigen/Core>
 
 /*
 Rig controller class for a null rig that simply sets and identifies motion of vertices centered at the C.O.M of X inside a ball of radius r

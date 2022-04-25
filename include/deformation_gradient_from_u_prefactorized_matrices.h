@@ -1,6 +1,6 @@
 #pragma once
-#include <Eigen\Core>
-#include <Eigen\Sparse>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
 /*
 Build prefactorized matrices that let you easily calculated a flattened covariance matrix from a given flattened displacement field. 
 

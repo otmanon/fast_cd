@@ -1,6 +1,6 @@
 #include "deformation_gradient.h"
 #include "igl/slice.h"
-#include <Eigen\Dense>
+#include <Eigen/Dense>
 void deformation_gradient(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::MatrixXd& U, Eigen::MatrixXd& F)
 {
 	Eigen::MatrixXd tet_X, tet_P;

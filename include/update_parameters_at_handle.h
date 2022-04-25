@@ -1,5 +1,5 @@
 #pragma once
-#include "Eigen\Core"
+#include "Eigen/Core"
 
 /*
 Given a list of row-order flattened 12x1 affine handle matrices p, update the entries corresponding to the ind's handle with the affine transformation matrix T

@@ -1,7 +1,7 @@
 #pragma once
 #pragma once
-#include <Eigen\Core>
-#include <Eigen\Dense>
+#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <functional>
 //This q
 class DenseQuasiNewtonSolver

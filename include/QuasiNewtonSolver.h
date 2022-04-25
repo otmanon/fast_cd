@@ -1,7 +1,7 @@
 #pragma once
 #pragma once
-#include <Eigen\Core>
-#include <Eigen\Sparse>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
 #include <functional>
 #include <igl\min_quad_with_fixed.h>
 //This q

@@ -1,7 +1,7 @@
 #pragma once
-#include <Eigen\Core>
-#include <Eigen\Sparse>
-#include <Eigen\Dense>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+#include <Eigen/Dense>
 #include <functional>
 class FastCDLocalGlobalSolver
 {

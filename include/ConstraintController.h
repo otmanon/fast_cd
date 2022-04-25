@@ -1,6 +1,6 @@
 #pragma once
-#include <Eigen\Core>
-#include <Eigen\Sparse>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
 #include <igl\opengl\glfw\Viewer.h>
 #include <igl\opengl\glfw\imgui\ImGuizmoWidget.h>
 

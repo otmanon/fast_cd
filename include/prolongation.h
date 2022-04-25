@@ -1,6 +1,6 @@
 #pragma once
-#include <Eigen\Dense>
-#include <Eigen\Sparse>
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
 /*
 Builds an interpolation matrix that maps from a coarse matrix to a fine version of the same matrix. 
 

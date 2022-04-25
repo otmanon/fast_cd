@@ -1,6 +1,6 @@
 #pragma once
-#include <Eigen\Core>
-#include <Eigen\Sparse>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include "CDNewtonSolver.h"
 #include "FastCDNewtonSolver.h"
