@@ -21,7 +21,7 @@
 #else
 #include <experimental/filesystem>
 #endif
-#include <Eigen\Geometry>
+#include <Eigen/Geometry>
 std::string get_rig_file_format(std::string filename)
 {
 	//open surface_file as json
