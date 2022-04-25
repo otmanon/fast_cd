@@ -1,0 +1,3 @@
+[submodule "deps/libigl"]
+	path = deps/libigl
+	url = https://github.com/libigl/libigl/tree/69c662b1fa7a9bfc2747e82dcfaca7c47f21830e
