@@ -1,6 +1,6 @@
 #pragma once
 #include <Eigen/core>
-#include <eigen/sparse>
+#include <Eigen/Sparse>
 
 
 /*

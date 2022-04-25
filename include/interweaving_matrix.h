@@ -1,6 +1,6 @@
 #pragma once
-#include <eigen/core>
-#include <eigen/sparse>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
 
 using namespace Eigen;
 
