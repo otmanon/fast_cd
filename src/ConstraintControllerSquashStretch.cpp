@@ -1,8 +1,8 @@
 #include "ConstraintControllerSquashStretch.h"
-#include <igl\slice.h>
-#include <igl\boundary_facets.h>
-#include <igl\unique.h>
-#include <igl\centroid.h>
+#include <igl/slice.h>
+#include <igl/boundary_facets.h>
+#include <igl/unique.h>
+#include <igl/centroid.h>
 ConstraintControllerSquashStretch::ConstraintControllerSquashStretch(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, float scale) :
 	scale(scale), squash_factor(1)
 {
