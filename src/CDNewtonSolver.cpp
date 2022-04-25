@@ -3,7 +3,7 @@
 #include "line_search.h"
 #include <iostream>
 #include "augment_with_linear_constraints.h"
-CDNewtonSolver::CDNewtonSolver(const int max_iter, const double tolerance, const const Eigen::SparseMatrix<double>& Q, const Eigen::SparseMatrix<double>& Qeq, double alpha, int max_iter_line_search) :
+CDNewtonSolver::CDNewtonSolver(const int max_iter, const double tolerance, const Eigen::SparseMatrix<double>& Q, const Eigen::SparseMatrix<double>& Qeq, double alpha, int max_iter_line_search) :
 	max_iters(max_iter), tolerance(tolerance), alpha(alpha), max_iter_line_search(max_iter_line_search)
 {
 	Eigen::VectorXi ui;

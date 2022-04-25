@@ -8,7 +8,7 @@ class CDNewtonSolver
 {
 
 public:
-	CDNewtonSolver(const int max_iter, const double tolerance, const const Eigen::SparseMatrix<double>& Q, const const Eigen::SparseMatrix<double>& Qeq, double alpha = 1, int max_iter_line_search = 1);
+	CDNewtonSolver(const int max_iter, const double tolerance,const Eigen::SparseMatrix<double>& Q,  const Eigen::SparseMatrix<double>& Qeq, double alpha = 1, int max_iter_line_search = 1);
 	
 	CDNewtonSolver(const int max_iter, const double tolerance, double alpha = 1, int max_iter_line_search = 1);
 
