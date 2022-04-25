@@ -36,7 +36,7 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
         Bop.set_mat(B);
       //  op.set_solver(ldlt_solver);
         op.set_custom_shift(0);
-        printf("Eigen::Eigen::UMFPACKLU succeeded in %g seconds ... \n", igl::get_seconds() - t_start);
+        printf("Eigen::UMFPACKLU factorization succeeded in %g seconds ... \n", igl::get_seconds() - t_start);
 
 
         geigs.init();
@@ -48,8 +48,8 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
         //B_spectra.setZero();
         if (geigs.info() == CompInfo::Successful)
         {
-            printf("Found eigenvectors in %g seconds ... \n", igl::get_seconds() - t_start);
-            printf("Total decomposition time %g... \n", igl::get_seconds() - total_start);
+            printf("Found Spectra eigenvectors in %g seconds ... \n", igl::get_seconds() - t_start);
+            printf("Total Spectra decomposition time %g... \n", igl::get_seconds() - total_start);
             U = geigs.eigenvectors();
           //  Eigen::VectorXd norms = (U.transpose() * B * U).diagonal();
           //  std::cout << norms << std::endl;
