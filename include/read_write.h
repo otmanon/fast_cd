@@ -1,5 +1,5 @@
 #pragma once
-#include <Eigen/core>
+#include <Eigen/Core>
 #include <iostream>
 #include <fstream>
 

@@ -37,5 +37,5 @@
 
 
 
-#include <Eigen/sparse>
-#include <Eigen/core>
+#include <Eigen/Sparse>
+#include <Eigen/Core>

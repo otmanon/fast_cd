@@ -4,7 +4,7 @@
 #include <igl/boundary_facets.h>
 #include <igl/unique.h>
 #include <igl/slice_into.h>
-#include <Eigen/sparse>
+#include <Eigen/Sparse>
 #include "sparse_diag.h"
 using namespace Eigen;
 void momentum_leaking_matrix(const MatrixXd& V, const MatrixXi& F, fast_cd::MOMENTUM_LEAK_MATRIX method, SparseMatrix<double>& D )
