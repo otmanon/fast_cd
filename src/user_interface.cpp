@@ -5,7 +5,6 @@
 #include <igl/opengl/MeshGL.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
 #include <string>
-#include <format>
 #include "rainbow_cmap.h"
 
 #include <GLFW/glfw3.h>
