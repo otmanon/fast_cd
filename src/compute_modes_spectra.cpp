@@ -3,6 +3,7 @@
 #include <igl/sort.h>
 #include <igl/get_seconds.h>
 #include "compute_modes_spectra.h"
+
 #ifdef FAST_CD_USE_SUITESPARSE
 #include <Eigen/UmfPackSupport>
 #include "UMFPACKSymShiftInvert.h"

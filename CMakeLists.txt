@@ -24,8 +24,10 @@ set_target_properties(fast_cd PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET fast_cd PROPERTY CXX_STANDARD 17)
 
 #find suitesparse (for windows, follow https://github.com/jlblancoc/suitesparse-metis-for-windows)
-option(FAST_CD_USE_SUITESPARSE "FAST_CD_USE_SUITESPARSE" ON)
-add_definitions( -DFAST_CD_USE_SUITESPARSE=${FAST_CD_USE_SUITESPARSE} )
+option(FAST_CD_USE_SUITESPARSE "FAST_CD_USE_SUITESPARSE" OFF)
+if(FAST_CD_USE_SUITESPARSE)
+  add_definitions(-DFAST_CD_USE_SUITESPARSE=${FAST_CD_USE_SUITESPARSE})
+endif()
 
 option(LIBIGL_RESTRICTED_MATLAB "USE_MATLAB" ON)
 add_definitions( -DFAST_CD_USE_MATLAB=${FAST_CD_USE_MATLAB} )
