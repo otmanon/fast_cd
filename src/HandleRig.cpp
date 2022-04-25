@@ -261,7 +261,10 @@ bool HandleRig::write_rig_to_json(std::string filename)
 		namespace fs = std::experimental::filesystem;
 	#endif
 	filename = fs::path(filename).extension().string() == ".json" ? filename : filename + ".json";
-	std::string parent_path = fs::path(filename).parent_path().string();
+
+	fs::path p = fs::path(filename);
+	
+	std::string parent_path = p.parent_path().string();
 	//if (!fs::exists(fs::path(filename).parent_path()))
 	//{
 	//	
