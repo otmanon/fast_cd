@@ -13,6 +13,7 @@
 
 void InteractiveCDHook::save_params(std::string custom_init_file)
 {
+    /*
 #ifdef WIN32
     namespace fs = std::filesystem;
 #else
@@ -42,7 +43,7 @@ void InteractiveCDHook::save_params(std::string custom_init_file)
     std::replace(rig_file.begin(), rig_file.end(), '\\', '/');
     j["rig_file_dir"] = rig_file;
 
-    o << std::setw(4) << j << std::endl;
+    o << std::setw(4) << j << std::endl;*/
 }
 
 void InteractiveCDHook::save_results()
