@@ -2,7 +2,6 @@
 
 #include "arap_hessian.h"
 #include "kmeans.h"
-#include "compute_modes.h"
 #include "augment_with_linear_constraints.h"
 #include "momentum_leaking_matrix.h"
 #include "sparse_diag.h"
