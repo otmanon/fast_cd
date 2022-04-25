@@ -4,11 +4,20 @@
 #include <json.hpp>
 #include <stdio.h>
 #include <stdio.h>
-
+#ifdef WIN32
+#include <filesystem>
+#else
+#include <experimental/filesystem>
+#endif
 using namespace nlohmann;
-namespace fs = std::filesystem;
 std::vector<std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d>> > read_anim_file( std::string file, const Skeleton& skeleton, Eigen::Matrix4d& S, Eigen::Vector3d& t)
 {
+	#ifdef WIN32
+	namespace fs = std::filesystem;
+	#else
+	namespace fs = std::experimental::filesystem;
+	#endif
+	
 	std::vector<std::vector<Eigen::Affine3d, Eigen::aligned_allocator<Eigen::Affine3d>> > anim_T;
 	if (!fs::exists(fs::path(file)))
 	{

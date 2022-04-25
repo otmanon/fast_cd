@@ -23,8 +23,18 @@
 #include "skeleton_visualization_mesh.h"
 #include "get_all_json_in_subdirs.h"
 
+#ifdef WIN32
+#include <filesystem>
+#else
+#include <experimental/filesystem>
+#endif
 LBSRig::LBSRig(std::string filename, Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::VectorXi& bI , std::string anim_file_dir)
 {
+#ifdef WIN32
+	namespace fs = std::filesystem;
+#else
+	namespace fs = std::experimental::filesystem;
+#endif
 	//classic
 	this->X = X;
 	this->bI = bI;
@@ -100,7 +110,7 @@ LBSRig::LBSRig(std::string filename, Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eig
 
 	//
 	anim_paths.clear(); anim_names.clear();
-	get_all_json_in_dir(std::filesystem::path(filename).parent_path().string() + "/anim/", anim_paths, anim_names);
+	get_all_json_in_dir(fs::path(filename).parent_path().string() + "/anim/", anim_paths, anim_names);
 	current_anim_id = -1;
 	new_anim_id = -1;
 }

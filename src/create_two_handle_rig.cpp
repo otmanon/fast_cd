@@ -1,9 +1,17 @@
 #include "create_two_handle_rig.h"
 #include "HandleRig.h"
+#ifdef WIN32
 #include <filesystem>
+#else
+#include <experimental/filesystem>
+#endif
 void create_two_handle_rig(std::string file_path, Eigen::MatrixXd& X)
 {
+#ifdef WIN32
     namespace fs = std::filesystem;
+#else
+    namespace fs = std::experimental::filesystem;
+#endif
     if (!fs::exists(fs::path(file_path).parent_path()))
     {
         fs::create_directories(fs::path(file_path).parent_path());

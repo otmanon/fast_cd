@@ -2,7 +2,13 @@
 
 #include <stdio.h>
 #include <cassert>
+#include <Eigen/Sparse>
+
+#ifdef WIN32
 #include <filesystem>
+#else
+#include <experimental/filesystem>
+#endif
 
 #include "normalize_geometry_unit_height.h"
 #include "igl/readMSH.h"
@@ -42,7 +48,11 @@
 
 InteractiveCDHook::InteractiveCDHook(std::string& file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
-    namespace fs = std::filesystem;
+    #ifdef WIN32
+        namespace fs = std::filesystem;
+    #else
+        namespace fs = std::experimental::filesystem;
+    #endif
     this->guizmo = guizmo;
     this->viewer = viewer;
 
@@ -128,7 +138,11 @@ void InteractiveCDHook::init_modal_anim_state()
 
 void InteractiveCDHook::init_app_from_json(std::string& file)
 {
-    namespace fs = std::filesystem;
+    #ifdef WIN32
+        namespace fs = std::filesystem;
+    #else
+        namespace fs = std::experimental::filesystem;
+    #endif
     if (fs::path("../data/scene_data/" + file).extension() != ".json")
     {
         std::cout << "please ensure there exists a default init.json file in the data/ directory";
@@ -194,7 +208,11 @@ void InteractiveCDHook::init_app_from_json(std::string& file)
 void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepath)
 {
     //figure out rig type
-    namespace fs = std::filesystem;
+    #ifdef WIN32
+        namespace fs = std::filesystem;
+    #else
+        namespace fs = std::experimental::filesystem;
+    #endif
     if (!fs::exists(fs::path(rig_file)))
     {
         std::cout << "Could not find rig file, please provide a valid rig.json file" << std::endl;

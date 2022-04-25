@@ -23,12 +23,18 @@
 #include "complementary_equality_constraint.h"
 #include "compute_modes_matlab.h"
 #include "deformation_gradient_from_u_prefactorized_matrices.h"
-#include <filesystem>
 #include "igl/sum.h"
 #include "igl/count.h"
 #include <igl/colon.h>
 #include <igl/volume.h>
 #include <igl/get_seconds.h>
+
+#ifdef WIN32
+	#include <filesystem>
+#else
+	#include <experimental/filesystem>
+#endif
+
 FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction, bool do_clustering, int num_modal_features)
 {
 	this->X = X;
@@ -407,6 +413,12 @@ void FastCDSim::update_positional_constraints(Eigen::MatrixXd& bc)
 
 void FastCDSim::init_modes(int num_modes)
 {
+
+#ifdef WIN32
+		namespace fs = std::filesystem;
+#else
+	namespace fs = std::experimental::filesystem;
+#endif
 	std::string B_file_path = modes_file_dir + "B.DMAT";
 	std::string L_file_path = modes_file_dir + "S.DMAT";
 	bool found_modes = igl::readDMAT(B_file_path, B_full);
@@ -432,7 +444,6 @@ void FastCDSim::init_modes(int num_modes)
 		Eigen::MatrixXd modes;
 		compute_modes_matlab(H, M, num_modes, modes, L_full);
 		B_full = modes.block(0, 0, 3*X.rows(), num_modes);
-		namespace fs = std::filesystem;
 		if (!fs::exists(fs::path(B_file_path).parent_path()))
 		{
 			fs::create_directories(fs::path(B_file_path).parent_path());
@@ -449,6 +460,12 @@ void FastCDSim::init_modes(int num_modes)
 
 void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 {
+
+	#ifdef WIN32
+		namespace fs = std::filesystem;
+	#else
+		namespace fs = std::experimental::filesystem;
+	#endif
 	const int l = do_clustering ? num_clusters : T.rows();
 	std::string labels_file_path = clusters_file_dir + "labels_" + std::to_string(l) + "_features_" + std::to_string(num_feature_modes) + ".DMAT";
 
@@ -471,7 +488,7 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 			igl::average_onto_faces(T, B_verts, B_faces);
 			igl::kmeans(B_faces, num_clusters, C, labels);
 			printf("Done clustering! took %g seconds \n", igl::get_seconds() - t_start);
-			namespace fs = std::filesystem;
+
 			if (!fs::exists(fs::path(labels_file_path).parent_path()))
 			{
 				fs::create_directories(fs::path(labels_file_path).parent_path());

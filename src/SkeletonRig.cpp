@@ -15,12 +15,21 @@
 #include <igl/colon.h>
 #include <igl/setdiff.h>
 #include <igl/slice_into.h>
+
+#ifdef WIN32
 #include <filesystem>
+#else
+#include <experimental/filesystem>
+#endif
 #include <Eigen\Geometry>
 std::string get_rig_file_format(std::string filename)
 {
 	//open surface_file as json
+#ifdef WIN32
 	namespace fs = std::filesystem;
+#else
+	namespace fs = std::experimental::filesystem;
+#endif
 	json j;
 	std::ifstream i(filename);
 	i >> j;
@@ -97,8 +106,12 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	printf("Converting a surface rig file format to a volume one. Will attempt to map from surface volume mesh X provided, to the coarse tet mesh we are trying to rig."
 				"Then, we will diffuse surface weight values to volume weight values via a diffusion...\n");
 
-	//open surface_file as json
-	namespace fs = std::filesystem;
+		//open surface_file as json
+	#ifdef WIN32
+		namespace fs = std::filesystem;
+	#else
+		namespace fs = std::experimental::filesystem;
+	#endif
 	json j;
 	std::ifstream i(surface_file_name);
 	i >> j;
@@ -188,8 +201,11 @@ SkeletonRig::SkeletonRig(std::string volume_file_name)
 
 bool SkeletonRig::read_rig_from_json(std::string filename)
 {
+#ifdef WIN32
 	namespace fs = std::filesystem;
-
+#else
+	namespace fs = std::experimental::filesystem;
+#endif
 	json j;
 
 	std::ifstream i(filename);
@@ -213,8 +229,11 @@ bool SkeletonRig::read_rig_from_json(std::string filename)
 
 bool SkeletonRig::write_rig_to_json(std::string filename)
 {
-
+#ifdef WIN32
 	namespace fs = std::filesystem;
+#else
+	namespace fs = std::experimental::filesystem;
+#endif
 	filename = fs::path(filename).extension().string() == ".json" ? filename : filename + ".json";
 	if (!fs::exists(fs::path(filename).parent_path()))
 	{

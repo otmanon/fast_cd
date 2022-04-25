@@ -1,9 +1,13 @@
 #include "create_affine_rig_json.h"
 #include <fstream>
 #include <stdio.h>
-#include <json.hpp>
+#ifdef WIN32
 #include <filesystem>
+#else
+#include <experimental/filesystem>
+#endif
 #include <ostream>
+#include "json.hpp"
 void create_affine_rig_json(std::string rig_path)
 {
     //write current state to json
