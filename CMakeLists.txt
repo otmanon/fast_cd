@@ -19,12 +19,12 @@ target_link_libraries(spectra INTERFACE Eigen3::Eigen)
 
 add_library(fast_cd ${SRC_FILES} ${HEADER_FILES})
 target_include_directories(fast_cd PRIVATE ./include/)
-target_include_directories(fast_cd PUBLIC ./deps/json/)
+target_include_directories(fast_cd PUBLIC ./deps/json/ /usr/include/suitesparse/)
 set_target_properties(fast_cd PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET fast_cd PROPERTY CXX_STANDARD 17)
 
 #find suitesparse (for windows, follow https://github.com/jlblancoc/suitesparse-metis-for-windows)
-option(FAST_CD_USE_SUITESPARSE "FAST_CD_USE_SUITESPARSE" OFF)
+option(FAST_CD_USE_SUITESPARSE "FAST_CD_USE_SUITESPARSE" ON)
 if(FAST_CD_USE_SUITESPARSE)
   add_definitions(-DFAST_CD_USE_SUITESPARSE=${FAST_CD_USE_SUITESPARSE})
 endif()
@@ -33,14 +33,9 @@ option(LIBIGL_RESTRICTED_MATLAB "USE_MATLAB" ON)
 add_definitions( -DFAST_CD_USE_MATLAB=${FAST_CD_USE_MATLAB} )
 
 
+
 if (FAST_CD_USE_SUITESPARSE)
-	find_package(SuiteSparse CONFIG REQUIRED)
-	if (FAST_CD_USE_MATLAB)
-	target_link_libraries(fast_cd spectra SuiteSparse::umfpack SuiteSparse::cholmod igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab)
-	else()
-	target_link_libraries(fast_cd spectra SuiteSparse::umfpack SuiteSparse::cholmod igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab)
-	endif()
-	
+	target_link_libraries(fast_cd spectra libumfpack.a libsuitesparseconfig.a libamd.a libcolamd.a libcamd.a libbtf.a libcholmod.a libccolamd.a libcolamd.a libcxsparse.a libgraphblas.a libklu.a libldl.a librbio.a libspqr.a /usr/lib/x86_64-linux-gnu/lapack/liblapack.a /usr/lib/x86_64-linux-gnu/blas/libblas.a libmetis.so igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab)
 else()
 	target_link_libraries(fast_cd spectra igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab)
 endif()

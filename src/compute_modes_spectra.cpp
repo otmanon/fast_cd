@@ -7,10 +7,6 @@
 #ifdef FAST_CD_USE_SUITESPARSE
 #include <Eigen/UmfPackSupport>
 #include "UMFPACKSymShiftInvert.h"
-#include "CholModSymShiftInvert.h"
-#include <Eigen/CholmodSupport>
-#include "CholModSimplicialLDLTSymShiftInvert.h"
-#include "SimplicialLDLTSymShiftInvert.h"
 #include <Spectra/SymGEigsShiftSolver.h>
 
 using namespace Spectra;
