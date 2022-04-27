@@ -94,7 +94,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
     Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> U;
    // U = Eigen::Map<Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>(sim.B.data(), )
    // igl::readDMAT("C:/Users/otman/OneDrive/Desktop/matrixdefo/data.DMAT", U);
-    assert((B.rows() == V.rows() * 3) && "#U should be 3*#V");
+    assert((sim.B.rows() == V.rows() * 3) && "#U should be 3*#V");
     //std::cout<<"**warning** resizing to min(U.cols(),100)"<<std::endl;
     //U.conservativeResize(U.rows(),std::min(100,(int)U.cols()));
     I = igl::LinSpaced< Eigen::Matrix< float, Eigen::Dynamic, 1> >(V.rows(), 0, V.rows() - 1);
@@ -110,125 +110,142 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
         {
             for (int c = 0; c < 3; c++)
             {
-                tex(i * m + j, c) = 0; // U(i + c * n, j);  should give zero displacement for all modes
+                tex(i * m + j, c) = sim.B(i + c * n, j); // should give zero displacement for all modes
             }
         }
     }
+
+     ///////////////////////////////////////////////////////////////////
+    // Compile Shaders
+    ///////////////////////////////////////////////////////////////////
+
+
+    std::string mesh_vertex_shader_string =
+        R"(#version 150
+      uniform mat4 view;
+      uniform mat4 proj;
+      uniform mat4 normal_matrix;
+      in vec3 position;
+      in vec3 normal;
+      out vec3 position_eye;
+      out vec3 normal_eye;
+      in vec4 Ka;
+      in vec4 Kd;
+      in vec4 Ks;
+     // in vec2 texcoord;
+      out vec2 texcoordi;
+      out vec4 Kai;
+      out vec4 Kdi;
+      out vec4 Ksi;
+
+     in float id;
+     uniform int n;
+     uniform int m;
+     uniform int s;
+     uniform float q[512];
+    uniform sampler2D tex;
+
+    void main()
+    {
+       vec3 displacement = vec3(0,0,0);
+        int index = int(id)*m + 0;
+        int si = index%s;
+        int sj = int((index-si)/s);
+         displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[0]; //
+       // for(int j = 0;j < m; j++)
+       // {
+       //   int index = int(id)*m+j;
+       //   int si = index % s;
+       //   int sj = int((index - si)/s);
+       //   displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
+       // }
+      vec3 deformed = position + displacement ; 
+
+      position_eye =  vec3 (view * vec4 (deformed, 1.0));
+      gl_Position = proj * vec4 (position_eye, 1.0);
+      normal_eye = vec3 (normal_matrix * vec4 (normal, 0.0));
+      normal_eye = normalize(normal_eye);
+      Kai = Ka;
+      Kdi = Kd;
+      Ksi = Ks;
+    })";
+
+
+    std::string mesh_fragment_shader_string =
+        R"(#version 150
+  uniform mat4 view;
+  uniform mat4 proj;
+  uniform vec4 fixed_color;
+  in vec3 position_eye;
+  in vec3 normal_eye;
+  uniform vec3 light_position_eye;
+  vec3 Ls = vec3 (1, 1, 1);
+  vec3 Ld = vec3 (1, 1, 1);
+  vec3 La = vec3 (1, 1, 1);
+  in vec4 Ksi;
+  in vec4 Kdi;
+  in vec4 Kai;
+  in vec2 texcoordi;
+  uniform sampler2D tex;
+  uniform float specular_exponent;
+  uniform float lighting_factor;
+  uniform float texture_factor;
+  uniform float matcap_factor;
+  uniform float double_sided;
+  out vec4 outColor;
+  void main()
+  {
+
+    vec3 xTangent = dFdx( position_eye );
+    vec3 yTangent = dFdy( position_eye );
+    vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
+    if(matcap_factor == 1.0f)
+    {
+      vec2 uv = normalize(faceNormal).xy * 0.5 + 0.5;
+      outColor = texture(tex, uv);
+    }else
+    {
+      vec3 Ia = La * vec3(Kai);    // ambient intensity
+
+      vec3 vector_to_light_eye = light_position_eye - position_eye;
+      vec3 direction_to_light_eye = normalize (vector_to_light_eye);
+      float dot_prod = dot (direction_to_light_eye, normalize(faceNormal));
+      float clamped_dot_prod = abs(max (dot_prod, -double_sided));
+      vec3 Id = Ld * vec3(Kdi) * clamped_dot_prod;    // Diffuse intensity
+
+      vec3 reflection_eye = reflect (-direction_to_light_eye, normalize(faceNormal));
+      vec3 surface_to_viewer_eye = normalize (-position_eye);
+      float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);
+      dot_prod_specular = float(abs(dot_prod)==dot_prod) * abs(max (dot_prod_specular, -double_sided));
+      float specular_factor = pow (dot_prod_specular, specular_exponent);
+      vec3 Is = Ls * vec3(Ksi) * specular_factor;    // specular intensity
+      vec4 color = vec4(lighting_factor * (Is + Id) + Ia + (1.0-lighting_factor) * vec3(Kdi),(Kai.a+Ksi.a+Kdi.a)/3);
+      outColor = mix(vec4(1,1,1,1), texture(tex, texcoordi), texture_factor) * color;
+      
+      if (fixed_color != vec4(0.0)) outColor = fixed_color;
+     
+   // outColor = vec4(0,1, 1, 1);
+    }
+  }
+)";
 
 
     ///////////////////////////////////////////////////////////////////
     // Initialize viewer and opengl context
     ///////////////////////////////////////////////////////////////////
+
     igl::opengl::glfw::Viewer v;
-    v.data().set_mesh(V, F);
-    v.data().set_face_based(false);
-    v.data().show_lines = false;
-    v.launch_init(true, false);
+    v.launch_init(true, false, "fast CD App", 1920, 1080);
+    //destroys any existing shader programs
     v.data().meshgl.free();
-
-    ///////////////////////////////////////////////////////////////////
-    // Compile new shaders
-    ///////////////////////////////////////////////////////////////////
-    {
-        std::string mesh_vertex_shader_string =
-            R"(#version 150
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 proj;
-in vec3 position;
-in vec3 normal;
-out vec3 position_eye;
-out vec3 normal_eye;
-in vec4 Ka;
-in vec4 Kd;
-in vec4 Ks;
-in vec2 texcoord;
-out vec2 texcoordi;
-out vec4 Kai;
-out vec4 Kdi;
-out vec4 Ksi;
-in float id;
-uniform int n;
-uniform int m;
-uniform int s;
-uniform float q[512];
-uniform sampler2D tex;
-void main()
-{
-  vec3 displacement = vec3(0,0,0);
-  for(int j = 0;j < m; j++)
-  {
-    int index = int(id)*m+j;
-    int si = index % s;
-    int sj = int((index - si)/s);
-    displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
-  }
-  vec3 deformed = position + displacement;
-  position_eye = vec3 (view * model * vec4 (deformed, 1.0));
-  gl_Position = proj * vec4 (position_eye, 1.0);
-  Kai = Ka;
-  Kdi = Kd;
-  Ksi = Ks;
-})";
-
-        std::string mesh_fragment_shader_string =
-            R"(#version 150
-        uniform mat4 model;
-        uniform mat4 view;
-        uniform mat4 proj;
-        uniform vec4 fixed_color;
-        in vec3 position_eye;
-        uniform vec3 light_position_world;
-        vec3 Ls = vec3 (1, 1, 1);
-        vec3 Ld = vec3 (1, 1, 1);
-        vec3 La = vec3 (1, 1, 1);
-        in vec4 Ksi;
-        in vec4 Kdi;
-        in vec4 Kai;
-        uniform float specular_exponent;
-        uniform float lighting_factor;
-        out vec4 outColor;
-        void main()
-        {
-          vec3 xTangent = dFdx(position_eye);
-          vec3 yTangent = dFdy(position_eye);
-          vec3 normal_eye = normalize( cross( yTangent, xTangent ) );
-        vec3 Ia = La * vec3(Kai);    // ambient intensity
-        vec3 light_position_eye = vec3 (view * vec4 (light_position_world, 1.0));
-        vec3 vector_to_light_eye = light_position_eye - position_eye;
-        vec3 direction_to_light_eye = normalize (vector_to_light_eye);
-        float dot_prod = dot (direction_to_light_eye, normal_eye);
-        float clamped_dot_prod = max (dot_prod, 0.0);
-        vec3 Id = Ld * vec3(Kdi) * clamped_dot_prod;    // Diffuse intensity
-        vec3 reflection_eye = reflect (-direction_to_light_eye, normal_eye);
-        vec3 surface_to_viewer_eye = normalize (-position_eye);
-        float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);
-        dot_prod_specular = float(abs(dot_prod)==dot_prod) * max (dot_prod_specular, 0.0);
-        float specular_factor = pow (dot_prod_specular, specular_exponent);
-        vec3 Kfi = 0.5*vec3(Ksi);
-        vec3 Lf = Ls;
-        float fresnel_exponent = 2*specular_exponent;
-        float fresnel_factor = 0;
-        {
-          float NE = max( 0., dot( normal_eye, surface_to_viewer_eye));
-          fresnel_factor = pow (max(sqrt(1. - NE*NE),0.0), fresnel_exponent);
-        }
-        vec3 Is = Ls * vec3(Ksi) * specular_factor;    // specular intensity
-        vec3 If = Lf * vec3(Kfi) * fresnel_factor;     // fresnel intensity
-        vec4 color = vec4(lighting_factor * (If + Is + Id) + Ia + 
-          (1.0-lighting_factor) * vec3(Kdi),(Kai.a+Ksi.a+Kdi.a)/3);
-        outColor = color;
-        if (fixed_color != vec4(0.0)) outColor = fixed_color;
-
-        outColor = vec4(0, 1, 1, 1);
-        })";
-        igl::opengl::create_shader_program(
-            mesh_vertex_shader_string,
-            mesh_fragment_shader_string,
-            {},
-            v.data().meshgl.shader_mesh);
-    }
-
+    v.data().meshgl.is_initialized = true;
+    v.data().meshgl.init_buffers();
+    v.data().meshgl.init_text_rendering();
+    igl::opengl::create_shader_program(
+        mesh_vertex_shader_string,
+        mesh_fragment_shader_string,
+        {},
+        v.data().meshgl.shader_mesh);
     ///////////////////////////////////////////////////////////////////
     // Send texture and vertex attributes to GPU
     ///////////////////////////////////////////////////////////////////
@@ -260,24 +277,25 @@ void main()
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
     }
 
+    v.data().set_mesh(V, F);
 
     Eigen::VectorXf q0 = Eigen::VectorXf::Zero(m, 1);
     q0(0) = 1;
     Eigen::VectorXf q1 = Eigen::VectorXf::Zero(m, 1);
 
-    v.callback_pre_draw = [&U, &q0, &q1, &m, &n, &s](igl::opengl::glfw::Viewer& v) ->bool
+    v.callback_pre_draw = [&](igl::opengl::glfw::Viewer& v) ->bool
     {
-        static size_t count = 0;
-        const int keyrate = 15;
-        if (count % keyrate == 0)
-        {
-            q0 = q1;
-            q1 = Eigen::VectorXf::Random(m, 1).array() * 0.5 + 0.5;
-            q1 = q1.array().pow(100.0).eval();
-        }
-        Eigen::VectorXf qa = q0 + double(count % keyrate) / (keyrate - 1.0) * (q1 - q0);
-        qa /= qa.sum();
-        count++;
+       //static size_t count = 0;
+       //const int keyrate = 15;
+       //if (count % keyrate == 0)
+       //{
+       //    q0 = q1;
+       //    q1 = Eigen::VectorXf::Random(m, 1).array() * 0.5 + 0.5;
+       //    q1 = q1.array().pow(100.0).eval();
+       //}
+        //Eigen::VectorXf qa = q0 + double(count % keyrate) / (keyrate - 1.0) * (q1 - q0);
+        //qa /= qa.sum();
+        //count++;
         /////////////////////////////////////////////////////////
         // Send uniforms to shader
         /////////////////////////////////////////////////////////
@@ -290,7 +308,7 @@ void main()
         GLint s_loc = glGetUniformLocation(prog_id, "s");
         glUniform1i(s_loc, s);
         GLint q_loc = glGetUniformLocation(prog_id, "q");
-        glUniform1fv(q_loc, U.cols(), qa.data());
+        glUniform1fv(q_loc, sim.B.cols(), q0.data());
         // Do this now so that we can stop texture from being loaded by viewer
         if (v.data().dirty)
         {
@@ -301,7 +319,7 @@ void main()
         return false;
     };
 
-    v.core().animation_max_fps = 60.0;
+    v.core().animation_max_fps = 240;
     v.core().is_animating = true;
     v.launch_rendering(true);
     v.launch_shut();
