@@ -1,13 +1,65 @@
 #include "launch_viewer_custom_shader.h"
 #include <igl/opengl/MeshGL.h>
 #include <igl/opengl/create_shader_program.h>
+
+
 void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
     bool resizeable, bool fullscreen, std::string name, int width, int height)
 {
 
     //v.launch_init(true, false);
 
-    //  igl::opengl::MeshGL::free();
+    std::string mesh_vertex_shader_string =
+        R"(#version 150
+      uniform mat4 view;
+      uniform mat4 proj;
+      uniform mat4 normal_matrix;
+      in vec3 position;
+      in vec3 normal;
+      out vec3 position_eye;
+      out vec3 normal_eye;
+      in vec4 Ka;
+      in vec4 Kd;
+      in vec4 Ks;
+     // in vec2 texcoord;
+      out vec2 texcoordi;
+      out vec4 Kai;
+      out vec4 Kdi;
+      out vec4 Ksi;
+
+     in float id;
+     uniform int n;
+     uniform int m;
+     uniform int s;
+     uniform float q[512];
+    uniform sampler2D tex;
+
+    void main()
+    {
+       vec3 displacement = vec3(0,0,0);
+        int index = int(id)*m + 0;
+        int si = index%s;
+        int sj = int((index-si)/s);
+         displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[0]; //
+       // for(int j = 0;j < m; j++)
+       // {
+       //   int index = int(id)*m+j;
+       //   int si = index % s;
+       //   int sj = int((index - si)/s);
+       //   displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
+       // }
+      vec3 deformed = position + displacement ; 
+
+      position_eye =  vec3 (view * vec4 (deformed, 1.0));
+      gl_Position = proj * vec4 (position_eye, 1.0);
+      normal_eye = vec3 (normal_matrix * vec4 (normal, 0.0));
+      normal_eye = normalize(normal_eye);
+      Kai = Ka;
+      Kdi = Kd;
+      Ksi = Ks;
+    })";
+
+    /*
     std::string mesh_vertex_shader_string =
         R"(#version 150
   uniform mat4 view;
@@ -37,7 +89,7 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
     Ksi = Ks;
     texcoordi = texcoord;
   }
-)";
+)";*/
 
     std::string mesh_fragment_shader_string =
         R"(#version 150
@@ -92,6 +144,7 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
       
       if (fixed_color != vec4(0.0)) outColor = fixed_color;
      
+  //  outColor = vec4(0,1, 1, 1);
     }
   }
 )";
@@ -203,35 +256,8 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
       outColor = vec4(TextColor, A);
     }
 )";
+ 
     v.launch_init(true, false, "fast CD App", 1920, 1080);
-    
-    /*v.init_buffers();
-    init_text_rendering();
-    create_shader_program(
-        mesh_vertex_shader_string,
-        mesh_fragment_shader_string,
-        {},
-        shader_mesh);
-    create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_fragment_shader_string,
-        {},
-        shader_overlay_lines);
-    create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_point_fragment_shader_string,
-        {},
-        shader_overlay_points);
-    create_shader_program(
-        text_geom_shader,
-        text_vert_shader,
-        text_frag_shader,
-        {},
-        shader_text);*/
-
-    //creates shader programs
-    //v.data().meshgl.init();
-    
     //destroys any existing shader programs
     v.data().meshgl.free();
     v.data().meshgl.is_initialized = true;
@@ -242,22 +268,22 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
         mesh_fragment_shader_string,
         {},
         v.data().meshgl.shader_mesh);
-    igl::opengl::create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_fragment_shader_string,
-        {},
-        v.data().meshgl.shader_overlay_lines);
-    igl::opengl::create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_point_fragment_shader_string,
-        {},
-        v.data().meshgl.shader_overlay_points);
-    igl::opengl::create_shader_program(
-        text_geom_shader,
-        text_vert_shader,
-        text_frag_shader,
-        {},
-        v.data().meshgl.shader_text);
+ //  igl::opengl::create_shader_program(
+ //      overlay_vertex_shader_string,
+ //      overlay_fragment_shader_string,
+ //      {},
+ //      v.data().meshgl.shader_overlay_lines);
+ //  igl::opengl::create_shader_program(
+ //      overlay_vertex_shader_string,
+ //      overlay_point_fragment_shader_string,
+ //      {},
+ //      v.data().meshgl.shader_overlay_points);
+ //  igl::opengl::create_shader_program(
+ //      text_geom_shader,
+ //      text_vert_shader,
+ //      text_frag_shader,
+ //      {},
+ //      v.data().meshgl.shader_text);
 
     v.core().animation_max_fps = 240;
     v.launch_rendering(true);

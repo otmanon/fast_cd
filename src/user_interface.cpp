@@ -7,25 +7,66 @@
 #include <string>
 #include "rainbow_cmap.h"
 
-#include <GLFW/glfw3.h>
 #include <iostream>
 
 #include <filesystem>
 
 #include "create_two_handle_rig.h"
 
+#include "igl/opengl/gl.h"
+#include "igl/LinSpaced.h"
+#include "igl/opengl/create_shader_program.h"
+#include "igl/read_triangle_mesh.h"
+#include "igl/readDMAT.h"
+#include "igl/readPLY.h"
 //Render UI related
 void InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 {
-    as.rig_controller->render(viewer);
-    rig->render(viewer);
+  //  Eigen::VectorXf q0 = Eigen::VectorXf::Zero(as.r);
+    Eigen::VectorXf z = 0*z_curr.cast<float>();
+    z(0) = 1;
+  //  const int keyrate = 10;
+   // if (step % keyrate == 0)
+  //  {
+       // q0 = q1;
+       // z_curr(0) += 1;// = z.cast<double>();
+     //   q1 = q1.array().pow(100.0).eval();
+   //}
     
-    if (v_state.vis_mode == TEXTURES)
-    {
-        viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
-    }
+  //  Eigen::VectorXf qa = q0 + double(count % keyrate) / (keyrate - 1.0) * (q1 - q0);
+   // qa /= qa.sum();
+   // count++;
+    /////////////////////////////////////////////////////////
+    // Send uniforms to shader
+    /////////////////////////////////////////////////////////
+    const int s = ceil(sqrt(V.rows() * as.r));
+
+    GLuint prog_id = viewer.data().meshgl.shader_mesh;
+    glUseProgram(prog_id);
+    GLint n_loc = glGetUniformLocation(prog_id, "n");
+    glUniform1i(n_loc, V.rows());
+    GLint m_loc = glGetUniformLocation(prog_id, "m");
+    glUniform1i(m_loc, as.r);
+    GLint s_loc = glGetUniformLocation(prog_id, "s");
+    glUniform1i(s_loc, s);
+    GLint q_loc = glGetUniformLocation(prog_id, "q");
+    glUniform1fv(q_loc, sim.B.cols(), z.data());
+    // Do this now so that we can stop texture from being loaded by viewer
+   
+        viewer.data().updateGL(viewer.data(), viewer.data().invert_normals, viewer.data().meshgl);
+        viewer.data().dirty = igl::opengl::MeshGL::DIRTY_NONE;
+        viewer.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+   // viewer.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+
+   // as.rig_controller->render(viewer);
+   // rig->render(viewer);
     
-    viewer.data_list[v_state.coarse_vis_id].set_vertices(V_ext);
+   // if (v_state.vis_mode == TEXTURES)
+   // {
+   //     viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
+   // }
+   // 
+   // viewer.data_list[v_state.coarse_vis_id].set_vertices(V_ext);
    
 
    //viewer.data_list[v_state.coarse_vis_id].set_vertices(V_ext);
@@ -37,36 +78,234 @@ void InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
    
 }
 
-void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& viewer)
+void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
 {
+    using namespace Eigen;
+    using namespace std;
+  //  Eigen::MatrixXd V;
+   // Eigen::MatrixXi F;
+   // igl::readPLY("C:/Users/otman/OneDrive/Desktop/matrixdefo/face.ply", V, F);
 
-    this->viewer = &viewer;
+    ///////////////////////////////////////////////////////////////////
+    // Load and prepare data
+    ///////////////////////////////////////////////////////////////////
+    Eigen::Matrix< float, Eigen::Dynamic, 1> I;
+    Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor> tex;
+    Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> U;
+   // U = Eigen::Map<Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>(sim.B.data(), )
+   // igl::readDMAT("C:/Users/otman/OneDrive/Desktop/matrixdefo/data.DMAT", U);
+    assert((B.rows() == V.rows() * 3) && "#U should be 3*#V");
+    //std::cout<<"**warning** resizing to min(U.cols(),100)"<<std::endl;
+    //U.conservativeResize(U.rows(),std::min(100,(int)U.cols()));
+    I = igl::LinSpaced< Eigen::Matrix< float, Eigen::Dynamic, 1> >(V.rows(), 0, V.rows() - 1);
+    const int n = V.rows();
+    const int m = sim.B.cols();
+    const int s = ceil(sqrt(n * m));
+    assert(s * s > n * m);//
+    printf("%d %d %d\n", n, m, s);
+    tex = Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor>::Zero(s * s, 3);
+    for (int j = 0; j < m; j++)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            for (int c = 0; c < 3; c++)
+            {
+                tex(i * m + j, c) = 0; // U(i + c * n, j);  should give zero displacement for all modes
+            }
+        }
+    }
 
-    init_vis_state();
-    this->viewer->append_mesh();
-    this->viewer->data_list[v_state.coarse_vis_id].clear();
-    this->viewer->data_list[v_state.fine_vis_id].clear();
-    new_v_state = v_state;
-   
 
-   
-    //turn data_list[0] on/off
-    //TODO: should keep matcap separate for each mesh, and load it up once we pick our mesh
-    if (v_state.vis_mode == VIS_MODE::MATCAP)
+    ///////////////////////////////////////////////////////////////////
+    // Initialize viewer and opengl context
+    ///////////////////////////////////////////////////////////////////
+    igl::opengl::glfw::Viewer v;
+    v.data().set_mesh(V, F);
+    v.data().set_face_based(false);
+    v.data().show_lines = false;
+    v.launch_init(true, false);
+    v.data().meshgl.free();
+
+    ///////////////////////////////////////////////////////////////////
+    // Compile new shaders
+    ///////////////////////////////////////////////////////////////////
     {
-        set_viewer_matcap();
+        std::string mesh_vertex_shader_string =
+            R"(#version 150
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 proj;
+in vec3 position;
+in vec3 normal;
+out vec3 position_eye;
+out vec3 normal_eye;
+in vec4 Ka;
+in vec4 Kd;
+in vec4 Ks;
+in vec2 texcoord;
+out vec2 texcoordi;
+out vec4 Kai;
+out vec4 Kdi;
+out vec4 Ksi;
+in float id;
+uniform int n;
+uniform int m;
+uniform int s;
+uniform float q[512];
+uniform sampler2D tex;
+void main()
+{
+  vec3 displacement = vec3(0,0,0);
+  for(int j = 0;j < m; j++)
+  {
+    int index = int(id)*m+j;
+    int si = index % s;
+    int sj = int((index - si)/s);
+    displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
+  }
+  vec3 deformed = position + displacement;
+  position_eye = vec3 (view * model * vec4 (deformed, 1.0));
+  gl_Position = proj * vec4 (position_eye, 1.0);
+  Kai = Ka;
+  Kdi = Kd;
+  Ksi = Ks;
+})";
+
+        std::string mesh_fragment_shader_string =
+            R"(#version 150
+        uniform mat4 model;
+        uniform mat4 view;
+        uniform mat4 proj;
+        uniform vec4 fixed_color;
+        in vec3 position_eye;
+        uniform vec3 light_position_world;
+        vec3 Ls = vec3 (1, 1, 1);
+        vec3 Ld = vec3 (1, 1, 1);
+        vec3 La = vec3 (1, 1, 1);
+        in vec4 Ksi;
+        in vec4 Kdi;
+        in vec4 Kai;
+        uniform float specular_exponent;
+        uniform float lighting_factor;
+        out vec4 outColor;
+        void main()
+        {
+          vec3 xTangent = dFdx(position_eye);
+          vec3 yTangent = dFdy(position_eye);
+          vec3 normal_eye = normalize( cross( yTangent, xTangent ) );
+        vec3 Ia = La * vec3(Kai);    // ambient intensity
+        vec3 light_position_eye = vec3 (view * vec4 (light_position_world, 1.0));
+        vec3 vector_to_light_eye = light_position_eye - position_eye;
+        vec3 direction_to_light_eye = normalize (vector_to_light_eye);
+        float dot_prod = dot (direction_to_light_eye, normal_eye);
+        float clamped_dot_prod = max (dot_prod, 0.0);
+        vec3 Id = Ld * vec3(Kdi) * clamped_dot_prod;    // Diffuse intensity
+        vec3 reflection_eye = reflect (-direction_to_light_eye, normal_eye);
+        vec3 surface_to_viewer_eye = normalize (-position_eye);
+        float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);
+        dot_prod_specular = float(abs(dot_prod)==dot_prod) * max (dot_prod_specular, 0.0);
+        float specular_factor = pow (dot_prod_specular, specular_exponent);
+        vec3 Kfi = 0.5*vec3(Ksi);
+        vec3 Lf = Ls;
+        float fresnel_exponent = 2*specular_exponent;
+        float fresnel_factor = 0;
+        {
+          float NE = max( 0., dot( normal_eye, surface_to_viewer_eye));
+          fresnel_factor = pow (max(sqrt(1. - NE*NE),0.0), fresnel_exponent);
+        }
+        vec3 Is = Ls * vec3(Ksi) * specular_factor;    // specular intensity
+        vec3 If = Lf * vec3(Kfi) * fresnel_factor;     // fresnel intensity
+        vec4 color = vec4(lighting_factor * (If + Is + Id) + Ia + 
+          (1.0-lighting_factor) * vec3(Kdi),(Kai.a+Ksi.a+Kdi.a)/3);
+        outColor = color;
+        if (fixed_color != vec4(0.0)) outColor = fixed_color;
+
+        outColor = vec4(0, 1, 1, 1);
+        })";
+        igl::opengl::create_shader_program(
+            mesh_vertex_shader_string,
+            mesh_fragment_shader_string,
+            {},
+            v.data().meshgl.shader_mesh);
     }
-    else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
+
+    ///////////////////////////////////////////////////////////////////
+    // Send texture and vertex attributes to GPU
+    ///////////////////////////////////////////////////////////////////
     {
-        set_viewer_clusters();
+        GLuint prog_id = v.data().meshgl.shader_mesh;
+        glUseProgram(prog_id);
+        GLuint VAO = v.data().meshgl.vao_mesh;
+        glBindVertexArray(VAO);
+        GLuint IBO;
+        glGenBuffers(1, &IBO);
+        glBindBuffer(GL_ARRAY_BUFFER, IBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * I.size(), I.data(), GL_STATIC_DRAW);
+        GLint iid = glGetAttribLocation(prog_id, "id");
+        glVertexAttribPointer(
+            iid, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(iid);
+        glBindVertexArray(0);
+        glActiveTexture(GL_TEXTURE0);
+        //glGenTextures(1, &v.opengl.vbo_tex);
+        glBindTexture(GL_TEXTURE_2D, v.data().meshgl.vbo_tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        // 8650×8650 texture was roughly the max I could still get 60 fps, 8700²
+        // already dropped to 1fps
+        //
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
     }
-    else if (v_state.vis_mode == VIS_MODE::TEXTURES)
+
+
+    Eigen::VectorXf q0 = Eigen::VectorXf::Zero(m, 1);
+    q0(0) = 1;
+    Eigen::VectorXf q1 = Eigen::VectorXf::Zero(m, 1);
+
+    v.callback_pre_draw = [&U, &q0, &q1, &m, &n, &s](igl::opengl::glfw::Viewer& v) ->bool
     {
-        set_viewer_textures();
-    }
-   // viewer.data_list[v_state.vis_id].set_colormap(get_rainbow_colormap());
-  //  save_params();
-    //rig->init_viewer(viewer);
+        static size_t count = 0;
+        const int keyrate = 15;
+        if (count % keyrate == 0)
+        {
+            q0 = q1;
+            q1 = Eigen::VectorXf::Random(m, 1).array() * 0.5 + 0.5;
+            q1 = q1.array().pow(100.0).eval();
+        }
+        Eigen::VectorXf qa = q0 + double(count % keyrate) / (keyrate - 1.0) * (q1 - q0);
+        qa /= qa.sum();
+        count++;
+        /////////////////////////////////////////////////////////
+        // Send uniforms to shader
+        /////////////////////////////////////////////////////////
+        GLuint prog_id = v.data().meshgl.shader_mesh;
+        glUseProgram(prog_id);
+        GLint n_loc = glGetUniformLocation(prog_id, "n");
+        glUniform1i(n_loc, n);
+        GLint m_loc = glGetUniformLocation(prog_id, "m");
+        glUniform1i(m_loc, m);
+        GLint s_loc = glGetUniformLocation(prog_id, "s");
+        glUniform1i(s_loc, s);
+        GLint q_loc = glGetUniformLocation(prog_id, "q");
+        glUniform1fv(q_loc, U.cols(), qa.data());
+        // Do this now so that we can stop texture from being loaded by viewer
+        if (v.data().dirty)
+        {
+            v.data().updateGL(v.data(), v.data().invert_normals, v.data().meshgl);
+            v.data().dirty = igl::opengl::MeshGL::DIRTY_NONE;
+        }
+        v.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+        return false;
+    };
+
+    v.core().animation_max_fps = 60.0;
+    v.core().is_animating = true;
+    v.launch_rendering(true);
+    v.launch_shut();
+    
 }
 
 
@@ -79,7 +318,7 @@ void InteractiveCDHook::set_viewer_textures()
     viewer->data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
 
     viewer->data_list[v_state.fine_vis_id].clear();
-
+        
 
     viewer->data_list[v_state.fine_vis_id].invert_normals = false;
     viewer->data_list[v_state.fine_vis_id].double_sided = false;

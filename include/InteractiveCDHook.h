@@ -14,7 +14,7 @@ class InteractiveCDHook
 public:
 
     // Initializes with a file. Either a .init json file, or a mesh name
-    InteractiveCDHook(std::string& file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
+    InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
 
     void init_app_from_json(std::string& file);
 

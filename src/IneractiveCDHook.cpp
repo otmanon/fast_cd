@@ -43,8 +43,8 @@
 #include "igl/barycenter.h"
 #include "igl/centroid.h"
 //#include "write_sparse_ijv_DMAT.h"
-
-InteractiveCDHook::InteractiveCDHook(std::string& file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
+#include <igl/writeMESH.h>
+InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
       namespace fs = std::filesystem;
    
@@ -61,6 +61,7 @@ InteractiveCDHook::InteractiveCDHook(std::string& file, igl::opengl::glfw::Viewe
 
 
     init_rig(as.rig_file_path, as.mesh_file_path);
+
 
     init_rig_controller(rig);
 
@@ -85,8 +86,9 @@ InteractiveCDHook::InteractiveCDHook(std::string& file, igl::opengl::glfw::Viewe
     sim = FastSim(V0, T, rig->S,  as.ym, as.pr, as.dt, as.r, as.l, as.pinned_mode_dir, as.pinned_clusters_dir, as.do_reduction, as.do_clustering);
     
   
-   cd_sim = FastCDSim(V0, T, rig->J, as.ym, as.pr, as.dt, as.r, as.l, as.cd_mode_dir, as.cd_clusters_dir, as.do_reduction, as.do_clustering);
+    cd_sim = FastCDSim(V0, T, rig->J, as.ym, as.pr, as.dt, as.r, as.l, as.cd_mode_dir, as.cd_clusters_dir, as.do_reduction, as.do_clustering);
    
+    
 
     //get all indices in J and B.
     Eigen::VectorXi ix = ext_ind;
@@ -119,7 +121,8 @@ void InteractiveCDHook::init_vis_state()
     v_state.coarse_vis_id = 0;
     v_state.fine_vis_id = 1;
     v_state.vis_cd = true;
-    v_state.vis_mode = VIS_MODE::MATCAP;
+    v_state.vis_mode = VIS_MODE::CLUSTERS;
+
 }
 
 void InteractiveCDHook::init_modal_anim_state()
@@ -263,19 +266,21 @@ void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepa
 
 void InteractiveCDHook::init_rig_controller(Rig * rig)
 {
+ //   igl::opengl::glfw::Viewer* bogus_viewer_tm;
+    igl::opengl::glfw::Viewer viewer = igl::opengl::glfw::Viewer(); //BOGOS Viewer Temporary
     if (as.rig_controller_name == "HandleRigMouseController")
     {
-        as.rig_controller = new HandleRigMouseController(rig->p0, viewer, guizmo);
+        as.rig_controller = new HandleRigMouseController(rig->p0, &viewer, guizmo);
     }
     else if (as.rig_controller_name == "LeftRightScriptedHandleRigController")
     {
-        as.rig_controller = new LeftRightScriptedHandleRigController(rig->p0, viewer, guizmo);
+        as.rig_controller = new LeftRightScriptedHandleRigController(rig->p0, &viewer, guizmo);
     }
     else if (as.rig_controller_name == "SkeletonRigFKMouseController")
     {
         //make sure the rig is of a Skeleton type
         //only give rest parameters...
-       as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig *)rig)->pI, ((SkeletonRig*)rig)->lengths, viewer, guizmo);
+       as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig *)rig)->pI, ((SkeletonRig*)rig)->lengths, &viewer, guizmo);
     }
     //TODO add one more that is for IK
 }
@@ -301,8 +306,10 @@ void InteractiveCDHook::init_geometry(std::string& mesh_file)
     igl::boundary_facets(T, F, FiT, _n);
     //get list of exterior vertex indices
     igl::unique(F, ext_ind);
-
-
+    bool read = igl::writeMESH("../data/scene_data/elephant/elephant.mesh", V, T, F);
+    bool wrote =  igl::writeMESH("../data/scene_data/elephant/elephant.mesh", V, T, F);
+    std::cout << "written out! : " << wrote << std::endl;
+    std::cout << "read! : " << wrote << std::endl;
     Eigen::MatrixXd N;  Eigen::MatrixXi FN; Eigen::MatrixXd V_h;
     has_display_mesh = igl::readOBJ(as.display_file_path, V_high_res, UV_high_res, N, F_high_res, FUV_high_res, FN);
     if (has_display_mesh)
