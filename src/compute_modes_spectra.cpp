@@ -76,7 +76,7 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
         }
         assert((geigs.info() == CompInfo::Successful) && "Eigendecomposition not succeeded");
         #else
-        printf("SuiteSparse UMFPack not linked proeperly. please call compute_modes_matlab() instead\n");
-        #endif FAST_CD_USE_SUITESPARSE
+#error "FAST_CD_USE_SUITESPARSE should be defined."
+        #endif 
         
 }
