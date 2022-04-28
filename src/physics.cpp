@@ -120,18 +120,18 @@ void InteractiveCDHook::full_sim_step_pinning_control()
     u_prev = u_curr;
     u_curr = u_next;
 
-    Eigen::MatrixXd U_next = Eigen::Map<Eigen::MatrixXd>(u_next.data(), u_next.rows() / 3, 3);
+ //   Eigen::MatrixXd U_next = Eigen::Map<Eigen::MatrixXd>(u_next.data(), u_next.rows() / 3, 3);
 
-    V = V0;
-    if (v_state.vis_cd)
-    {
-        V += U_next;
-    }
-    if (v_state.vis_mode == TEXTURES) //visualize high res embedded mesh.
-    {
-        Eigen::VectorXd v_high_res = W_low_to_high * u_next;
-        V_high_res = V_high_res0 + Eigen::Map<Eigen::MatrixXd>(v_high_res.data(), v_high_res.rows() / 3, 3);
-    }
+ //   V = V0;
+ //   if (v_state.vis_cd)
+ //   {
+ //       V += U_next;
+ //   }
+ //   if (v_state.vis_mode == TEXTURES) //visualize high res embedded mesh.
+//    {
+ //       Eigen::VectorXd v_high_res = W_low_to_high * u_next;
+ //       V_high_res = V_high_res0 + Eigen::Map<Eigen::MatrixXd>(v_high_res.data(), v_high_res.rows() / 3, 3);
+ //   }
 
     igl::slice(V, ext_ind, 1, V_ext);
 }
@@ -196,18 +196,18 @@ void InteractiveCDHook::full_sim_step_cd_control()
 
     Eigen::MatrixXd Uc_next = Eigen::Map<Eigen::MatrixXd>(uc_next.data(), uc_next.rows() / 3, 3);
 
-    Eigen::VectorXd r = rig->J * p_next;
-    Eigen::MatrixXd R = Eigen::Map<Eigen::MatrixXd>(r.data(), r.rows() / 3, 3);
-    V = R;
+  //  Eigen::VectorXd r = rig->J * p_next;
+  //  Eigen::MatrixXd R = Eigen::Map<Eigen::MatrixXd>(r.data(), r.rows() / 3, 3);
+  //  V = R;
     if (v_state.vis_cd)
     {
-        V += Uc_next;
+  //      V += Uc_next;
     }
     igl::slice(V, ext_ind, 1, V_ext);
     if (v_state.vis_mode == TEXTURES) //visualize high res embedded mesh.
     {
-        Eigen::VectorXd v = W_low_to_high * (uc_next + r);
-        V_high_res = Eigen::Map<Eigen::MatrixXd>(v.data(), v.rows() / 3, 3);
+ //       Eigen::VectorXd v = W_low_to_high * (uc_next + r);
+ //       V_high_res = Eigen::Map<Eigen::MatrixXd>(v.data(), v.rows() / 3, 3);
     }
 }
 
@@ -242,17 +242,17 @@ void InteractiveCDHook::reduced_sim_step_cd_control()
     }
     else
     {
-        const Eigen::VectorXd r_ext = cd_J_ext * p_next;
-        Eigen::MatrixXd R_ext = Eigen::Map<const Eigen::MatrixXd>(r_ext.data(), r_ext.rows() / 3, 3);
+  //      const Eigen::VectorXd r_ext = cd_J_ext * p_next;
+  //      Eigen::MatrixXd R_ext = Eigen::Map<const Eigen::MatrixXd>(r_ext.data(), r_ext.rows() / 3, 3);
 
-        V_ext = R_ext; 
+  //      V_ext = R_ext; 
         if (v_state.vis_cd)  //don't slice into it if we arent visualizing cd
         {
             //get exterior surface vertex quantities only.
-            const Eigen::VectorXd uc_ext = cd_B_ext * z_next;
-            const Eigen::MatrixXd Uc_ext = Eigen::Map<const Eigen::MatrixXd>(uc_ext.data(), uc_ext.rows() / 3, 3);
+  //          const Eigen::VectorXd uc_ext = cd_B_ext * z_next;
+  //          const Eigen::MatrixXd Uc_ext = Eigen::Map<const Eigen::MatrixXd>(uc_ext.data(), uc_ext.rows() / 3, 3);
 
-            V_ext += Uc_ext;
+  //          V_ext += Uc_ext;
             //igl::slice_into(Uc_ext, ext_ind, 1, V_ext);
         }
     }
@@ -285,12 +285,12 @@ void InteractiveCDHook::sim_step_modal_animation()
     }
 
 
-    V += mas.scale * Eigen::Map<Eigen::MatrixXd>(B_flat.data(), V.rows(), 3);
-    igl::slice(V, ext_ind, 1, V_ext);
+   // V += mas.scale * Eigen::Map<Eigen::MatrixXd>(B_flat.data(), V.rows(), 3);
+   // igl::slice(V, ext_ind, 1, V_ext);
 
     if (v_state.vis_mode == TEXTURES) //visualize high res embedded mesh.
     {
-        Eigen::VectorXd v = W_low_to_high * Eigen::Map<Eigen::VectorXd>(V.data(), V.rows() * 3);
-        V_high_res = Eigen::Map<Eigen::MatrixXd>(v.data(), v.rows() / 3, 3);
+   //     Eigen::VectorXd v = W_low_to_high * Eigen::Map<Eigen::VectorXd>(V.data(), V.rows() * 3);
+   //     V_high_res = Eigen::Map<Eigen::MatrixXd>(v.data(), v.rows() / 3, 3);
     }
 }

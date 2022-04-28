@@ -1,3 +1,4 @@
+
 #include "InteractiveCDHook.h"
 
 #include <stdio.h>
@@ -44,6 +45,17 @@
 #include "igl/centroid.h"
 //#include "write_sparse_ijv_DMAT.h"
 #include <igl/writeMESH.h>
+
+#include <igl/png/readPNG.h>
+#include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
+#include <string>
+
+#include <iostream>
+
+
+#include "create_two_handle_rig.h"
+
+
 InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
       namespace fs = std::filesystem;
@@ -106,11 +118,13 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
 
     WB = W_low_to_high * sim.B;
 
+    init_modal_anim_state();
+
     init_simulation();
     init_viewer(*viewer);
-
-
-    init_modal_anim_state();
+    {
+ 
+    }
 
     new_as = as;
 }
@@ -196,7 +210,10 @@ void InteractiveCDHook::init_app_from_json(std::string& file)
     //set this to true always for now
     as.use_inertia = true;
 
+    as.proj_gpu = 1;
     new_as = as;
+
+
 }
 
 

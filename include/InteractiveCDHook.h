@@ -1,5 +1,6 @@
 #pragma once
 //#include "PhysicsHook.h"
+#include "igl/opengl/gl.h"
 #include "lbs_rig.h"
 #include "igl/min_quad_with_fixed.h"
 #include "fast_complementary_dynamics_sim.h"
@@ -54,7 +55,7 @@ public:
     void sim_step_modal_animation();
 
     //render/visualization/interaction
-    virtual void render(igl::opengl::glfw::Viewer& viewer);
+    virtual bool render(igl::opengl::glfw::Viewer& viewer);
 
     virtual void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
@@ -144,7 +145,7 @@ public:
         std::string mesh_file_path, matcap_file;
         std::string display_file_path, texture_png_path;
         int rig_id;
-
+        int proj_gpu;
         
         float k; //TODO remove this and replace with young's modulus/poisson_ratio
 
@@ -174,7 +175,7 @@ public:
         VIS_MODE vis_mode;
     } v_state, new_v_state;
 
-
+    Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor> tex;
     Eigen::MatrixXd time_energy;       //stores result data during a simulation, and saves it to disk when the simulation is over.
 
     Eigen::MatrixXd V, V0;      //mesh geometry (deformed) , original mesh geometry
@@ -230,4 +231,5 @@ public:
     FastCDSim cd_sim;
     FastSim sim;
 
+ 
 };
