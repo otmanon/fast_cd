@@ -1,7 +1,7 @@
 #include "list_2D_to_matrix.h"
 
 
-Eigen::MatrixXd list_2D_to_matrix(std::vector<std::vector<double>> A_list)
+Eigen::MatrixXd list_2D_to_matrix(std::vector<std::vector<double>> & A_list)
 {
 
 	//list of rows
