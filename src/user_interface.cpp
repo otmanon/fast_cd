@@ -91,26 +91,26 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
     ///////////////////////////////////////////////////////////////////
     Eigen::Matrix< float, Eigen::Dynamic, 1> I;
     Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor> tex;
-    Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> U;
+   // Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> U;
    // U = Eigen::Map<Eigen::Matrix< float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>(sim.B.data(), )
    // igl::readDMAT("C:/Users/otman/OneDrive/Desktop/matrixdefo/data.DMAT", U);
-    assert((sim.B.rows() == V.rows() * 3) && "#U should be 3*#V");
+    assert((cd_sim.B.rows() == V.rows() * 3) && "#U should be 3*#V");
     //std::cout<<"**warning** resizing to min(U.cols(),100)"<<std::endl;
     //U.conservativeResize(U.rows(),std::min(100,(int)U.cols()));
     I = igl::LinSpaced< Eigen::Matrix< float, Eigen::Dynamic, 1> >(V.rows(), 0, V.rows() - 1);
     const int n = V.rows();
-    const int m = sim.B.cols();
-    const int s = ceil(sqrt(n * m));
+    const int m = cd_sim.B.cols();
+    const int s = ceil(sqrt(n * m))*2;
     assert(s * s > n * m);//
     printf("%d %d %d\n", n, m, s);
-    tex = Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor>::Zero(s * s, 3);
+    tex = Eigen::MatrixXf::Zero(s * s, 3);
     for (int j = 0; j < m; j++)
     {
         for (int i = 0; i < n; i++)
         {
             for (int c = 0; c < 3; c++)
             {
-                tex(i * m + j, c) = sim.B(i + c * n, j); // should give zero displacement for all modes
+                tex(m*i + j, c) = -float(cd_sim.B(i + c * n, j)); // should give zero displacement for all modes
             }
         }
     }
@@ -148,17 +148,17 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
     void main()
     {
        vec3 displacement = vec3(0,0,0);
-        int index = int(id)*m + 0;
-        int si = index%s;
-        int sj = int((index-si)/s);
-         displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[0]; //
-       // for(int j = 0;j < m; j++)
-       // {
-       //   int index = int(id)*m+j;
-       //   int si = index % s;
-       //   int sj = int((index - si)/s);
-       //   displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
-       // }
+      //  int index = int(id)*m + 0;
+      //  int si = index%s;
+      //  int sj = int((index-si)/s);
+      //   displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[0]; //
+      for(int j = 0;j < m; j++)
+      {
+        int index = int(id)*m+j;
+        int si = index % s;
+        int sj = int((index - si)/s);
+        displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
+      }
       vec3 deformed = position + displacement ; 
 
       position_eye =  vec3 (view * vec4 (deformed, 1.0));
@@ -233,14 +233,14 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
     ///////////////////////////////////////////////////////////////////
     // Initialize viewer and opengl context
     ///////////////////////////////////////////////////////////////////
-
+    Eigen::MatrixXf texT = tex.transpose();
     igl::opengl::glfw::Viewer v;
     v.launch_init(true, false, "fast CD App", 1920, 1080);
     //destroys any existing shader programs
     v.data().meshgl.free();
     v.data().meshgl.is_initialized = true;
     v.data().meshgl.init_buffers();
-    v.data().meshgl.init_text_rendering();
+  //  v.data().meshgl.init_text_rendering();
     igl::opengl::create_shader_program(
         mesh_vertex_shader_string,
         mesh_fragment_shader_string,
@@ -274,13 +274,18 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
         // 8650×8650 texture was roughly the max I could still get 60 fps, 8700²
         // already dropped to 1fps
         //
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s, s, 0, GL_RGB, GL_FLOAT, texT.data());
     }
 
-    v.data().set_mesh(V, F);
+
+    Eigen::VectorXd b = cd_sim.B.col(0);
+    Eigen::MatrixXd UB = Eigen::Map<Eigen::MatrixXd>(b.data(), V.rows(), 3);
+    Eigen::MatrixXd U = 0.01*UB + V0;
+    //  v.data().set_mesh(U, F);
+    v.data().set_mesh(V0, F);
 
     Eigen::VectorXf q0 = Eigen::VectorXf::Zero(m, 1);
-    q0(0) = 1;
+    q0(0) = 0.1;
     Eigen::VectorXf q1 = Eigen::VectorXf::Zero(m, 1);
 
     v.callback_pre_draw = [&](igl::opengl::glfw::Viewer& v) ->bool
@@ -308,17 +313,28 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
         GLint s_loc = glGetUniformLocation(prog_id, "s");
         glUniform1i(s_loc, s);
         GLint q_loc = glGetUniformLocation(prog_id, "q");
-        glUniform1fv(q_loc, sim.B.cols(), q0.data());
+        glUniform1fv(q_loc, cd_sim.B.cols(), q0.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s, s, 0, GL_RGB, GL_FLOAT, texT.data());
+      
+       // Eigen::VectorXd b = cd_sim.B.col(0);
+       // Eigen::MatrixXd UB = Eigen::Map<Eigen::MatrixXd>(b.data(), V.rows(), 3);
+       // Eigen::MatrixXd U = UB + V0;
+      //  v.data().set_mesh(U, F);
         // Do this now so that we can stop texture from being loaded by viewer
-        if (v.data().dirty)
+      if (v.data().dirty)
         {
             v.data().updateGL(v.data(), v.data().invert_normals, v.data().meshgl);
             v.data().dirty = igl::opengl::MeshGL::DIRTY_NONE;
+           
         }
         v.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
         return false;
     };
-
+    //v.data().show_texture = true;
     v.core().animation_max_fps = 240;
     v.core().is_animating = true;
     v.launch_rendering(true);
