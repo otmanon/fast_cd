@@ -104,10 +104,11 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
    // assert(s * s > n * m);//
     printf("%d %d %d\n", n, m, s);
     tex = Eigen::MatrixXf::Zero(n, 3);
-    Eigen::VectorXd x = V.col(0);
-    x.array() /= (x.maxCoeff() - x.minCoeff());
-    x.array() -= x.minCoeff();
-    tex.block(0, 0, V.rows(), 1) = x.cast<float>(); //first column is all x.
+    Eigen::VectorXf x = cd_sim.B.col(0).cast<float>();
+    Eigen::MatrixXf X = Eigen::Map<Eigen::MatrixXf>(x.data(), V.rows(), 3);
+   // X.array().rowwise() /= (X.colwise().maxCoeff() - X.colwise().minCoeff()).array();
+ //   X.rowwise() -= X.colwise().mean();
+    tex = X; //first column is all x.
    //for (int j = 0; j < m; j++)
    //{
    //    for (int i = 0; i < n; i++)
@@ -161,7 +162,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& bogusViewer)
       int index= int(id);
       int si = index % s;
       int sj = int((index - si)/s);
-      vec3 deformed = position;// + displacement ; 
+      vec3 deformed = position + 0.1*texelFetch(tex,ivec2(si,sj),0).xyz ; 
       tex_color = vec4(texelFetch(tex,ivec2(si,sj),0).xyz,  1.0);
       position_eye =  vec3 (view * vec4 (deformed, 1.0));
       gl_Position = proj * vec4 (position_eye, 1.0);
