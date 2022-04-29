@@ -1,5 +1,6 @@
 #pragma once
-#include "Eigen/Geometry"
+#include <Eigen/Geometry>
+#include <vector>
 
 /*
 Assumes p is a stacked list of row order flattened vertices. Assumes 12 parameters per bone
