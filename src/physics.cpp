@@ -157,10 +157,9 @@ void InteractiveCDHook::reduced_sim_step_pinning_control()
         z_next = sim.reduced_step(z_curr, z_prev, bc);
     }
 
-
     z_prev = z_curr;
     z_curr = z_next;
-
+    /*
 
     V_ext = V0_ext;
     if (v_state.vis_cd)
@@ -180,7 +179,7 @@ void InteractiveCDHook::reduced_sim_step_pinning_control()
             Eigen::VectorXd u_high_res = WB * z_next;
             V_high_res += Eigen::Map<Eigen::MatrixXd>(u_high_res.data(), u_high_res.rows() / 3, 3);
         }
-    }
+    }*/
 }
 
 
@@ -213,9 +212,10 @@ void InteractiveCDHook::full_sim_step_cd_control()
 
 void InteractiveCDHook::reduced_sim_step_cd_control()
 {
-    Eigen::VectorXd  p_next = as.rig_controller->p_rel;
+   //nice and simple
     //local_global_solver_reducedh(z, z_next);
-    Eigen::VectorXd z_next = cd_sim.reduced_step(p_next, p_curr, p_prev, z_curr, z_prev);
+    p_next = as.rig_controller->p_rel;
+    z_next = cd_sim.reduced_step(p_next, p_curr, p_prev, z_curr, z_prev);
 
     z_prev = z_curr;
     z_curr = z_next;
@@ -223,25 +223,25 @@ void InteractiveCDHook::reduced_sim_step_cd_control()
     p_prev = p_curr;
     p_curr = p_next;
 
-    if (v_state.vis_mode == TEXTURES)
-    {
-        Eigen::VectorXd v_fine, v_coarse;
-        if (v_state.vis_cd)
-        {
-            v_coarse = (cd_sim.B * z_next + rig->J * p_curr);
-            v_fine = W_low_to_high * v_coarse; // a little slow... some things can be sped up, whatevs
-        }
-        else
-        {
-            v_coarse = ( rig->J * p_curr);
-            v_fine = W_low_to_high * v_coarse;
-        }
-        V_high_res = Eigen::Map<Eigen::MatrixXd>(v_fine.data(), v_fine.rows() / 3, 3);
-        V = Eigen::Map<Eigen::MatrixXd>(v_coarse.data(), v_coarse.rows() / 3, 3);
-        igl::slice(V, ext_ind, 1, V_ext); // dont forget to update cage
-    }
-    else
-    {
+   // if (v_state.vis_mode == TEXTURES)
+   // {
+   //     Eigen::VectorXd v_fine, v_coarse;
+   //     if (v_state.vis_cd)
+   //     {
+   //         v_coarse = (cd_sim.B * z_next + rig->J * p_curr);
+   //         v_fine = W_low_to_high * v_coarse; // a little slow... some things can be sped up, whatevs
+   //     }
+   //     else
+   //     {
+   //         v_coarse = ( rig->J * p_curr);
+   //         v_fine = W_low_to_high * v_coarse;
+   //     }
+   //     V_high_res = Eigen::Map<Eigen::MatrixXd>(v_fine.data(), v_fine.rows() / 3, 3);
+   //     V = Eigen::Map<Eigen::MatrixXd>(v_coarse.data(), v_coarse.rows() / 3, 3);
+   //     igl::slice(V, ext_ind, 1, V_ext); // dont forget to update cage
+   // }
+   // else
+   // {
   //      const Eigen::VectorXd r_ext = cd_J_ext * p_next;
   //      Eigen::MatrixXd R_ext = Eigen::Map<const Eigen::MatrixXd>(r_ext.data(), r_ext.rows() / 3, 3);
 
@@ -255,7 +255,7 @@ void InteractiveCDHook::reduced_sim_step_cd_control()
   //          V_ext += Uc_ext;
             //igl::slice_into(Uc_ext, ext_ind, 1, V_ext);
         }
-    }
+    //}
 }
 
 void InteractiveCDHook::sim_step_modal_animation()

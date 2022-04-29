@@ -35,7 +35,8 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
         uniform int n;
         uniform int m;
         uniform int s;
-        uniform float q[512];
+        uniform float q[512];  //reduced activations
+        uniform float p[512];     //rig parameters (row-flattened 3x4 matrices for each bone)
         uniform sampler2D tex;
 
         void main()

@@ -27,8 +27,9 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 {
 
   //  Eigen::VectorXf q0 = Eigen::VectorXf::Zero(as.r);
-    Eigen::VectorXf z = 0*z_curr.cast<float>();
-    z(0) = 0.1;
+    Eigen::VectorXf z = z_next.cast<float>();
+    Eigen::VectorXf p = p_next.cast<float>();
+  //  z(0) = 0.1;
 
    if (as.proj_gpu == 1) //render with GPU
    {
@@ -44,8 +45,10 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
         glUniform1i(m_loc, cd_sim.B.cols());
         GLint s_loc = glGetUniformLocation(prog_id, "s");
         glUniform1i(s_loc, s);
-        GLint q_loc = glGetUniformLocation(prog_id, "q");
+        GLint q_loc = glGetUniformLocation(prog_id, "q");  //modal activations
         glUniform1fv(q_loc, as.r, z.data());
+        GLint p_loc = glGetUniformLocation(prog_id, "p"); //rig parameters
+        glUniform1fv(p_loc , as.rig_controller->p_rel.rows(), p.data());
         GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
         glUniform1i(cd_loc, as.proj_gpu);
         // Do this now so that we can stop texture from being loaded by viewer

@@ -157,8 +157,8 @@ public:
     
     Eigen::VectorXd  uc_curr, uc_prev;  //flattened displacement, rest position, current displacement and prev displacement for inertia 
     Eigen::VectorXd  u_curr, u_prev;
-    Eigen::VectorXd z, z_prev, z_curr;                  //reduced coefficients
-    Eigen::VectorXd p, p_prev, p_curr;
+    Eigen::VectorXd z_next, z_prev, z_curr;                  //reduced coefficients
+    Eigen::VectorXd p_next, p_prev, p_curr;
     
     int max_iters;                                    //max number of local-global iterations                     
     double tol;                                            //convergence tolerance of local-global iterations
