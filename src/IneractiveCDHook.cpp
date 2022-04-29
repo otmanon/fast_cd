@@ -292,6 +292,7 @@ void InteractiveCDHook::init_rig_controller(Rig * rig)
     }
     //TODO add one more that is for IK
 }
+
 void InteractiveCDHook::init_constraint(FastCDSim& cd_sim)
 {
     

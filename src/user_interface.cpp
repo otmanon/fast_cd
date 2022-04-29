@@ -33,9 +33,9 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 
    if (as.proj_gpu == 1) //render with GPU
    {
-        GLuint prog_id = viewer.data().meshgl.shader_mesh;
+        GLuint prog_id = viewer.data_list[v_state.coarse_vis_id].meshgl.shader_mesh;
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, viewer.data().meshgl.vbo_tex);
+        glBindTexture(GL_TEXTURE_2D, viewer.data_list[v_state.coarse_vis_id].meshgl.vbo_tex);
         const int b = int(as.rig_controller->p_rel.rows() / 12);
         const int s = ceil(sqrt(V.rows() * (as.r+ b)));
         glUseProgram(prog_id);
@@ -54,31 +54,31 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
         GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
         glUniform1i(cd_loc, as.proj_gpu);
         // Do this now so that we can stop texture from being loaded by viewer
-        if (viewer.data().dirty)
+        if (viewer.data_list[v_state.coarse_vis_id].dirty)
         {
-            viewer.data().updateGL(
-                viewer.data(),
-                viewer.data().invert_normals,
-                viewer.data().meshgl
+            viewer.data_list[v_state.coarse_vis_id].updateGL(
+                viewer.data_list[v_state.coarse_vis_id],
+                viewer.data_list[v_state.coarse_vis_id].invert_normals,
+                viewer.data_list[v_state.coarse_vis_id].meshgl
             );
-            viewer.data().dirty = igl::opengl::MeshGL::DIRTY_NONE;
+            viewer.data_list[v_state.coarse_vis_id].dirty = igl::opengl::MeshGL::DIRTY_NONE;
         }
 
-         viewer.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+        viewer.data_list[v_state.coarse_vis_id].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
 
    }
    else
    {
        glActiveTexture(GL_TEXTURE0);
-       glBindTexture(GL_TEXTURE_2D, viewer.data().meshgl.vbo_tex);
-       GLuint prog_id = viewer.data().meshgl.shader_mesh;
+       glBindTexture(GL_TEXTURE_2D, viewer.data_list[v_state.coarse_vis_id].meshgl.vbo_tex);
+       GLuint prog_id = viewer.data_list[v_state.coarse_vis_id].meshgl.shader_mesh;
        glUseProgram(prog_id);
        GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
        glUniform1i(cd_loc, as.proj_gpu);
        Eigen::VectorXd u = cd_sim.B * z.cast<double>() + rig->J * p.cast<double>();
        Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), V.rows(), 3);
        V = U;
-       viewer.data().set_vertices(V);
+       viewer.data_list[v_state.coarse_vis_id].set_vertices(V);
    }
 
    // as.rig_controller->render(viewer);
@@ -103,7 +103,21 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 
 void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
 {
+  
+    this->viewer = &v;
+
     init_vis_state();
+    this->viewer->append_mesh();
+    //this->viewer->data_list[v_state.coarse_vis_id].clear();
+    this->viewer->data_list[v_state.fine_vis_id].clear();
+    new_v_state = v_state;
+
+  //  set_viewer_clusters();
+    set_viewer_defo_textures();
+}
+
+void InteractiveCDHook::set_viewer_defo_textures()
+{
     using namespace Eigen;
     using namespace std;
     Eigen::MatrixXd V = this->V;
@@ -123,18 +137,18 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
     const int n = V.rows();
     const int m = U.cols();
     const int b = rig->p0.rows() / 12;       //number of bones
-    const int s = ceil(sqrt(n * (m+b)));
-    assert(s * s > n * (m+b));
+    const int s = ceil(sqrt(n * (m + b)));
+    assert(s * s > n * (m + b));
     printf("verts : %d  modes : %d bones: %d im_dim %d\n", n, m, b, s);
     tex = Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor>::Zero(s * s, 3);
-    
+
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < m; j++)
         {
             for (int c = 0; c < 3; c++)
             {
-                tex(i * (m+b) + j, c) = U(i + c * n, j);
+                tex(i * (m + b) + j, c) = U(i + c * n, j);
             }
         }
         for (int j = 0; j < b; j++)
@@ -151,49 +165,47 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
     // Initialize viewer and opengl context
     ///////////////////////////////////////////////////////////////////
    // igl::opengl::glfw::Viewer v;
-    v.data().set_mesh(V0, F);
-    v.data().invert_normals = false;
-    v.data().double_sided = true;
-    v.data().set_face_based(false);
-    v.data().show_lines = false;
-     
+    viewer->data_list[v_state.coarse_vis_id].set_mesh(V0, F);
+    viewer->data_list[v_state.coarse_vis_id].invert_normals = false;
+    viewer->data_list[v_state.coarse_vis_id].double_sided = true;
+    viewer->data_list[v_state.coarse_vis_id].set_face_based(false);
+    viewer->data_list[v_state.coarse_vis_id].show_lines = false;
+
     ///////////////////////////////////////////////////////////////////
    // Send texture and vertex attributes to GPU... should make this its own function but maybe it's okay
    ///////////////////////////////////////////////////////////////////
-      {
-      GLuint prog_id = v.data().meshgl.shader_mesh;
-      glUseProgram(prog_id);
-      GLuint VAO = v.data().meshgl.vao_mesh;
-      glBindVertexArray(VAO);
-      GLuint IBO;
-      glGenBuffers(1, &IBO);
-      glBindBuffer(GL_ARRAY_BUFFER, IBO);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(float)* I.size(), I.data(), GL_STATIC_DRAW);
-      GLint iid = glGetAttribLocation(prog_id, "id");
-      glVertexAttribPointer(
-          iid, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
-      glEnableVertexAttribArray(iid);
-    //  glBindVertexArray(0);
-      
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, v.data().meshgl.vbo_tex);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    {
+        GLuint prog_id = viewer->data_list[v_state.coarse_vis_id].meshgl.shader_mesh;
+        glUseProgram(prog_id);
+        GLuint VAO = viewer->data_list[v_state.coarse_vis_id].meshgl.vao_mesh;
+        glBindVertexArray(VAO);
+        GLuint IBO;
+        glGenBuffers(1, &IBO);
+        glBindBuffer(GL_ARRAY_BUFFER, IBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * I.size(), I.data(), GL_STATIC_DRAW);
+        GLint iid = glGetAttribLocation(prog_id, "id");
+        glVertexAttribPointer(
+            iid, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(iid);
+        //  glBindVertexArray(0);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, viewer->data_list[v_state.coarse_vis_id].meshgl.vbo_tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-      glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
-      
-      }
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-      //This is very important... otherwise when the new mesh is set, it triggers a dirty call , and igl overwrites the texture with junk...
-      v.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
+
+    }
+
+    //This is very important... otherwise when the new mesh is set, it triggers a dirty call , and igl overwrites the texture with junk...
+    viewer->data_list[v_state.coarse_vis_id].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
 }
-
-
-void InteractiveCDHook::set_viewer_textures()
+void InteractiveCDHook::set_viewer_color_textures()
 {
     //TODO: should keep matcap separate for each mesh, and load it up once we pick our mesh
     viewer->data_list[v_state.fine_vis_id].clear();
@@ -320,7 +332,7 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
             }
             else if (v_state.vis_mode == VIS_MODE::TEXTURES)
             {
-                set_viewer_textures();
+                set_viewer_color_textures();
             }
         }
     }

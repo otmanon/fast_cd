@@ -71,7 +71,9 @@ public:
 
     void set_viewer_clusters();
 
-    void set_viewer_textures();
+    void set_viewer_color_textures();
+
+    void set_viewer_defo_textures();
 
     void poll_sim_changes();
 
