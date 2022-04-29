@@ -79,6 +79,15 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
        Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), cd_B_ext.rows()/3, 3);
        V_ext = U;
        viewer.data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
+
+       if (v_state.vis_mode == TEXTURES)
+      {
+          u = cd_sim.B * z.cast<double>() + rig->J * p.cast<double>();
+          Eigen::VectorXd u_high_res = W_low_to_high * u;
+          V_high_res = Eigen::Map<Eigen::MatrixXd>(u_high_res.data(), u_high_res.rows()/3, 3);
+          viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
+      }
+ 
    }
 
    // as.rig_controller->render(viewer);
@@ -172,7 +181,8 @@ void InteractiveCDHook::set_viewer_defo_textures()
     viewer->data_list[v_state.coarse_vis_id].double_sided = true;
     viewer->data_list[v_state.coarse_vis_id].set_face_based(false);
     viewer->data_list[v_state.coarse_vis_id].show_lines = false;
-
+    viewer->data_list[v_state.coarse_vis_id].show_texture = false;
+    viewer->data_list[v_state.fine_vis_id].show_texture = false;
     ///////////////////////////////////////////////////////////////////
    // Send texture and vertex attributes to GPU... should make this its own function but maybe it's okay
    ///////////////////////////////////////////////////////////////////
@@ -211,9 +221,9 @@ void InteractiveCDHook::set_viewer_color_textures()
 {
     //TODO: should keep matcap separate for each mesh, and load it up once we pick our mesh
     viewer->data_list[v_state.fine_vis_id].clear();
+    viewer->data_list[v_state.coarse_vis_id].clear();
     viewer->data_list[v_state.coarse_vis_id].show_lines = true;
     viewer->data_list[v_state.coarse_vis_id].show_faces = false;
-    viewer->data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
 
     viewer->data_list[v_state.fine_vis_id].clear();
         
@@ -226,6 +236,7 @@ void InteractiveCDHook::set_viewer_color_textures()
     std::string texture_path = as.texture_png_path;
     bool read = igl::png::readPNG(texture_path, R, G, B, A);
 
+    viewer->data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
     viewer->data_list[v_state.fine_vis_id].set_mesh(V_high_res, F_high_res);
     if (UV_high_res.rows() > 0)  //if our texture matches the display mesh
     {
