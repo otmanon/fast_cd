@@ -76,7 +76,7 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
         }
         assert((geigs.info() == CompInfo::Successful) && "Eigendecomposition not succeeded");
         #else
-#error "FAST_CD_USE_SUITESPARSE should be defined."
+//#error "FAST_CD_USE_SUITESPARSE should be defined."
         #endif 
         
 }

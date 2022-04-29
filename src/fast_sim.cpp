@@ -172,7 +172,7 @@ void FastSim::init_modes(int num_modes){
 		//compute modes and load into S_full and B_full
 		Eigen::MatrixXd modes;
 #ifdef FAST_CD_USE_MATLAB
-#error "should not get here"
+//#error "should not get here"
 		compute_modes_matlab(H, M, num_modes, modes, L_full);
 #else
 		compute_modes_spectra(H, M, num_modes, modes, L_full);

@@ -21,7 +21,7 @@ target_link_libraries(spectra INTERFACE Eigen3::Eigen)
 
 add_library(fast_cd ${SRC_FILES} ${HEADER_FILES})
 set(FAST_CD_INCLUDE_DIRS ./include ./deps/json)
-target_include_directories(fast_cd PRIVATE ${FAST_CD_INCLUDE_DIRS})
+target_include_directories(fast_cd PUBLIC ${FAST_CD_INCLUDE_DIRS})
 set_target_properties(fast_cd PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET fast_cd PROPERTY CXX_STANDARD 17)
 
