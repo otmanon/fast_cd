@@ -58,7 +58,7 @@
 
 InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
-      namespace fs = std::filesystem;
+    namespace fs = std::filesystem;
    
     this->guizmo = guizmo;
     this->viewer = viewer;
@@ -66,7 +66,6 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
     init_app_from_json(file);
 
     std::cout << "creating " << as.mesh_name << " scene...." << std::endl;
-   
 
    // load_default_file_paths();
     init_geometry(as.mesh_file_path);
@@ -99,8 +98,6 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
     
   
     cd_sim = FastCDSim(V0, T, rig->J, as.ym, as.pr, as.dt, as.r, as.l, as.cd_mode_dir, as.cd_clusters_dir, as.do_reduction, as.do_clustering);
-   
-    
 
     //get all indices in J and B.
     Eigen::VectorXi ix = ext_ind;
@@ -113,18 +110,12 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
 
     igl::slice(cd_sim.J, iext, 1, cd_J_ext);		//slice J the same as B
 
-
-
-
     WB = W_low_to_high * sim.B;
 
     init_modal_anim_state();
 
     init_simulation();
     init_viewer(*viewer);
-    {
- 
-    }
 
     new_as = as;
 }
@@ -386,14 +377,13 @@ void InteractiveCDHook::init_simulation()
     V0_ext = V_ext;
     uc_curr = Eigen::VectorXd::Zero(V.rows() * V.cols()); uc_prev = uc_curr;
     u_curr = Eigen::VectorXd::Zero(V.rows() * V.cols());
-    u_prev = Eigen::VectorXd::Zero(V.rows() * V.cols());
-    z_prev = Eigen::VectorXd::Zero(as.r); z_curr = z_prev;
-
+    u_prev = Eigen::VectorXd::Zero(V.rows() * V.cols()); 
+    z_prev = Eigen::VectorXd::Zero(as.r); z_curr = z_prev; z_next = z_prev;
     //reset rig
     rig->reset();
     as.rig_controller->reset();
   //  as.constraint_controller->reset();
-    p_curr = as.rig_controller->p_rel; p_prev=  as.rig_controller->p_rel;
+    p_curr = as.rig_controller->p_rel; p_prev = as.rig_controller->p_rel; p_next = p_prev;
 
     //modal animation reset
     init_modal_anim_state();

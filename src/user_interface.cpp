@@ -36,19 +36,21 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
         GLuint prog_id = viewer.data().meshgl.shader_mesh;
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, viewer.data().meshgl.vbo_tex);
-        const int s = ceil(sqrt(V.rows() * as.r));
-     
+        const int b = int(as.rig_controller->p_rel.rows() / 12);
+        const int s = ceil(sqrt(V.rows() * (as.r+ b)));
         glUseProgram(prog_id);
         GLint n_loc = glGetUniformLocation(prog_id, "n");
         glUniform1i(n_loc, V.rows());
         GLint m_loc = glGetUniformLocation(prog_id, "m");
         glUniform1i(m_loc, cd_sim.B.cols());
+        GLint b_loc = glGetUniformLocation(prog_id, "b");
+        glUniform1i(b_loc, b);
         GLint s_loc = glGetUniformLocation(prog_id, "s");
         glUniform1i(s_loc, s);
         GLint q_loc = glGetUniformLocation(prog_id, "q");  //modal activations
         glUniform1fv(q_loc, as.r, z.data());
         GLint p_loc = glGetUniformLocation(prog_id, "p"); //rig parameters
-        glUniform1fv(p_loc , as.rig_controller->p_rel.rows(), p.data());
+        glUniform1fv(p_loc , p.rows(), p.data());
         GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
         glUniform1i(cd_loc, as.proj_gpu);
         // Do this now so that we can stop texture from being loaded by viewer
@@ -73,9 +75,9 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
        glUseProgram(prog_id);
        GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
        glUniform1i(cd_loc, as.proj_gpu);
-       Eigen::VectorXd u = cd_sim.B * z.cast<double>();
+       Eigen::VectorXd u = cd_sim.B * z.cast<double>() + rig->J * p.cast<double>();
        Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), V.rows(), 3);
-       V = U + V0;
+       V = U;
        viewer.data().set_vertices(V);
    }
 
@@ -120,17 +122,26 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
     I = igl::LinSpaced< Eigen::Matrix< float, Eigen::Dynamic, 1> >(V.rows(), 0, V.rows() - 1);
     const int n = V.rows();
     const int m = U.cols();
-    const int s = ceil(sqrt(n * m));
-    assert(s * s > n * m);
-    printf("%d %d %d\n", n, m, s);
+    const int b = rig->p0.rows() / 12;       //number of bones
+    const int s = ceil(sqrt(n * (m+b)));
+    assert(s * s > n * (m+b));
+    printf("verts : %d  modes : %d bones: %d im_dim %d\n", n, m, b, s);
     tex = Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor>::Zero(s * s, 3);
-    for (int j = 0; j < m; j++)
+    
+    for (int i = 0; i < n; i++)
     {
-        for (int i = 0; i < n; i++)
+        for (int j = 0; j < m; j++)
         {
             for (int c = 0; c < 3; c++)
             {
-                tex(i * m + j, c) = U(i + c * n, j);
+                tex(i * (m+b) + j, c) = U(i + c * n, j);
+            }
+        }
+        for (int j = 0; j < b; j++)
+        {
+            for (int c = 0; c < 3; c++)
+            {
+                tex(i * (m + b) + j + m, c) = rig->W(i, j); //bone is the same, place right after the modes
             }
         }
     }
@@ -175,11 +186,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
       glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
       
-
       }
-      Eigen::VectorXf q0 = Eigen::VectorXf::Zero(m, 1);
-      q0(0) = 0.01;
-      Eigen::VectorXf q1 = Eigen::VectorXf::Zero(m, 1);
 
       //This is very important... otherwise when the new mesh is set, it triggers a dirty call , and igl overwrites the texture with junk...
       v.data().dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;

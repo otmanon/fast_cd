@@ -34,6 +34,7 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
         in float id;
         uniform int n;
         uniform int m;
+        uniform int b;
         uniform int s;
         uniform float q[512];  //reduced activations
         uniform float p[512];     //rig parameters (row-flattened 3x4 matrices for each bone)
@@ -41,18 +42,39 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
 
         void main()
         {
-          vec3 deformed = position;
+          vec3 deformed = position;         //base case
           if(proj_gpu == 1)                  //then we should deform our mesh
           {
-             vec3 displacement = vec3(0,0,0);
+             vec3 uc = vec3(0,0,0);
              for(int j = 0;j < m; j++)
              {
-                  int index = int(id)*m+j;
+                  int index = int(id)*(m+b)+j;
                   int si = index % s;
                   int sj = int((index - si)/s);
-                  displacement = displacement + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
+                  uc = uc + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
              }
-             deformed = position + displacement;
+            //rig position... weighted average of transformation matrices
+             vec3 r = vec3(0, 0, 0);
+             int c = 12;                    //12 params per bone
+             for(int j = 0; j < b; j++)
+             {
+                  int index = int(id)*(m+b)+j + m;
+                  int si = index % s;
+                  int sj = int((index - si)/s);
+                  float w = texelFetch(tex,ivec2(si,sj),0).x;       //weight matrix same for x, y and z components... wasteful to pack all of it in
+                  
+                 mat4 T = mat4(p[c*j + 0], p[c*j + 4], p[c*j + 8], 0, 
+                               p[c*j + 1], p[c*j + 5], p[c*j + 9], 0, 
+                               p[c*j + 2],  p[c*j + 6], p[c*j + 10], 0, 
+                                p[c*j + 3], p[c*j + 7], p[c*j + 11], 1);
+                         
+                //  T = mat4(1.0);
+                 vec4 v = vec4(position, 1);
+                  vec4 t = w*T*v;
+                  r = r +  t.xyz;
+             }
+
+             deformed = r + uc;
          }
           position_eye = vec3 (view * vec4 (deformed, 1.0));
           gl_Position = proj * vec4 (position_eye, 1.0);
