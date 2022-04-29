@@ -75,10 +75,10 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
        glUseProgram(prog_id);
        GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
        glUniform1i(cd_loc, as.proj_gpu);
-       Eigen::VectorXd u = cd_sim.B * z.cast<double>() + rig->J * p.cast<double>();
-       Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), V.rows(), 3);
-       V = U;
-       viewer.data_list[v_state.coarse_vis_id].set_vertices(V);
+       Eigen::VectorXd u = cd_B_ext * z.cast<double>() + cd_J_ext * p.cast<double>();
+       Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), cd_B_ext.rows()/3, 3);
+       V_ext = U;
+       viewer.data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
    }
 
    // as.rig_controller->render(viewer);
@@ -165,6 +165,8 @@ void InteractiveCDHook::set_viewer_defo_textures()
     // Initialize viewer and opengl context
     ///////////////////////////////////////////////////////////////////
    // igl::opengl::glfw::Viewer v;
+    viewer->data_list[v_state.coarse_vis_id].clear();
+    viewer->data_list[v_state.fine_vis_id].clear();
     viewer->data_list[v_state.coarse_vis_id].set_mesh(V0, F);
     viewer->data_list[v_state.coarse_vis_id].invert_normals = false;
     viewer->data_list[v_state.coarse_vis_id].double_sided = true;
@@ -254,8 +256,8 @@ void InteractiveCDHook::set_viewer_matcap()
     viewer->data_list[v_state.coarse_vis_id].point_size = 10;
 
 
-    viewer->data_list[v_state.coarse_vis_id].invert_normals = true;
-    viewer->data_list[v_state.coarse_vis_id].double_sided = false;
+    viewer->data_list[v_state.coarse_vis_id].invert_normals = false;
+    viewer->data_list[v_state.coarse_vis_id].double_sided = true;
     viewer->data_list[v_state.coarse_vis_id].set_face_based(true);
     viewer->data_list[v_state.coarse_vis_id].show_lines = true;
     viewer->data_list[v_state.coarse_vis_id].show_faces = true;
@@ -281,7 +283,7 @@ void InteractiveCDHook::set_viewer_clusters()
     viewer->data_list[v_state.coarse_vis_id].show_lines = true;
     viewer->data_list[v_state.coarse_vis_id].show_faces = true;
     viewer->data_list[v_state.coarse_vis_id].invert_normals = true;
-    viewer->data_list[v_state.coarse_vis_id].double_sided = false;
+    viewer->data_list[v_state.coarse_vis_id].double_sided = true;
     viewer->data_list[v_state.coarse_vis_id].set_face_based(true);
 
     viewer->data_list[v_state.coarse_vis_id].use_matcap = false;
@@ -316,23 +318,43 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
     if (ImGui::CollapsingHeader("Visualization"))
     {
         ImGui::Checkbox("vis CD", &v_state.vis_cd);
-        ImGui::RadioButton("Matcap", (int*)&new_v_state.vis_mode, (int)VIS_MODE::MATCAP); ImGui::SameLine();
-        ImGui::RadioButton("Clusters", (int*)&new_v_state.vis_mode, (int)VIS_MODE::CLUSTERS); ImGui::SameLine();
-        ImGui::RadioButton("Textures", (int*)&new_v_state.vis_mode, (int)VIS_MODE::TEXTURES);
-        if (v_state.vis_mode != new_v_state.vis_mode)
+
+        bool use_gpu_proj = as.proj_gpu > 0;
+        bool changed_proj = ImGui::Checkbox("Project on GPU: ", &use_gpu_proj);
+        if (changed_proj)
         {
-            v_state.vis_mode = new_v_state.vis_mode;
-            if (v_state.vis_mode == VIS_MODE::MATCAP)
+            viewer->data().set_vertices(V0);
+            as.proj_gpu = use_gpu_proj ? 1 : 0;
+                                    //cant run gpu projection at the same time as any fancy libigl coloring
+            if (as.proj_gpu == 1)
             {
-                set_viewer_matcap();
+                as.proj_gpu = 1; // this is just the 0/1 flag sent to the vertex shader to know what calculations to compute 
+                set_viewer_defo_textures();
+                
             }
-            else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
+        }
+        if (as.proj_gpu == 0)
+        {
+            as.proj_gpu = 0;
+
+            ImGui::RadioButton("Matcap", (int*)&new_v_state.vis_mode, (int)VIS_MODE::MATCAP); ImGui::SameLine();
+            ImGui::RadioButton("Clusters", (int*)&new_v_state.vis_mode, (int)VIS_MODE::CLUSTERS); ImGui::SameLine();
+            ImGui::RadioButton("Textures", (int*)&new_v_state.vis_mode, (int)VIS_MODE::TEXTURES);
+            if (v_state.vis_mode != new_v_state.vis_mode || changed_proj)
             {
-                set_viewer_clusters();
-            }
-            else if (v_state.vis_mode == VIS_MODE::TEXTURES)
-            {
-                set_viewer_color_textures();
+                v_state.vis_mode = new_v_state.vis_mode;
+                if (v_state.vis_mode == VIS_MODE::MATCAP)
+                {
+                    set_viewer_matcap();
+                }
+                else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
+                {
+                    set_viewer_clusters();
+                }
+                else if (v_state.vis_mode == VIS_MODE::TEXTURES)
+                {
+                    set_viewer_color_textures();
+                }
             }
         }
     }
@@ -394,12 +416,7 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
         init_simulation();
     }
   
-    bool use_gpu_proj = as.proj_gpu > 0;
-    if (ImGui::Checkbox("Project on GPU: ", &use_gpu_proj))
-    {
-        viewer->data().set_vertices(V0);
-    }
-    as.proj_gpu = use_gpu_proj ? 1 : 0;
+
     ImGui::SliderFloat("Young's Modulus", &new_as.ym, 0.1, 1000, "% .3f", ImGuiSliderFlags_Logarithmic);
     ImGui::SliderFloat("Poisson Ratio", &new_as.pr, 0.0, 0.5);
     ImGui::Checkbox("Do Reduction", &new_as.do_reduction); ImGui::SameLine();
