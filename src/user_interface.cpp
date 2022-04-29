@@ -112,7 +112,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
     this->viewer->data_list[v_state.fine_vis_id].clear();
     new_v_state = v_state;
 
-  //  set_viewer_clusters();
+  // set_viewer_clusters();
     set_viewer_defo_textures();
 }
 
@@ -600,6 +600,7 @@ void InteractiveCDHook::poll_sim_changes()
         igl::slice(cd_sim.B, iext, 1, cd_B_ext);
         igl::slice(sim.B, iext, 1, pinned_B_ext);
         igl::slice(cd_sim.J, iext, 1, cd_J_ext);		//slice J the same as B
+        set_viewer_defo_textures();
     }
     if (as.rig_id != new_as.rig_id)
     {
