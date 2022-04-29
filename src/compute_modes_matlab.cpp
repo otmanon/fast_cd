@@ -1,3 +1,4 @@
+#ifdef FAST_CD_USE_MATLAB
 #include "compute_modes_matlab.h"
 #include <iostream>
 #include <cassert>
@@ -29,3 +30,4 @@ void compute_modes_matlab(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<do
     S = Eigen::Map<Eigen::VectorXd>(S_mat.data(), S_mat.rows(), 1);
   
 }
+#endif

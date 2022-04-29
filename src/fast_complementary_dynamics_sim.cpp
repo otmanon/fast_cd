@@ -22,6 +22,7 @@
 #include "fast_complementary_dynamics_constrained_gevp.h"
 #include "complementary_equality_constraint.h"
 #include "compute_modes_matlab.h"
+#include "compute_modes_spectra.h"
 #include "deformation_gradient_from_u_prefactorized_matrices.h"
 #include "igl/sum.h"
 #include "igl/count.h"
@@ -437,7 +438,11 @@ void FastCDSim::init_modes(int num_modes)
 
 		//compute modes and load into S_full and B_full
 		Eigen::MatrixXd modes;
+#ifdef FAST_CD_USE_MATLAB
 		compute_modes_matlab(H, M, num_modes, modes, L_full);
+#else
+		compute_modes_spectra(H, M, num_modes, modes, L_full);
+#endif
 		B_full = modes.block(0, 0, 3*X.rows(), num_modes);
 		if (!fs::exists(fs::path(B_file_path).parent_path()))
 		{
