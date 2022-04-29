@@ -67,13 +67,13 @@ public:
       //  rig->init_gizmo(this->guizmo);
     }
 
-    void set_viewer_matcap();
+    void set_viewer_matcap(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& V, Eigen::MatrixXi& F,  std::string matcap_file, int cid=0, int fid=1);
 
-    void set_viewer_clusters();
+    void set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int cid = 0, int fid = 1);
 
     void set_viewer_color_textures();
 
-    void set_viewer_defo_textures();
+    void set_viewer_defo_textures(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& X, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W, int cid=0, int fid=1);
 
     void poll_sim_changes();
 
