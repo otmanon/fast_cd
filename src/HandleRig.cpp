@@ -7,12 +7,12 @@
 
 #include <filesystem>
 
-#include "matrix_to_2D_list.h"
-#include "list_2D_to_matrix.h"
-#include "igl/repdiag.h"
-#include "igl/point_mesh_squared_distance.h"
 #include "compute_handle_positions_from_rig_parameters.h"
-#include "igl/colon.h"
+#include <igl/repdiag.h>
+#include <igl/point_mesh_squared_distance.h>
+#include <igl/colon.h>
+#include <igl/list_to_matrix.h>
+#include <igl/matrix_to_list.h>
 HandleRig::HandleRig(std::string filename)
 {
 	read_rig_from_json(filename);
@@ -272,8 +272,8 @@ bool HandleRig::write_rig_to_json(std::string filename)
 
 	std::vector<std::vector<double>> X_list, W_list;
 	std::vector<double> p0_list;
-	X_list = matrix_to_2D_list(X);
-	W_list = matrix_to_2D_list(W);
+        igl::matrix_to_list(X,X_list);
+	igl::matrix_to_list(W,W_list);
 	p0_list = std::vector<double>(p0.data(), p0.data() + p0.rows());
 
 	j["rig_type"] = "handle_rig";
@@ -303,8 +303,8 @@ bool HandleRig::read_rig_from_json(std::string filename)
 	std::vector<std::vector<double>> W_list = j["W"];
 	std::vector<double> p0_list = j["p0"];
 
-	X = list_2D_to_matrix(X_list);
-	W = list_2D_to_matrix(W_list);
+	igl::list_to_matrix(X_list,X);
+	igl::list_to_matrix(W_list,W);
 	p0 = Eigen::Map<Eigen::VectorXd>(&p0_list[0], p0_list.size());
 	return true;
 }

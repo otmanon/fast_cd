@@ -1,8 +1,6 @@
 #include "SkeletonRig.h"
 #include "update_parameters_at_handle.h"
 #include "surface_to_volume_weights.h"
-#include "list_2D_to_matrix.h"
-#include "matrix_to_2D_list.h"
 #include "matrix4f_from_parameters.h"
 
 #include <igl/boundary_facets.h>
@@ -15,6 +13,8 @@
 #include <igl/colon.h>
 #include <igl/setdiff.h>
 #include <igl/slice_into.h>
+#include <igl/list_to_matrix.h>
+#include <igl/matrix_to_list.h>
 
 
 #include <filesystem>
@@ -111,7 +111,8 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 
 	rig_pinning = j.value("rig_pinning", "ball");  //if htis is ball then we treat them like cylinders
 	std::vector<std::vector<double>> X_list = j["vertices"];
-	Eigen::MatrixXd surface_X = list_2D_to_matrix(X_list); // hopefully this works
+	Eigen::MatrixXd surface_X;
+        igl::list_to_matrix(X_list,surface_X); // hopefully this works
 	Eigen::MatrixXd surface_W;
 	read_bones_from_json(j, surface_X.rows(), surface_W, this->p0, this->pI, this->lengths);
 
@@ -207,8 +208,8 @@ namespace fs = std::filesystem;
 	std::vector<double> length_list = j["lengths"];
 	std::vector<int> pI_list = j["pI"];
 
-	X = list_2D_to_matrix(X_list);
-	W = list_2D_to_matrix(W_list);
+	igl::list_to_matrix(X_list,X);
+	igl::list_to_matrix(W_list,W);
 	p0 = Eigen::Map<Eigen::VectorXd>(&p0_list[0], p0_list.size());
 	pI = Eigen::Map<Eigen::VectorXi>(&pI_list[0], pI_list.size());
 	lengths = Eigen::Map<Eigen::VectorXd>(&length_list[0], length_list.size());
@@ -233,8 +234,8 @@ bool SkeletonRig::write_rig_to_json(std::string filename)
 	std::vector<std::vector<double>> X_list, W_list;
 	std::vector<double> p0_list,  length_list;
 	std::vector<int> pI_list;
-	X_list = matrix_to_2D_list(X);
-	W_list = matrix_to_2D_list(W);
+        igl::matrix_to_list(X,X_list);
+        igl::matrix_to_list(W,W_list);
 	p0_list = std::vector<double>(p0.data(), p0.data() + p0.rows());
 	pI_list = std::vector<int>(pI.data(), pI.data() + pI.rows());
 	length_list = std::vector<double>(lengths.data(), lengths.data() + lengths.rows());
