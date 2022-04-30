@@ -49,6 +49,10 @@ public:
 
     void render_reduced_gpu_proj(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf & p, int n, int cid);
 
+    void render_reduced_cpu_proj_pin(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::MatrixXd& B, Eigen::MatrixXd& X, int cid);
+
+    void render_reduced_gpu_proj_pin(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, int n, int cid);
+
     void full_sim_step_pinning_control();
 
     void reduced_sim_step_pinning_control();
@@ -62,6 +66,9 @@ public:
     //render/visualization/interaction
     virtual bool render(igl::opengl::glfw::Viewer& viewer);
 
+    void render_cd(igl::opengl::glfw::Viewer& viewer);
+
+    void render_pinning(igl::opengl::glfw::Viewer& viewer);
     virtual void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
     void init_viewer(igl::opengl::glfw::Viewer& viewer);

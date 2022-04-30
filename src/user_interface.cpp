@@ -30,7 +30,18 @@
 bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 {
   
+    if (as.constraint_type == PINNING)
+        render_pinning(viewer);
+    else
+        render_cd(viewer);
+   
+    as.rig_controller->render(viewer);
+    return false;
+     
+}
 
+void InteractiveCDHook::render_cd(igl::opengl::glfw::Viewer& viewer)
+{
     if (as.do_reduction)
     {
         Eigen::VectorXf z = z_curr.cast<float>();
@@ -57,9 +68,9 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
             }
         }
     }
-    else 
+    else
     {   // no need to worry about proj_gpu. just use set_vertices
-    
+
         Eigen::MatrixXd P_ext;
         if (v_state.vis_mode == TEXTURES)
         {
@@ -67,7 +78,7 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
             Eigen::VectorXd p = uc_curr + r;
             Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
             igl::slice(P, ext_ind, 1, P_ext);
-            render_full(viewer, P , v_state.fine_vis_id);
+            render_full(viewer, P, v_state.fine_vis_id);
             if (v_state.show_cage)
             {
                 render_full(viewer, P_ext, v_state.coarse_vis_id);
@@ -82,10 +93,61 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
             render_full(viewer, P_ext, v_state.coarse_vis_id);
         }
     }
-     
 }
 
+void InteractiveCDHook::render_pinning(igl::opengl::glfw::Viewer& viewer)
+{
+    if (as.do_reduction)
+    {
+        Eigen::VectorXf z = z_curr.cast<float>();
 
+        if (as.proj_gpu)
+        {  //send reduced parameters to GPU. Reconstruct full space there.
+            render_reduced_gpu_proj_pin(viewer, z, V.rows(), v_state.coarse_vis_id);
+        }
+        else
+        {
+            //construct full space in CPU, then send that to GPU
+            if (v_state.vis_mode == TEXTURES)
+            {
+                render_reduced_cpu_proj_pin(viewer, z,  pinned_WB, V_high_res0, v_state.fine_vis_id);
+                if (v_state.show_cage)
+                {
+                    render_reduced_cpu_proj_pin(viewer, z,  pinned_B_ext, V0_ext, v_state.coarse_vis_id);
+                }
+            }
+            else
+            {
+                render_reduced_cpu_proj_pin(viewer, z, pinned_B_ext,  V0_ext, v_state.coarse_vis_id);
+            }
+        }
+    }
+    else
+    {   // no need to worry about proj_gpu. just use set_vertices
+
+        Eigen::MatrixXd P_ext;
+        if (v_state.vis_mode == TEXTURES)
+        {
+            Eigen::VectorXd p = uc_curr;
+            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
+            igl::slice(P, ext_ind, 1, P_ext);
+            P += V_high_res0;
+            render_full(viewer, P, v_state.fine_vis_id);
+            if (v_state.show_cage)
+            {
+                render_full(viewer, P_ext, v_state.coarse_vis_id);
+            }
+        }
+        else
+        {
+            Eigen::VectorXd p = uc_curr;
+            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
+            P += V_high_res0;
+            igl::slice(P, ext_ind, 1, P_ext);
+            render_full(viewer, P_ext, v_state.coarse_vis_id);
+        }
+    }
+}
 
 
 void InteractiveCDHook::render_full(igl::opengl::glfw::Viewer& v, Eigen::MatrixXd& V, int cid)
@@ -94,7 +156,8 @@ void InteractiveCDHook::render_full(igl::opengl::glfw::Viewer& v, Eigen::MatrixX
     glUseProgram(prog_id);
     GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
     glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
-
+    GLint pin_loc = glGetUniformLocation(prog_id, "pin");
+    glUniform1i(pin_loc, false);
 
     v.data_list[cid].set_vertices(V);
 
@@ -107,9 +170,11 @@ void InteractiveCDHook::render_reduced_cpu_proj(igl::opengl::glfw::Viewer& v, Ei
     glUseProgram(prog_id);
     GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
     glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
-    Eigen::VectorXd u = B * z.cast<double>() + J * p.cast<double>();  //the titular cpu proj
+    GLint pin_loc = glGetUniformLocation(prog_id, "pin");
+    glUniform1i(pin_loc, false);
+    Eigen::VectorXd u = B * z.cast<double>() +  J * p.cast<double>();  //the titular cpu proj
     Eigen::MatrixXd V = Eigen::Map<Eigen::MatrixXd>(u.data(), u.rows() / 3, 3);
-   
+
     v.data_list[cid].set_vertices(V);
    
 }
@@ -150,6 +215,63 @@ void InteractiveCDHook::render_reduced_gpu_proj(igl::opengl::glfw::Viewer& v, Ei
     GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
     glUniform1i(cd_loc, true); //if we call this then we must assume it's true
     // Do this now so that we can stop texture from being loaded by viewer
+    GLint pin_loc = glGetUniformLocation(prog_id, "pin");
+    glUniform1i(pin_loc, false);
+    if (v.data_list[cid].dirty)
+    {
+        v.data_list[cid].updateGL(
+            v.data_list[cid],
+            v.data_list[cid].invert_normals,
+            v.data_list[cid].meshgl
+        );
+        v.data_list[cid].dirty = igl::opengl::MeshGL::DIRTY_NONE;
+    }
+
+    v.data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+
+}
+
+void InteractiveCDHook::render_reduced_cpu_proj_pin(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::MatrixXd& B, Eigen::MatrixXd& X, int cid)
+{
+    GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
+    glUseProgram(prog_id);
+    GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
+    glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
+    GLint pin_loc = glGetUniformLocation(prog_id, "pin");
+    glUniform1i(pin_loc, true);
+    Eigen::VectorXd u = B * z.cast<double>();  //the titular cpu proj
+    Eigen::MatrixXd V = Eigen::Map<Eigen::MatrixXd>(u.data(), u.rows() / 3, 3);
+    V += X;
+
+    v.data_list[cid].set_vertices(V);
+}
+
+void InteractiveCDHook::render_reduced_gpu_proj_pin(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, int n, int cid)
+{  
+    const int m = z.rows();
+    const int b = int(0);
+    const int s = ceil(sqrt(n * (m + b)));
+
+    GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
+    glUseProgram(prog_id);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, v.data_list[cid].meshgl.vbo_tex);
+    GLint n_loc = glGetUniformLocation(prog_id, "n");
+    glUniform1i(n_loc, n);
+    GLint m_loc = glGetUniformLocation(prog_id, "m");
+    glUniform1i(m_loc, m);
+    GLint b_loc = glGetUniformLocation(prog_id, "b");
+    glUniform1i(b_loc, b);
+    GLint s_loc = glGetUniformLocation(prog_id, "s");
+    glUniform1i(s_loc, s);
+    GLint q_loc = glGetUniformLocation(prog_id, "q");  //modal activations
+    glUniform1fv(q_loc, m, z.data());
+ 
+    GLint pin_loc = glGetUniformLocation(prog_id, "pin");
+    glUniform1i(pin_loc, true);
+    GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
+    glUniform1i(cd_loc, true); //if we call this then we must assume it's true
+    // Do this now so that we can stop texture from being loaded by viewer
     if (v.data_list[cid].dirty)
     {
         v.data_list[cid].updateGL(
@@ -177,7 +299,15 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
 
   // set_viewer_clusters();
     if (as.proj_gpu)
-        set_viewer_defo_textures(*viewer, this->V0, this->F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.coarse_vis_id);
+    {
+        if (as.constraint_type == PINNING)
+        {
+            Eigen::MatrixXd Z;
+            set_viewer_defo_textures(*viewer, this->V0, this->F, sim.B, Z, v_state.coarse_vis_id, v_state.coarse_vis_id);
+        }
+        else
+            set_viewer_defo_textures(*viewer, this->V0, this->F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.coarse_vis_id);
+    }
     else
     {
         if (v_state.vis_mode == VIS_MODE::MATCAP)
@@ -186,8 +316,10 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
         }
         else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
         {
-            Eigen::VectorXi labels_faces;
-            igl::slice(cd_sim.labels, FiT, labels_faces);
+            Eigen::VectorXi labels_faces, labels;
+            labels = as.constraint_type == PINNING ? sim.labels : cd_sim.labels;
+
+            igl::slice(labels, FiT, labels_faces);
             set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
         }
         else if (v_state.vis_mode == VIS_MODE::TEXTURES)
@@ -506,6 +638,7 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
     if (changed_constraint)
     {
         init_simulation();
+        init_viewer(*viewer);
     }
   
 
@@ -654,12 +787,7 @@ void InteractiveCDHook::poll_sim_changes()
         as.do_clustering = new_as.do_clustering;
         cd_sim.switch_clustering(as.do_clustering);
         sim.switch_clustering(as.do_clustering);
-        Eigen::VectorXi labels_faces;
-        igl::slice(cd_sim.labels, FiT, labels_faces);
-        if (v_state.vis_mode == VIS_MODE::CLUSTERS)
-        {
-            viewer->data_list[v_state.coarse_vis_id].set_data(labels_faces.cast<double>());
-        }
+        init_viewer(*viewer);
     }
     if (as.do_reduction != new_as.do_reduction)
     {
@@ -685,12 +813,7 @@ void InteractiveCDHook::poll_sim_changes()
 
         cd_sim.update_clusters(new_as.l); //TODO add as.feat to cd_sim class
         sim.update_clusters(new_as.l);
-        Eigen::VectorXi labels_faces;
-        igl::slice(sim.labels, FiT, labels_faces);
-        if (v_state.vis_mode == VIS_MODE::CLUSTERS)
-        {
-            viewer->data_list[v_state.coarse_vis_id].set_data(labels_faces.cast<double>());
-        }
+        init_viewer(*viewer);
     }
     if (new_as.r != as.r)
     {

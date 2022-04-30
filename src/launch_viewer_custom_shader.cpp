@@ -30,14 +30,15 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
         out vec4 Kdi;
         out vec4 Ksi;
         
-       uniform int proj_gpu;
+        uniform int proj_gpu;
+        uniform int pin;
         in float id;
         uniform int n;
         uniform int m;
         uniform int b;
         uniform int s;
         uniform float q[512];  //reduced activations
-        uniform float p[512];     //rig parameters (row-flattened 3x4 matrices for each bone)
+        uniform float p[400];     //rig parameters (row-flattened 3x4 matrices for each bone)
         uniform sampler2D tex;
 
         void main()
@@ -55,27 +56,33 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
              }
             //rig position... weighted average of transformation matrices
              vec3 r = vec3(0, 0, 0);
-             int c = 12;                    //12 params per bone
-             for(int j = 0; j < b; j++)
-             {
-                  int index = int(id)*(m+b)+j + m;
-                  int si = index % s;
-                  int sj = int((index - si)/s);
-                  float w = texelFetch(tex,ivec2(si,sj),0).x;       //weight matrix same for x, y and z components... wasteful to pack all of it in
+            if(pin == 0)   // if we are using pinning constraints, than we don't include rig/motion here
+            {
+                 int c = 12;                    //12 params per bone
+                 for(int j = 0; j < b; j++)
+                 {
+                      int index = int(id)*(m+b)+j + m;
+                      int si = index % s;
+                      int sj = int((index - si)/s);
+                      float w = texelFetch(tex,ivec2(si,sj),0).x;       //weight matrix same for x, y and z components... wasteful to pack all of it in
                   
-                 mat4 T = mat4(p[c*j + 0], p[c*j + 4], p[c*j + 8], 0, 
-                               p[c*j + 1], p[c*j + 5], p[c*j + 9], 0, 
-                               p[c*j + 2],  p[c*j + 6], p[c*j + 10], 0, 
-                                p[c*j + 3], p[c*j + 7], p[c*j + 11], 1);
+                     mat4 T = mat4(p[c*j + 0], p[c*j + 4], p[c*j + 8], 0, 
+                                   p[c*j + 1], p[c*j + 5], p[c*j + 9], 0, 
+                                   p[c*j + 2],  p[c*j + 6], p[c*j + 10], 0, 
+                                    p[c*j + 3], p[c*j + 7], p[c*j + 11], 1);
                          
-                //  T = mat4(1.0);
-                 vec4 v = vec4(position, 1);
-                  vec4 t = w*T*v;
-                  r = r +  t.xyz;
-             }
-
+                    //  T = mat4(1.0);
+                     vec4 v = vec4(position, 1);
+                      vec4 t = w*T*v;
+                      r = r +  t.xyz;
+                 }
              deformed = r + uc;
-         }
+            }else
+            {
+            deformed = position + uc;
+            }
+          }
+       
           position_eye = vec3 (view * vec4 (deformed, 1.0));
           gl_Position = proj * vec4 (position_eye, 1.0);
           Kai = Ka;
