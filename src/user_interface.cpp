@@ -33,63 +33,40 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
     Eigen::VectorXf p = p_next.cast<float>();
 
 
-   if (as.proj_gpu == 1) //render with GPU
-   {
-        GLuint prog_id = viewer.data_list[v_state.coarse_vis_id].meshgl.shader_mesh;
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, viewer.data_list[v_state.coarse_vis_id].meshgl.vbo_tex);
-        const int b = int(as.rig_controller->p_rel.rows() / 12);
-        const int s = ceil(sqrt(V.rows() * (as.r+ b)));
-        glUseProgram(prog_id);
-        GLint n_loc = glGetUniformLocation(prog_id, "n");
-        glUniform1i(n_loc, V.rows());
-        GLint m_loc = glGetUniformLocation(prog_id, "m");
-        glUniform1i(m_loc, cd_sim.B.cols());
-        GLint b_loc = glGetUniformLocation(prog_id, "b");
-        glUniform1i(b_loc, b);
-        GLint s_loc = glGetUniformLocation(prog_id, "s");
-        glUniform1i(s_loc, s);
-        GLint q_loc = glGetUniformLocation(prog_id, "q");  //modal activations
-        glUniform1fv(q_loc, as.r, z.data());
-        GLint p_loc = glGetUniformLocation(prog_id, "p"); //rig parameters
-        glUniform1fv(p_loc , p.rows(), p.data());
-        GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
-        glUniform1i(cd_loc, as.proj_gpu);
-        // Do this now so that we can stop texture from being loaded by viewer
-        if (viewer.data_list[v_state.coarse_vis_id].dirty)
-        {
-            viewer.data_list[v_state.coarse_vis_id].updateGL(
-                viewer.data_list[v_state.coarse_vis_id],
-                viewer.data_list[v_state.coarse_vis_id].invert_normals,
-                viewer.data_list[v_state.coarse_vis_id].meshgl
-            );
-            viewer.data_list[v_state.coarse_vis_id].dirty = igl::opengl::MeshGL::DIRTY_NONE;
-        }
-
-        viewer.data_list[v_state.coarse_vis_id].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
-
+   if (as.proj_gpu) 
+   {  //send reduced parameters to GPU. Reconstruct full space there.
+       render_reduced(viewer, z, p, V.rows(), v_state.coarse_vis_id);
    }
    else
    {
-       glActiveTexture(GL_TEXTURE0);
-       glBindTexture(GL_TEXTURE_2D, viewer.data_list[v_state.coarse_vis_id].meshgl.vbo_tex);
-       GLuint prog_id = viewer.data_list[v_state.coarse_vis_id].meshgl.shader_mesh;
-       glUseProgram(prog_id);
-       GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
-       glUniform1i(cd_loc, as.proj_gpu);
-       Eigen::VectorXd u = cd_B_ext * z.cast<double>() + cd_J_ext * p.cast<double>();
-       Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), cd_B_ext.rows()/3, 3);
-       V_ext = U;
-       viewer.data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
-
+       //construct full space in CPU, then send that to GPU
        if (v_state.vis_mode == TEXTURES)
-      {
-          u = cd_sim.B * z.cast<double>() + rig->J * p.cast<double>();
-          Eigen::VectorXd u_high_res = W_low_to_high * u;
-          V_high_res = Eigen::Map<Eigen::MatrixXd>(u_high_res.data(), u_high_res.rows()/3, 3);
-          viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
-      }
- 
+       {
+           render_full(viewer, z, p, cd_WB, cd_WJ, v_state.fine_vis_id);
+           if (v_state.show_cage)
+           {
+               render_full(viewer, z, p, cd_B_ext, cd_J_ext, v_state.coarse_vis_id);
+           }
+              
+       }
+       else
+       {
+           render_full(viewer, z, p, cd_B_ext, cd_J_ext, v_state.coarse_vis_id);
+       }
+     
+     //  if (v_state.vis_mode == TEXTURES)
+     //  {
+     //      Eigen::VectorXd u = WB * z.cast<double>() + WJ * p.cast<double>();
+     //      Eigen::VectorXd u_high_res = W_low_to_high * u;
+     //      V_high_res = Eigen::Map<Eigen::MatrixXd>(u_high_res.data(), u_high_res.rows() / 3, 3);
+     //
+     //      viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
+     //
+     //      Eigen::VectorXd u = cd_B_ext * z.cast<double>() + cd_J_ext * p.cast<double>();
+     //      Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), cd_B_ext.rows() / 3, 3);
+     //      V_ext = U;
+     //      viewer.data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
+     //  }
    }
 
    // as.rig_controller->render(viewer);
@@ -108,10 +85,74 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 
     //maybe can let the fragment shader take care of this
   //  viewer.data_list[v_state.coarse_vis_id].compute_normals();d
-        return false;
+    
    
 }
 
+void InteractiveCDHook::render_full(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int cid)
+{
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, v.data_list[cid].meshgl.vbo_tex);
+    GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
+    glUseProgram(prog_id);
+    GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
+    glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
+    Eigen::VectorXd u = B * z.cast<double>() + J * p.cast<double>();
+    Eigen::MatrixXd V = Eigen::Map<Eigen::MatrixXd>(u.data(), u.rows() / 3, 3);
+   
+    v.data_list[cid].set_vertices(V);
+   
+}
+
+/*
+ Sets data in the mesh by passing reduced buffers to the vertex shader.
+
+ v - libigl viewer
+ z - reduced space coefficients for our simulation
+ p - rig parameters (row flattened 12x1 transformation matrices)
+ n - (int) number of vertices
+
+ */
+void InteractiveCDHook::render_reduced(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, int n, int cid)
+{
+    //TODO: assert that viewer is already configured for reduced step... otherwise need to resend texture
+
+    const int m = z.rows();
+    const int b = int(p.rows() / 12);
+    const int s = ceil(sqrt(n * (m + b)));
+
+    GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, v.data_list[cid].meshgl.vbo_tex);
+    glUseProgram(prog_id);
+    GLint n_loc = glGetUniformLocation(prog_id, "n");
+    glUniform1i(n_loc, n);
+    GLint m_loc = glGetUniformLocation(prog_id, "m");
+    glUniform1i(m_loc, m);
+    GLint b_loc = glGetUniformLocation(prog_id, "b");
+    glUniform1i(b_loc, b);
+    GLint s_loc = glGetUniformLocation(prog_id, "s");
+    glUniform1i(s_loc, s);
+    GLint q_loc = glGetUniformLocation(prog_id, "q");  //modal activations
+    glUniform1fv(q_loc, m, z.data());
+    GLint p_loc = glGetUniformLocation(prog_id, "p"); //rig parameters
+    glUniform1fv(p_loc, p.rows(), p.data());
+    GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
+    glUniform1i(cd_loc, true); //if we call this then we must assume it's true
+    // Do this now so that we can stop texture from being loaded by viewer
+    if (v.data_list[cid].dirty)
+    {
+        v.data_list[cid].updateGL(
+            v.data_list[cid],
+            v.data_list[cid].invert_normals,
+            v.data_list[cid].meshgl
+        );
+        v.data_list[cid].dirty = igl::opengl::MeshGL::DIRTY_NONE;
+    }
+
+    v.data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+
+}
 void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
 {
   
@@ -219,44 +260,46 @@ void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& view
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
-
     }
-
     //This is very important... otherwise when the new mesh is set, it triggers a dirty call , and igl overwrites the texture with junk...
     viewer.data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
 }
-void InteractiveCDHook::set_viewer_color_textures()
+void InteractiveCDHook::set_viewer_color_textures(igl::opengl::glfw::Viewer& viewer, std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine, 
+    Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine, int cid, int fid)
 {
+
     //TODO: should keep matcap separate for each mesh, and load it up once we pick our mesh
-    viewer->data_list[v_state.fine_vis_id].clear();
-    viewer->data_list[v_state.coarse_vis_id].clear();
-    viewer->data_list[v_state.coarse_vis_id].show_lines = true;
-    viewer->data_list[v_state.coarse_vis_id].show_faces = false;
+    viewer.data_list[fid].clear();
+    viewer.data_list[cid].clear();
 
-    viewer->data_list[v_state.fine_vis_id].clear();
+    viewer.data_list[fid].is_visible = true; 
+    viewer.data_list[cid].show_lines = true;
+    viewer.data_list[cid].show_faces = false;
+    viewer.data_list[cid].is_visible = false;//dont wanna see or hear about you when using textures
+
+    viewer.data_list[fid].clear();
         
-
-    viewer->data_list[v_state.fine_vis_id].invert_normals = false;
-    viewer->data_list[v_state.fine_vis_id].double_sided = false;
-    viewer->data_list[v_state.fine_vis_id].set_face_based(true);
+    viewer.data_list[fid].invert_normals = false;
+    viewer.data_list[fid].double_sided = false;
+    viewer.data_list[fid].set_face_based(true);
 
     Eigen::Matrix<unsigned char, -1, -1> R, G, B, A;
-    std::string texture_path = as.texture_png_path;
+    std::string texture_path = texture_filepath;
     bool read = igl::png::readPNG(texture_path, R, G, B, A);
 
-    viewer->data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
-    viewer->data_list[v_state.fine_vis_id].set_mesh(V_high_res, F_high_res);
+    viewer.data_list[cid].set_mesh(V_coarse, F_coarse);
+    viewer.data_list[fid].set_mesh(V_fine, F_fine);
     if (UV_high_res.rows() > 0)  //if our texture matches the display mesh
     {
         //  viewer.data().set_normals(FN);
-        viewer->data_list[v_state.fine_vis_id].set_uv(UV_high_res, FUV_high_res);
-        viewer->data_list[v_state.fine_vis_id].show_lines = false;
-        viewer->data_list[v_state.fine_vis_id].show_texture = true;
-        viewer->data_list[v_state.fine_vis_id].show_faces = true;
-        viewer->data_list[v_state.fine_vis_id].set_texture(R, G, B);
+        viewer.data_list[fid].set_uv(UV_fine, FUV_fine);
+        viewer.data_list[fid].show_lines = false;
+        viewer.data_list[fid].show_texture = true;
+        viewer.data_list[fid].show_faces = true;
+        viewer.data_list[fid].set_texture(R, G, B);
     }else
     {
-        viewer->data_list[v_state.fine_vis_id].invert_normals = true;
+        viewer.data_list[fid].invert_normals = true;
     }
     
 }
@@ -270,6 +313,10 @@ void InteractiveCDHook::set_viewer_matcap(igl::opengl::glfw::Viewer& viewer, Eig
     viewer.data_list[cid].clear();
  
     viewer.data_list[cid].set_mesh(V, F);
+    viewer.data_list[fid].set_mesh(V_high_res, F_high_res); //should only send V_ext
+
+    viewer.data_list[fid].is_visible = false; //dont wanna see or hear about you when using matcap young man... though tbh why not??
+    viewer.data_list[cid].is_visible = true; //dont wanna see or hear about you when using matcap young man... though tbh why not??
 
 
     viewer.data_list[cid].point_size = 10;
@@ -295,7 +342,11 @@ void InteractiveCDHook::set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, E
     viewer.data_list[fid].clear();
     viewer.data_list[cid ].clear();
     viewer.data_list[cid ].set_mesh(V, F); //should only send V_ext
-   
+    viewer.data_list[fid].set_mesh(V_high_res, F_high_res); //should only send V_ext
+    viewer.data_list[fid].is_visible = false; //dont wanna see or hear about you when drawing clusters young man!
+    viewer.data_list[cid].is_visible = true; //dont wanna see or hear about you when using matcap young man... though tbh why not??
+
+
 
     viewer.data_list[cid ].point_size = 10;
           
@@ -372,8 +423,15 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
                 }
                 else if (v_state.vis_mode == VIS_MODE::TEXTURES)
                 {
-                    set_viewer_color_textures();
+                    set_viewer_color_textures(*viewer, as.texture_png_path, V0_ext, F_ext, V_high_res,
+                        F_high_res, UV_high_res, FUV_high_res, v_state.coarse_vis_id, v_state.fine_vis_id);
                 }
+            }
+            if (v_state.vis_mode == TEXTURES)
+            {
+                ImGui::Checkbox("Draw Cage", &v_state.show_cage);
+                viewer->data_list[v_state.coarse_vis_id].is_visible = v_state.show_cage;
+
             }
         }
     }

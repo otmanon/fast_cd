@@ -110,8 +110,10 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
 
     igl::slice(cd_sim.J, iext, 1, cd_J_ext);		//slice J the same as B
 
-    WB = W_low_to_high * sim.B;
+    cd_WB = W_low_to_high * cd_sim.B;
+    cd_WJ = W_low_to_high * rig->J;
 
+    pinned_WB = W_low_to_high * sim.B;
     init_modal_anim_state();
 
     init_simulation();
@@ -127,7 +129,7 @@ void InteractiveCDHook::init_vis_state()
     v_state.fine_vis_id = 1;
     v_state.vis_cd = true;
     v_state.vis_mode = VIS_MODE::CLUSTERS;
-
+    v_state.show_cage = false;
 }
 
 void InteractiveCDHook::init_modal_anim_state()

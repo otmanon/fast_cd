@@ -43,6 +43,9 @@ public:
     */
     virtual bool simulateOneStep();
 
+    void render_full(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int cid);
+
+    void render_reduced(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf & p, int n, int cid);
 
     void full_sim_step_pinning_control();
 
@@ -71,7 +74,8 @@ public:
 
     void set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int cid = 0, int fid = 1);
 
-    void set_viewer_color_textures();
+    void set_viewer_color_textures(igl::opengl::glfw::Viewer& viewer, std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
+        Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine, int cid, int fid);
 
     void set_viewer_defo_textures(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& X, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W, int cid=0, int fid=1);
 
@@ -174,6 +178,7 @@ public:
         int coarse_vis_id;      //two data entreis, one for coarse mesh, one for fines
         int fine_vis_id;        //two data entries, one for coarse, one for fine
         bool vis_cd;
+        bool show_cage; // if vis_mode==Textures, whether or not to render the cage with it
         VIS_MODE vis_mode;
     } v_state, new_v_state;
 
@@ -194,7 +199,8 @@ public:
     Eigen::MatrixXd cd_B_ext, pinned_B_ext;
     Eigen::SparseMatrix<double> cd_J_ext;
 
-    Eigen::MatrixXd WB; // may need to precompute this further...
+    Eigen::SparseMatrix<double> cd_WJ;
+    Eigen::MatrixXd cd_WB, pinned_WB; // may need to precompute this further...
     Eigen::VectorXi ext_ind, iext;    //list of exterior vertex indices in our list. iext is the same as ext_ind, but indexes all entrices in a flattened V matrix.
 
     Eigen::MatrixXi F, T;       //faces and tets (these are shared with the simulation... shouldn't change ever)
