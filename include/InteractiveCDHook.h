@@ -42,10 +42,12 @@ public:
     Performs one typestep. Split up into two options, one if we want to look at the modes, the other if we wanna do physics. TODO: split these into two further groups
     */
     virtual bool simulateOneStep();
+ 
+    void render_full(igl::opengl::glfw::Viewer& v, Eigen::MatrixXd& X, int cid);
 
-    void render_full(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int cid);
+    void render_reduced_cpu_proj(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int cid);
 
-    void render_reduced(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf & p, int n, int cid);
+    void render_reduced_gpu_proj(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf & p, int n, int cid);
 
     void full_sim_step_pinning_control();
 

@@ -29,75 +29,85 @@
 //Render UI related
 bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 {
-    Eigen::VectorXf z = z_next.cast<float>();
-    Eigen::VectorXf p = p_next.cast<float>();
+  
 
+    if (as.do_reduction)
+    {
+        Eigen::VectorXf z = z_curr.cast<float>();
+        Eigen::VectorXf p = p_curr.cast<float>();
 
-   if (as.proj_gpu) 
-   {  //send reduced parameters to GPU. Reconstruct full space there.
-       render_reduced(viewer, z, p, V.rows(), v_state.coarse_vis_id);
-   }
-   else
-   {
-       //construct full space in CPU, then send that to GPU
-       if (v_state.vis_mode == TEXTURES)
-       {
-           render_full(viewer, z, p, cd_WB, cd_WJ, v_state.fine_vis_id);
-           if (v_state.show_cage)
-           {
-               render_full(viewer, z, p, cd_B_ext, cd_J_ext, v_state.coarse_vis_id);
-           }
-              
-       }
-       else
-       {
-           render_full(viewer, z, p, cd_B_ext, cd_J_ext, v_state.coarse_vis_id);
-       }
+        if (as.proj_gpu)
+        {  //send reduced parameters to GPU. Reconstruct full space there.
+            render_reduced_gpu_proj(viewer, z, p, V.rows(), v_state.coarse_vis_id);
+        }
+        else
+        {
+            //construct full space in CPU, then send that to GPU
+            if (v_state.vis_mode == TEXTURES)
+            {
+                render_reduced_cpu_proj(viewer, z, p, cd_WB, cd_WJ, v_state.fine_vis_id);
+                if (v_state.show_cage)
+                {
+                    render_reduced_cpu_proj(viewer, z, p, cd_B_ext, cd_J_ext, v_state.coarse_vis_id);
+                }
+            }
+            else
+            {
+                render_reduced_cpu_proj(viewer, z, p, cd_B_ext, cd_J_ext, v_state.coarse_vis_id);
+            }
+        }
+    }
+    else 
+    {   // no need to worry about proj_gpu. just use set_vertices
+    
+        Eigen::MatrixXd P_ext;
+        if (v_state.vis_mode == TEXTURES)
+        {
+            Eigen::VectorXd r = cd_WJ * p_curr;
+            Eigen::VectorXd p = uc_curr + r;
+            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
+            igl::slice(P, ext_ind, 1, P_ext);
+            render_full(viewer, P , v_state.fine_vis_id);
+            if (v_state.show_cage)
+            {
+                render_full(viewer, P_ext, v_state.coarse_vis_id);
+            }
+        }
+        else
+        {
+            Eigen::VectorXd r = rig->J * p_curr;
+            Eigen::VectorXd p = uc_curr + r;
+            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
+            igl::slice(P, ext_ind, 1, P_ext);
+            render_full(viewer, P_ext, v_state.coarse_vis_id);
+        }
+    }
      
-     //  if (v_state.vis_mode == TEXTURES)
-     //  {
-     //      Eigen::VectorXd u = WB * z.cast<double>() + WJ * p.cast<double>();
-     //      Eigen::VectorXd u_high_res = W_low_to_high * u;
-     //      V_high_res = Eigen::Map<Eigen::MatrixXd>(u_high_res.data(), u_high_res.rows() / 3, 3);
-     //
-     //      viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
-     //
-     //      Eigen::VectorXd u = cd_B_ext * z.cast<double>() + cd_J_ext * p.cast<double>();
-     //      Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u.data(), cd_B_ext.rows() / 3, 3);
-     //      V_ext = U;
-     //      viewer.data_list[v_state.coarse_vis_id].set_mesh(V_ext, F_ext);
-     //  }
-   }
-
-   // as.rig_controller->render(viewer);
-   // rig->render(viewer);
-    
-   // if (v_state.vis_mode == TEXTURES)
-   // {
-   //     viewer.data_list[v_state.fine_vis_id].set_vertices(V_high_res);
-   // }
-   // 
-   // viewer.data_list[v_state.coarse_vis_id].set_vertices(V_ext);
-   
-
-   //viewer.data_list[v_state.coarse_vis_id].set_vertices(V_ext);
-   // viewer.data_list[v_state.coarse_vis_id].set_vertices(V_high_res);
-
-    //maybe can let the fragment shader take care of this
-  //  viewer.data_list[v_state.coarse_vis_id].compute_normals();d
-    
-   
 }
 
-void InteractiveCDHook::render_full(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int cid)
+
+
+
+void InteractiveCDHook::render_full(igl::opengl::glfw::Viewer& v, Eigen::MatrixXd& V, int cid)
 {
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, v.data_list[cid].meshgl.vbo_tex);
     GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
     glUseProgram(prog_id);
     GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
     glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
-    Eigen::VectorXd u = B * z.cast<double>() + J * p.cast<double>();
+
+
+    v.data_list[cid].set_vertices(V);
+
+}
+
+void InteractiveCDHook::render_reduced_cpu_proj(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int cid)
+{
+ 
+    GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
+    glUseProgram(prog_id);
+    GLint cd_loc = glGetUniformLocation(prog_id, "proj_gpu");
+    glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
+    Eigen::VectorXd u = B * z.cast<double>() + J * p.cast<double>();  //the titular cpu proj
     Eigen::MatrixXd V = Eigen::Map<Eigen::MatrixXd>(u.data(), u.rows() / 3, 3);
    
     v.data_list[cid].set_vertices(V);
@@ -113,7 +123,7 @@ void InteractiveCDHook::render_full(igl::opengl::glfw::Viewer& v, Eigen::VectorX
  n - (int) number of vertices
 
  */
-void InteractiveCDHook::render_reduced(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, int n, int cid)
+void InteractiveCDHook::render_reduced_gpu_proj(igl::opengl::glfw::Viewer& v, Eigen::VectorXf& z, Eigen::VectorXf& p, int n, int cid)
 {
     //TODO: assert that viewer is already configured for reduced step... otherwise need to resend texture
 
@@ -153,12 +163,12 @@ void InteractiveCDHook::render_reduced(igl::opengl::glfw::Viewer& v, Eigen::Vect
     v.data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
 
 }
+
 void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
 {
   
     this->viewer = &v;
 
-    init_vis_state();
     if (viewer->data_list.size() == 1)
         this->viewer->append_mesh();
     //this->viewer->data_list[v_state.coarse_vis_id].clear();
@@ -166,10 +176,29 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
     new_v_state = v_state;
 
   // set_viewer_clusters();
-    set_viewer_defo_textures(*viewer, this->V0, this->F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.coarse_vis_id);
+    if (as.proj_gpu)
+        set_viewer_defo_textures(*viewer, this->V0, this->F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.coarse_vis_id);
+    else
+    {
+        if (v_state.vis_mode == VIS_MODE::MATCAP)
+        {
+            set_viewer_matcap(*viewer, V_ext, F_ext, "../data" + as.matcap_file, v_state.coarse_vis_id, v_state.fine_vis_id);
+        }
+        else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
+        {
+            Eigen::VectorXi labels_faces;
+            igl::slice(cd_sim.labels, FiT, labels_faces);
+            set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
+        }
+        else if (v_state.vis_mode == VIS_MODE::TEXTURES)
+        {
+            set_viewer_color_textures(*viewer, as.texture_png_path, V0_ext, F_ext, V_high_res,
+                F_high_res, UV_high_res, FUV_high_res, v_state.coarse_vis_id, v_state.fine_vis_id);
+        }
+    }
 }
 
-void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W, int cid, int fid)
+void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& v, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W, int cid, int fid)
 {
     using namespace Eigen;
     using namespace std;
@@ -216,29 +245,28 @@ void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& view
     // Initialize viewer and opengl context
     ///////////////////////////////////////////////////////////////////
    // igl::opengl::glfw::Viewer v;
-    viewer.data_list[v_state.coarse_vis_id].show_lines = true;
-    viewer.data_list[v_state.coarse_vis_id].show_faces = true;
-    viewer.data_list[v_state.coarse_vis_id].invert_normals = true;
-    viewer.data_list[v_state.coarse_vis_id].double_sided = true;
-    viewer.data_list[v_state.coarse_vis_id].set_face_based(true);
-    viewer.data_list[v_state.coarse_vis_id].use_matcap = false;
-
-    viewer.data_list[v_state.coarse_vis_id].clear();
-    viewer.data_list[v_state.fine_vis_id].clear();
-    viewer.data_list[v_state.coarse_vis_id].set_mesh(V, F);
-    viewer.data_list[v_state.coarse_vis_id].invert_normals = false;
-    viewer.data_list[v_state.coarse_vis_id].double_sided = true;
-    viewer.data_list[v_state.coarse_vis_id].set_face_based(false);
-    viewer.data_list[v_state.coarse_vis_id].show_lines = false;
-    viewer.data_list[v_state.coarse_vis_id].show_texture = false;
-    viewer.data_list[v_state.fine_vis_id].show_texture = false;
+    
+    v.data_list[cid].clear();
+    v.data_list[fid].clear();
+    v.data_list[cid].set_mesh(V, F);
+    v.data_list[cid].set_face_based(false);
+    v.data_list[cid].use_matcap = false;
+    v.data_list[cid].show_lines = true;
+    v.data_list[cid].show_faces = true;
+    v.data_list[cid].invert_normals = false;
+    v.data_list[cid].double_sided = true;
+    v.data_list[cid].show_lines = false;
+    v.data_list[cid].show_texture = false;
+    v.data_list[fid].show_texture = false;
+    v.data_list[fid].is_visible = false;
+    v.data_list[cid].is_visible = true;
     ///////////////////////////////////////////////////////////////////
    // Send texture and vertex attributes to GPU... should make this its own function but maybe it's okay
    ///////////////////////////////////////////////////////////////////
     {
-        GLuint prog_id = viewer.data_list[cid].meshgl.shader_mesh;
+        GLuint prog_id = v.data_list[cid].meshgl.shader_mesh;
         glUseProgram(prog_id);
-        GLuint VAO = viewer.data_list[cid].meshgl.vao_mesh;
+        GLuint VAO = v.data_list[cid].meshgl.vao_mesh;
         glBindVertexArray(VAO);
         GLuint IBO;
         glGenBuffers(1, &IBO);
@@ -251,7 +279,7 @@ void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& view
         //  glBindVertexArray(0);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, viewer.data_list[cid].meshgl.vbo_tex);
+        glBindTexture(GL_TEXTURE_2D, v.data_list[cid].meshgl.vbo_tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -262,7 +290,7 @@ void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& view
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, s, s, 0, GL_RGB, GL_FLOAT, tex.data());
     }
     //This is very important... otherwise when the new mesh is set, it triggers a dirty call , and igl overwrites the texture with junk...
-    viewer.data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+    v.data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
 }
 void InteractiveCDHook::set_viewer_color_textures(igl::opengl::glfw::Viewer& viewer, std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine, 
     Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine, int cid, int fid)
@@ -411,21 +439,8 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
             if (v_state.vis_mode != new_v_state.vis_mode || changed_proj)
             {
                 v_state.vis_mode = new_v_state.vis_mode;
-                if (v_state.vis_mode == VIS_MODE::MATCAP)
-                {
-                    set_viewer_matcap(*viewer, V_ext, F_ext, "../data" + as.matcap_file, v_state.coarse_vis_id, v_state.fine_vis_id);
-                }
-                else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
-                {
-                    Eigen::VectorXi labels_faces;
-                    igl::slice(cd_sim.labels, FiT, labels_faces);
-                    set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
-                }
-                else if (v_state.vis_mode == VIS_MODE::TEXTURES)
-                {
-                    set_viewer_color_textures(*viewer, as.texture_png_path, V0_ext, F_ext, V_high_res,
-                        F_high_res, UV_high_res, FUV_high_res, v_state.coarse_vis_id, v_state.fine_vis_id);
-                }
+                init_viewer(*viewer);
+
             }
             if (v_state.vis_mode == TEXTURES)
             {
@@ -609,24 +624,16 @@ void InteractiveCDHook::change_rig_type()
 
     init_simulation();
 
-    render(*viewer);
-    
+
     cd_sim.update_compelementary_constraint(rig->J, as.cd_mode_dir, as.cd_clusters_dir);
+    
+    init_rig_controller(rig);
     sim.update_equality_constraint(rig->S);
 
     igl::slice(cd_sim.B, iext, 1, cd_B_ext);
     igl::slice(sim.B, iext, 1, pinned_B_ext);
     igl::slice(cd_sim.J, iext, 1, cd_J_ext);		//slice J the same as B
-    if (v_state.vis_mode == VIS_MODE::MATCAP)
-    {
-        set_viewer_matcap(*viewer, V_ext, F_ext, "../data" + as.matcap_file, v_state.coarse_vis_id, v_state.fine_vis_id);
-    }
-    else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
-    {
-        Eigen::VectorXi labels_faces;
-        igl::slice(cd_sim.labels, FiT, labels_faces);
-        set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
-    }
+    init_viewer(*viewer);
 }
 
 void InteractiveCDHook::change_animation_mode()
@@ -696,7 +703,8 @@ void InteractiveCDHook::poll_sim_changes()
         igl::slice(cd_sim.B, iext, 1, cd_B_ext);
         igl::slice(sim.B, iext, 1, pinned_B_ext);
         igl::slice(cd_sim.J, iext, 1, cd_J_ext);		//slice J the same as B
-        set_viewer_defo_textures(*viewer, V0, F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.fine_vis_id);
+        init_viewer(*viewer);
+      
     }
     if (as.rig_id != new_as.rig_id)
     {

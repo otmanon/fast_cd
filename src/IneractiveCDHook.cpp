@@ -117,6 +117,8 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
     init_modal_anim_state();
 
     init_simulation();
+
+    init_vis_state();
     init_viewer(*viewer);
 
     new_as = as;
