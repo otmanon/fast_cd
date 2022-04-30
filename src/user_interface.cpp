@@ -23,6 +23,7 @@
 #include <igl/readDMAT.h>
 #include <igl/colon.h>
 #include <igl/slice_into.h>
+#include <igl/slice.h>
 #include <igl/unique.h>
 #include <igl/boundary_facets.h>
 //Render UI related
@@ -117,7 +118,8 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
     this->viewer = &v;
 
     init_vis_state();
-    this->viewer->append_mesh();
+    if (viewer->data_list.size() == 1)
+        this->viewer->append_mesh();
     //this->viewer->data_list[v_state.coarse_vis_id].clear();
     this->viewer->data_list[v_state.fine_vis_id].clear();
     new_v_state = v_state;
@@ -287,28 +289,12 @@ void InteractiveCDHook::set_viewer_matcap(igl::opengl::glfw::Viewer& viewer, Eig
     viewer.data_list[cid].show_texture = true;
 }
 
-void InteractiveCDHook::set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& V, Eigen::MatrixXi& T, Eigen::VectorXi& clusters, int cid, int fid)
+void InteractiveCDHook::set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int cid, int fid)
 {
-    Eigen::MatrixXi F; Eigen::VectorXi FiT, _n;
-    igl::boundary_facets(T, F, FiT, _n);
-    igl::unique(F, ext_ind);
-    Eigen::VectorXi ind_v;      //contains the opposite info of ext_ind, given a full volumetric vertex list TV, finds surface Verts FV
-    Eigen::VectorXi a;
-    igl::colon(0, ext_ind.rows() - 1, a);
-    ind_v.resize(V.rows(), 1);
-    ind_v.setConstant(-1);
-    igl::slice_into(a, ext_ind, ind_v);
 
-    F_ext.resizeLike(F);
-    for (int i = 0; i < F.rows(); i++)
-    {
-        F_ext(i, 0) = ind_v(F(i, 0));
-        F_ext(i, 1) = ind_v(F(i, 1));
-        F_ext(i, 2) = ind_v(F(i, 2));
-    }
     viewer.data_list[fid].clear();
     viewer.data_list[cid ].clear();
-    viewer.data_list[cid ].set_mesh(V, F);
+    viewer.data_list[cid ].set_mesh(V, F); //should only send V_ext
    
 
     viewer.data_list[cid ].point_size = 10;
@@ -321,9 +307,7 @@ void InteractiveCDHook::set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, E
 
     viewer.data_list[cid ].use_matcap = false;
     Eigen::MatrixXd colormap = get_rainbow_colormap();
-    Eigen::VectorXi labels_faces;
-    igl::slice(clusters, FiT, labels_faces);
-    viewer.data_list[cid ].set_data(labels_faces.cast<double>());
+    viewer.data_list[cid ].set_data(clusters.cast<double>());
     viewer.data_list[cid ].set_colormap(colormap);
 }
 
@@ -382,7 +366,9 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
                 }
                 else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
                 {
-                    set_viewer_clusters(*viewer, V_ext, T, cd_sim.labels, v_state.coarse_vis_id, v_state.fine_vis_id);
+                    Eigen::VectorXi labels_faces;
+                    igl::slice(cd_sim.labels, FiT, labels_faces);
+                    set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
                 }
                 else if (v_state.vis_mode == VIS_MODE::TEXTURES)
                 {
@@ -579,7 +565,9 @@ void InteractiveCDHook::change_rig_type()
     }
     else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
     {
-        set_viewer_clusters(*viewer, V_ext, T, cd_sim.labels, v_state.coarse_vis_id, v_state.fine_vis_id);
+        Eigen::VectorXi labels_faces;
+        igl::slice(cd_sim.labels, FiT, labels_faces);
+        set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
     }
 }
 
