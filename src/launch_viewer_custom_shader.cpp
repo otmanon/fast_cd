@@ -1,100 +1,149 @@
 #include "launch_viewer_custom_shader.h"
 #include <igl/opengl/MeshGL.h>
 #include <igl/opengl/create_shader_program.h>
+
+
 void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
     bool resizeable, bool fullscreen, std::string name, int width, int height)
 {
 
     //v.launch_init(true, false);
 
-    //  igl::opengl::MeshGL::free();
-    std::string mesh_vertex_shader_string =
-        R"(#version 150
-  uniform mat4 view;
-  uniform mat4 proj;
-  uniform mat4 normal_matrix;
-  in vec3 position;
-  in vec3 normal;
-  out vec3 position_eye;
-  out vec3 normal_eye;
-  in vec4 Ka;
-  in vec4 Kd;
-  in vec4 Ks;
-  in vec2 texcoord;
-  out vec2 texcoordi;
-  out vec4 Kai;
-  out vec4 Kdi;
-  out vec4 Ksi;
+            ///////////////////////////////////////////////////////////////////
+            // Compile new shaders
+            ///////////////////////////////////////////////////////////////////
+   
+        std::string mesh_vertex_shader_string =
+            R"(#version 150
+        uniform mat4 view;
+        uniform mat4 proj;
+        in vec3 position;
+        in vec3 normal;
+        out vec3 position_eye;
+        out vec3 normal_eye;
+        in vec4 Ka;
+        in vec4 Kd;
+        in vec4 Ks;
+        in vec2 texcoord;
+        out vec2 texcoordi;
+        out vec4 Kai;
+        out vec4 Kdi;
+        out vec4 Ksi;
+        
+        uniform int proj_gpu;
+        uniform int pin;
+        in float id;
+        uniform int n;
+        uniform int m;
+        uniform int b;
+        uniform int s;
+        uniform float q[512];  //reduced activations
+        uniform float p[400];     //rig parameters (row-flattened 3x4 matrices for each bone)
+        uniform sampler2D tex;
 
-  void main()
-  {
-    position_eye = vec3 (view * vec4 (position, 1.0));
-    normal_eye = vec3 (normal_matrix * vec4 (normal, 0.0));
-    normal_eye = normalize(normal_eye);
-    gl_Position = proj * vec4 (position_eye, 1.0); //proj * view * vec4(position, 1.0);"
-    Kai = Ka;
-    Kdi = Kd;
-    Ksi = Ks;
-    texcoordi = texcoord;
-  }
-)";
+        void main()
+        {
+          vec3 deformed = position;         //base case
+          if(proj_gpu == 1)                  //then we should deform our mesh
+          {
+             vec3 uc = vec3(0,0,0);
+             for(int j = 0;j < m; j++)
+             {
+                  int index = int(id)*(m+b)+j;
+                  int si = index % s;
+                  int sj = int((index - si)/s);
+                  uc = uc + texelFetch(tex,ivec2(si,sj),0).xyz*q[j];
+             }
+            //rig position... weighted average of transformation matrices
+             vec3 r = vec3(0, 0, 0);
+            if(pin == 0)   // if we are using pinning constraints, than we don't include rig/motion here
+            {
+                 int c = 12;                    //12 params per bone
+                 for(int j = 0; j < b; j++)
+                 {
+                      int index = int(id)*(m+b)+j + m;
+                      int si = index % s;
+                      int sj = int((index - si)/s);
+                      float w = texelFetch(tex,ivec2(si,sj),0).x;       //weight matrix same for x, y and z components... wasteful to pack all of it in
+                  
+                     mat4 T = mat4(p[c*j + 0], p[c*j + 4], p[c*j + 8], 0, 
+                                   p[c*j + 1], p[c*j + 5], p[c*j + 9], 0, 
+                                   p[c*j + 2],  p[c*j + 6], p[c*j + 10], 0, 
+                                    p[c*j + 3], p[c*j + 7], p[c*j + 11], 1);
+                         
+                    //  T = mat4(1.0);
+                     vec4 v = vec4(position, 1);
+                      vec4 t = w*T*v;
+                      r = r +  t.xyz;
+                 }
+             deformed = r + uc;
+            }else
+            {
+            deformed = position + uc;
+            }
+          }
+       
+          position_eye = vec3 (view * vec4 (deformed, 1.0));
+          gl_Position = proj * vec4 (position_eye, 1.0);
+          Kai = Ka;
+          Kdi = Kd;
+          Ksi = Ks;
+          texcoordi = texcoord;
+        })";
 
-    std::string mesh_fragment_shader_string =
-        R"(#version 150
-  uniform mat4 view;
-  uniform mat4 proj;
-  uniform vec4 fixed_color;
-  in vec3 position_eye;
-  in vec3 normal_eye;
-  uniform vec3 light_position_eye;
-  vec3 Ls = vec3 (1, 1, 1);
-  vec3 Ld = vec3 (1, 1, 1);
-  vec3 La = vec3 (1, 1, 1);
-  in vec4 Ksi;
-  in vec4 Kdi;
-  in vec4 Kai;
-  in vec2 texcoordi;
-  uniform sampler2D tex;
-  uniform float specular_exponent;
-  uniform float lighting_factor;
-  uniform float texture_factor;
-  uniform float matcap_factor;
-  uniform float double_sided;
-  out vec4 outColor;
-  void main()
-  {
+        std::string mesh_fragment_shader_string =
+            R"(#version 150
+          uniform mat4 view;
+          uniform mat4 proj;
+          uniform vec4 fixed_color;
+          in vec3 position_eye;
+          uniform vec3 light_position_eye;
+          vec3 Ls = vec3 (1, 1, 1);
+          vec3 Ld = vec3 (1, 1, 1);
+          vec3 La = vec3 (1, 1, 1);
+          in vec4 Ksi;
+          in vec4 Kdi;
+          in vec4 Kai;
+          in vec2 texcoordi;
+          uniform sampler2D tex;
+          uniform float specular_exponent;
+          uniform float lighting_factor;
+          uniform float texture_factor;
+          uniform float matcap_factor;
+          uniform float double_sided;
+          out vec4 outColor;
+          void main()
+          {
+            vec3 xTangent = dFdx(position_eye);
+            vec3 yTangent = dFdy(position_eye);
+            vec3 normal_eye = normalize( cross( yTangent, xTangent ) );
 
-    vec3 xTangent = dFdx( position_eye );
-    vec3 yTangent = dFdy( position_eye );
-    vec3 faceNormal = normalize( cross( xTangent, yTangent ) );
-    if(matcap_factor == 1.0f)
-    {
-      vec2 uv = normalize(faceNormal).xy * 0.5 + 0.5;
-      outColor = texture(tex, uv);
-    }else
-    {
-      vec3 Ia = La * vec3(Kai);    // ambient intensity
+            if(matcap_factor == 1.0f)
+            {
+              vec2 uv = normalize(normal_eye).xy * 0.5 + 0.5;
+              outColor = texture(tex, uv);
+            }else
+            {
+              vec3 Ia = La * vec3(Kai);    // ambient intensity
 
-      vec3 vector_to_light_eye = light_position_eye - position_eye;
-      vec3 direction_to_light_eye = normalize (vector_to_light_eye);
-      float dot_prod = dot (direction_to_light_eye, normalize(faceNormal));
-      float clamped_dot_prod = abs(max (dot_prod, -double_sided));
-      vec3 Id = Ld * vec3(Kdi) * clamped_dot_prod;    // Diffuse intensity
+              vec3 vector_to_light_eye = light_position_eye - position_eye;
+              vec3 direction_to_light_eye = normalize (vector_to_light_eye);
+              float dot_prod = dot (direction_to_light_eye, normalize(normal_eye));
+              float clamped_dot_prod = abs(max (dot_prod, -double_sided));
+              vec3 Id = Ld * vec3(Kdi) * clamped_dot_prod;    // Diffuse intensity
 
-      vec3 reflection_eye = reflect (-direction_to_light_eye, normalize(faceNormal));
-      vec3 surface_to_viewer_eye = normalize (-position_eye);
-      float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);
-      dot_prod_specular = float(abs(dot_prod)==dot_prod) * abs(max (dot_prod_specular, -double_sided));
-      float specular_factor = pow (dot_prod_specular, specular_exponent);
-      vec3 Is = Ls * vec3(Ksi) * specular_factor;    // specular intensity
-      vec4 color = vec4(lighting_factor * (Is + Id) + Ia + (1.0-lighting_factor) * vec3(Kdi),(Kai.a+Ksi.a+Kdi.a)/3);
-      outColor = mix(vec4(1,1,1,1), texture(tex, texcoordi), texture_factor) * color;
-      
-      if (fixed_color != vec4(0.0)) outColor = fixed_color;
-     
-    }
-  }
-)";
+              vec3 reflection_eye = reflect (-direction_to_light_eye, normalize(normal_eye));
+              vec3 surface_to_viewer_eye = normalize (-position_eye);
+              float dot_prod_specular = dot (reflection_eye, surface_to_viewer_eye);
+              dot_prod_specular = float(abs(dot_prod)==dot_prod) * abs(max (dot_prod_specular, -double_sided));
+              float specular_factor = pow (dot_prod_specular, specular_exponent);
+              vec3 Is = Ls * vec3(Ksi) * specular_factor;    // specular intensity
+              vec4 color = vec4(lighting_factor * (Is + Id) + Ia + (1.0-lighting_factor) * vec3(Kdi),(Kai.a+Ksi.a+Kdi.a)/3);
+              outColor = mix(vec4(1,1,1,1), texture(tex, texcoordi), texture_factor) * color;
+              if (fixed_color != vec4(0.0)) outColor = fixed_color;
+            }
+          }
+        )";
 
     std::string overlay_vertex_shader_string =
         R"(#version 150
@@ -203,35 +252,8 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
       outColor = vec4(TextColor, A);
     }
 )";
+ 
     v.launch_init(true, false, "fast CD App", 1920, 1080);
-    
-    /*v.init_buffers();
-    init_text_rendering();
-    create_shader_program(
-        mesh_vertex_shader_string,
-        mesh_fragment_shader_string,
-        {},
-        shader_mesh);
-    create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_fragment_shader_string,
-        {},
-        shader_overlay_lines);
-    create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_point_fragment_shader_string,
-        {},
-        shader_overlay_points);
-    create_shader_program(
-        text_geom_shader,
-        text_vert_shader,
-        text_frag_shader,
-        {},
-        shader_text);*/
-
-    //creates shader programs
-    //v.data().meshgl.init();
-    
     //destroys any existing shader programs
     v.data().meshgl.free();
     v.data().meshgl.is_initialized = true;
@@ -242,22 +264,22 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
         mesh_fragment_shader_string,
         {},
         v.data().meshgl.shader_mesh);
-    igl::opengl::create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_fragment_shader_string,
-        {},
-        v.data().meshgl.shader_overlay_lines);
-    igl::opengl::create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_point_fragment_shader_string,
-        {},
-        v.data().meshgl.shader_overlay_points);
-    igl::opengl::create_shader_program(
-        text_geom_shader,
-        text_vert_shader,
-        text_frag_shader,
-        {},
-        v.data().meshgl.shader_text);
+ //  igl::opengl::create_shader_program(
+ //      overlay_vertex_shader_string,
+ //      overlay_fragment_shader_string,
+ //      {},
+ //      v.data().meshgl.shader_overlay_lines);
+ //  igl::opengl::create_shader_program(
+ //      overlay_vertex_shader_string,
+ //      overlay_point_fragment_shader_string,
+ //      {},
+ //      v.data().meshgl.shader_overlay_points);
+ //  igl::opengl::create_shader_program(
+ //      text_geom_shader,
+ //      text_vert_shader,
+ //      text_frag_shader,
+ //      {},
+ //      v.data().meshgl.shader_text);
 
     v.core().animation_max_fps = 240;
     v.launch_rendering(true);
