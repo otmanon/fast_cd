@@ -38,12 +38,13 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
         uniform int b;
         uniform int s;
         uniform float q[512];  //reduced activations
-        uniform float p[400];     //rig parameters (row-flattened 3x4 matrices for each bone)
+        uniform float p[552];     //rig parameters (row-flattened 3x4 matrices for each bone)
         uniform sampler2D tex;
 
         void main()
         {
           vec3 deformed = position;         //base case
+/*
           if(proj_gpu == 1)                  //then we should deform our mesh
           {
              vec3 uc = vec3(0,0,0);
@@ -82,6 +83,7 @@ void launch_viewer_custom_shader(igl::opengl::glfw::Viewer& v,
             deformed = position + uc;
             }
           }
+*/
        
           position_eye = vec3 (view * vec4 (deformed, 1.0));
           gl_Position = proj * vec4 (position_eye, 1.0);

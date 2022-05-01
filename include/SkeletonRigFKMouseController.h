@@ -2,14 +2,10 @@
 #include "HandleRigController.h"
 
 
-void get_tip_positions_from_parameters(Eigen::VectorXd& p0, Eigen::VectorXd& bl, Eigen::MatrixXd& tips);
-
-void get_joint_positions_from_parameters(Eigen::VectorXd& p0, Eigen::MatrixXd& joints);
-
 	 /*
 	 From absolute world rig parameters p, build your skeleton mesh.
 	 */
- void get_skeleton_mesh(Eigen::VectorXd& p, Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC);
+ void get_skeleton_mesh(float thickness, Eigen::VectorXd& p, Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC);
 class SkeletonRigFKMouseController : public HandleRigMouseController
 {
 
@@ -25,7 +21,7 @@ public:
 	guizmo = the guizmo, declared outside of this class, but this class re-initializes it
 
 	*/
-	 SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI , Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget * guizmo);
+	 SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI , Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget * guizmo, std::string animation_dir="");
 
 
 	 //show the current skeleton visually
@@ -34,9 +30,12 @@ public:
 	 //show your mesh girl!
 	 void render(igl::opengl::glfw::Viewer& viewer);
 
-	
+
+	 virtual void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 	 bool mouse_down(igl::opengl::glfw::Viewer& viewer, int button, int modifier);
 	 void reset();
+
+	 void set_scripted_motion(int step);
 public:
 	Eigen::VectorXi pI; //parent indices
 	Eigen::VectorXd pl; //bone lengths
@@ -64,4 +63,10 @@ public:
 
 	Eigen::MatrixXd renderV,renderC;
 	Eigen::MatrixXi  renderF;
+
+	float thickness;
+
+
+	bool pause;
+	bool loaded_anim;
 };

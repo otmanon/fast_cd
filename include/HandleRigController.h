@@ -34,7 +34,7 @@ public:
 
 	Eigen::MatrixX4f matrix4f_from_parameters(Eigen::VectorXd& p, int i);
 
-
+	virtual void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
 	void reset();
 
@@ -50,4 +50,11 @@ public:
 	int vis_id;
 
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo;
+
+	int current_animation_id;
+	std::string animation_dir;
+	std::vector<std::string> animation_filepaths;
+	std::vector<std::string> animation_filenames;
+	Eigen::MatrixXd anim_P;
+	bool is_global_anim;			//if true, then anim_P are GLOBAL transformation matrices, not relative as CD is used to. Each parameter needs to then be converted to a relative anim. Mixamo transformations are global
 };

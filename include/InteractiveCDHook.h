@@ -24,7 +24,7 @@ public:
     void init_rig(std::string& rig_file, std::string& mesh_name);
 
     void init_rig_controller(Rig* rig);
-
+    void pick_rig_controller(Rig* rig);
     void init_constraint(FastCDSim& cd_sim);
     
     void init_create_rigs(std::string mesh_dir,std::vector<std::string>& create_rig_paths, std::vector<std::string>& create_rig_names);
@@ -153,7 +153,7 @@ public:
         ANIMATION_MODE animation_mode;
 
         //simulation relevant strings, filedirs, names etc
-        std::string mesh_name, animation_name;
+        std::string mesh_name, animation_name, rig_anim_dir;
         std::string cd_mode_dir, cd_clusters_dir, labels_file_path, rig_file_path,
             pinned_mode_dir,
             pinned_clusters_dir;

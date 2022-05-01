@@ -74,8 +74,8 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
     init_rig(as.rig_file_path, as.mesh_file_path);
 
 
-    init_rig_controller(rig);
-
+    //init_rig_controller(rig);
+    pick_rig_controller(rig);
     //finds all rigs found in the mesh/rigs/ directory
     get_all_json_in_subdirs(fs::path(as.mesh_file_path).parent_path().string() + "/rigs/", rig_paths, rig_names);
 
@@ -99,6 +99,7 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
   
     cd_sim = FastCDSim(V0, T, rig->J, as.ym, as.pr, as.dt, as.r, as.l, as.cd_mode_dir, as.cd_clusters_dir, as.do_reduction, as.do_clustering);
 
+    as.proj_gpu = false;
     //get all indices in J and B.
     Eigen::VectorXi ix = ext_ind;
     Eigen::VectorXi iy = ext_ind.array() + V0.rows();
@@ -202,8 +203,10 @@ void InteractiveCDHook::init_app_from_json(std::string& file)
 
     as.pinned_mode_dir = "../data/" + j.value("pinned_modes_dir", fs::path(rig_path).parent_path().string() + "/cache/modes/pinned_default/"); //should get some for cd clusters and for constrained clusters
     as.pinned_clusters_dir = "../data/" + j.value("pinned_clusters_dir", fs::path(rig_path).parent_path().string() + "/cache/clusters/pinned_default/");
+   
+    as.rig_anim_dir = "../data/" + j.value("anim_file_dir",  fs::path(rig_path).parent_path().string() + "/anim/");
     //set this to true always for now
-    as.use_inertia = true;
+   as.use_inertia = true;
 
     as.proj_gpu = 1;
     new_as = as;
@@ -279,22 +282,35 @@ void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepa
 void InteractiveCDHook::init_rig_controller(Rig * rig)
 {
  //   igl::opengl::glfw::Viewer* bogus_viewer_tm;
-    igl::opengl::glfw::Viewer viewer = igl::opengl::glfw::Viewer(); //BOGOS Viewer Temporary
+   // igl::opengl::glfw::Viewer viewer = igl::opengl::glfw::Viewer(); //BOGOS Viewer Temporary
     if (as.rig_controller_name == "HandleRigMouseController")
     {
-        as.rig_controller = new HandleRigMouseController(rig->p0, &viewer, guizmo);
+        as.rig_controller = new HandleRigMouseController(rig->p0, viewer, guizmo);
     }
     else if (as.rig_controller_name == "LeftRightScriptedHandleRigController")
     {
-        as.rig_controller = new LeftRightScriptedHandleRigController(rig->p0, &viewer, guizmo);
+        as.rig_controller = new LeftRightScriptedHandleRigController(rig->p0, viewer, guizmo);
     }
     else if (as.rig_controller_name == "SkeletonRigFKMouseController")
     {
         //make sure the rig is of a Skeleton type
         //only give rest parameters...
-       as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig *)rig)->pI, ((SkeletonRig*)rig)->lengths, &viewer, guizmo);
+       as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig *)rig)->pI, ((SkeletonRig*)rig)->lengths, viewer, guizmo);
     }
     //TODO add one more that is for IK
+}
+
+void InteractiveCDHook::pick_rig_controller(Rig* rig)
+{
+    //picks the default rig controller according to the rig type. 
+    if (dynamic_cast<SkeletonRig*>(rig) != nullptr)   //dealing with a skeleton... make a controller
+    { 
+        as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig*)rig)->pI, ((SkeletonRig*)rig)->lengths, viewer, guizmo, as.rig_anim_dir);
+    }
+    else
+    {
+        as.rig_controller = new HandleRigMouseController(rig->p0, viewer, guizmo);
+    }
 }
 
 void InteractiveCDHook::init_constraint(FastCDSim& cd_sim)

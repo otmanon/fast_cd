@@ -392,6 +392,13 @@ void InteractiveCDHook::set_viewer_defo_textures(igl::opengl::glfw::Viewer& v, E
     v.data_list[fid].show_texture = false;
     v.data_list[fid].is_visible = false;
     v.data_list[cid].is_visible = true;
+
+
+    v.data_list[cid].show_face_labels = false;
+    v.data_list[cid].show_vertex_labels = false;
+
+    v.data_list[fid].show_face_labels = false;
+    v.data_list[fid].show_vertex_labels = false;
     ///////////////////////////////////////////////////////////////////
    // Send texture and vertex attributes to GPU... should make this its own function but maybe it's okay
    ///////////////////////////////////////////////////////////////////
@@ -443,6 +450,13 @@ void InteractiveCDHook::set_viewer_color_textures(igl::opengl::glfw::Viewer& vie
     viewer.data_list[fid].double_sided = false;
     viewer.data_list[fid].set_face_based(true);
 
+
+    viewer.data_list[cid].show_face_labels = false;
+    viewer.data_list[cid].show_vertex_labels = false;
+
+    viewer.data_list[fid].show_face_labels = false;
+    viewer.data_list[fid].show_vertex_labels = false;
+
     Eigen::Matrix<unsigned char, -1, -1> R, G, B, A;
     std::string texture_path = texture_filepath;
     bool read = igl::png::readPNG(texture_path, R, G, B, A);
@@ -482,6 +496,12 @@ void InteractiveCDHook::set_viewer_matcap(igl::opengl::glfw::Viewer& viewer, Eig
     viewer.data_list[cid].point_size = 10;
 
 
+    viewer.data_list[cid].show_face_labels = false;
+    viewer.data_list[cid].show_vertex_labels = false;
+
+    viewer.data_list[fid].show_face_labels = false;
+    viewer.data_list[fid].show_vertex_labels = false;
+
     viewer.data_list[cid].invert_normals = false;
     viewer.data_list[cid].double_sided = true;
     viewer.data_list[cid].set_face_based(true);
@@ -506,7 +526,11 @@ void InteractiveCDHook::set_viewer_clusters(igl::opengl::glfw::Viewer& viewer, E
     viewer.data_list[fid].is_visible = false; //dont wanna see or hear about you when drawing clusters young man!
     viewer.data_list[cid].is_visible = true; //dont wanna see or hear about you when using matcap young man... though tbh why not??
 
+    viewer.data_list[cid].show_face_labels = false;
+    viewer.data_list[cid].show_vertex_labels = false;
 
+    viewer.data_list[fid].show_face_labels = false;
+    viewer.data_list[fid].show_vertex_labels = false;
 
     viewer.data_list[cid ].point_size = 10;
           
@@ -551,12 +575,10 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
         bool changed_proj = ImGui::Checkbox("Project on GPU: ", &use_gpu_proj);
         if (changed_proj)
         {
-            viewer->data().set_vertices(V0);
-            as.proj_gpu = use_gpu_proj ? 1 : 0;
+            as.proj_gpu = use_gpu_proj ? true : false;
                                     //cant run gpu projection at the same time as any fancy libigl coloring
-            if (as.proj_gpu == 1)
+            if (as.proj_gpu)
             {
-                as.proj_gpu = 1; // this is just the 0/1 flag sent to the vertex shader to know what calculations to compute 
                 set_viewer_defo_textures(*viewer, V0, F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.fine_vis_id);
                 
             }
@@ -665,7 +687,8 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
             time_energy.resize(0, 2);
         }
     }
-    rig->draw_gui(menu);
+    as.rig_controller->draw_gui(menu);
+
 }
 
 bool InteractiveCDHook::mouse_down(igl::opengl::glfw::Viewer& viewer, int button, int modifier) {

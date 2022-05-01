@@ -70,7 +70,7 @@ Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eig
 		std::cout << "simulator not configured for calling reduced_step(). Please switch simulator to reduced mode with sim.switch_reduced(true)..." << std::endl;
 		return Eigen::VectorXd::Zero(0);
 	}
-	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+
 	Eigen::VectorXd r, ur, BTMy;
 	//have a valid rig
 
@@ -537,11 +537,14 @@ void FastCDSim::init_full_system_matrices()
 	
 	
 	//Need these for bending energy
-	fmp.KMH = fmp.K.transpose() * fmp.Vol_exp * fmp.H;
-	fmp.KMK = fmp.K.transpose() * fmp.Vol_exp * fmp.K;				//this should be exactly equal to cotan laplacian
+	Eigen::SparseMatrix<double> KT = fmp.K.transpose();
+	Eigen::SparseMatrix<double> KM = KT * fmp.Vol_exp;
+	fmp.KMH = KM * fmp.H;
+	fmp.KMK = KM * fmp.K;				//this should be exactly equal to cotan laplacian//
 	
-	fmp.KMTIH = fmp.K.transpose() * fmp.Vol_exp * fmp.traceMat.transpose() * fmp.traceMat * fmp.H;
-	fmp.KMTIK = fmp.K.transpose() * fmp.Vol_exp * fmp.traceMat.transpose() * fmp.traceMat * fmp.K;
+	Eigen::SparseMatrix<double> KMTT = KM * fmp.traceMat.transpose() * fmp.traceMat;
+	fmp.KMTIH  = KMTT *  fmp.H;
+	fmp.KMTIK =  KMTT * fmp.K;
 
 	//should do clustering matrices here.
 
@@ -558,36 +561,38 @@ void FastCDSim::init_reduction_matrices()
 {
 	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols()); //a few of these need rest space positions
 	//general system matrices
-	rmp.BTA = B.transpose() * fmp.A;
+	Eigen::MatrixXd BT = B.transpose();
+	Eigen::SparseMatrix<double> KT = fmp.K.transpose();
+	rmp.BTA = BT * fmp.A;
 	rmp.BTAB = rmp.BTA * B;
 	rmp.BTAJ = rmp.BTA * J;
 
-	rmp.BTM = B.transpose() * fmp.M;
+	rmp.BTM = BT * fmp.M;
 	rmp.BTMB = rmp.BTM * B;
 	rmp.BTMJ = rmp.BTM * J;
 
 	rmp.BTMX = rmp.BTM * x;
 
 	//need these for bending energy
-	rmp.BKMK = B.transpose() * fmp.KMK;
+	rmp.BKMK = BT * fmp.KMK;
 	rmp.BKMKB = rmp.BKMK * B;
 	rmp.BMB = rmp.BTMB; //same thing 
-	rmp.BKMH = B.transpose() * fmp.KMH;
+	rmp.BKMH = BT * fmp.KMH;
 
 	rmp.GMKB = fmp.GMK * B;
 	rmp.GmKB = fmp.GmK * B;
-	rmp.BKMG = B.transpose() * fmp.KMG;
+	rmp.BKMG = BT* fmp.KMG;
 
-	rmp.BKMGm = B.transpose() * (fmp.K.transpose() * (fmp.Vol_exp * fmp.G_m.transpose()));
+	rmp.BKMGm = BT* (KT) * (fmp.Vol_exp * fmp.G_m.transpose());
 	rmp.BKMKJ = rmp.BKMK * J;
 	rmp.BKMKX = rmp.BKMK * x;
 	//dm.BKMKur = rmp.BKMKJ * p_next + rmp.BKMKNX - rmp.BKMKX;
 	//need these for volume preserving energy
 	//Volume energy matrices How do I make thi
-	Eigen::MatrixXd BKMTIK = B.transpose() * fmp.KMTIK;
-	rmp.BKMTIH = B.transpose() * fmp.KMTIH ;
+	Eigen::MatrixXd BKMTIK = BT * fmp.KMTIK;
+	rmp.BKMTIH = BT * fmp.KMTIH ;
 	rmp.BKMTIKB = BKMTIK * B;
-	rmp.BKMTIG = B.transpose() * fmp.KMTIG;
+	rmp.BKMTIG = BT* fmp.KMTIG;
 	rmp.BKMTIKJ = BKMTIK * J;
 	rmp.BKMTIKX = BKMTIK * x;
 }

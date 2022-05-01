@@ -30,6 +30,29 @@ HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0,  igl::op
 	init_guizmo_viewer(viewer, guizmo);
 }
 
+void HandleRigMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
+{
+
+	// Draw additional windows
+	menu.callback_draw_custom_window = [&]()
+	{
+		//	ImGui::Text("Rig Controller Menu");
+			// Define next window position + size
+		ImGui::SetNextWindowPos(ImVec2(180.f * menu.menu_scaling(), 10), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(200, 160), ImGuiCond_FirstUseEver);
+		ImGui::Begin(
+			"Rig Controller Menu", nullptr,
+			ImGuiWindowFlags_NoSavedSettings
+		);
+
+		// Expose the same variable directly ...
+
+
+		ImGui::End();
+	};
+
+}
+
 
 
 void HandleRigMouseController::reset()

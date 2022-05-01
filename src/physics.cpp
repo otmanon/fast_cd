@@ -30,6 +30,7 @@
 #include <igl/get_seconds.h>
 bool InteractiveCDHook::simulateOneStep()
 {
+
     //Q += dt * Eigen::MatrixXd::Ones(Q.rows(), Q.cols());
     auto start = std::chrono::high_resolution_clock::now();
 

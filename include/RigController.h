@@ -23,6 +23,8 @@ public:
 
 	virtual void init_guizmo_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo){};
 
+
+	virtual void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu) {};
 	/*
 	returns the constrained displacement of all vertices pinned by this rig.
 	*/

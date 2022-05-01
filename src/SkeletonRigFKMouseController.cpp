@@ -1,40 +1,17 @@
 #include "SkeletonRigFKMouseController.h"
 #include "flattened_parameters_to_Affine3D_list.h"
-#include "igl/forward_kinematics.h"
+#include "get_all_json_in_subdirs.h"
+#include "load_animation.h"
+#include <igl/forward_kinematics.h>
 
 #include <igl/colon.h>
 #include <igl/cat.h>
 #include "update_parameters_at_handle.h"
 #include "matrix4f_from_parameters.h"
 #include <igl/project.h>
-void get_tip_positions_from_parameters(Eigen::VectorXd& p0,  Eigen::VectorXd& bl, Eigen::MatrixXd& tips)
-{
-	int num_b = p0.rows() / 12;
-	tips.resize(num_b, 3);
 
-	Eigen::Matrix4d A;
-	Eigen::RowVector4d l;
-	for (int i = 0; i < num_b; i++)
-	{
-		A = matrix4f_from_parameters(p0, i).cast<double>();
-		l = Eigen::RowVector4d(bl(i), 0, 0, 1);
-		tips.row(i) = (A * l.transpose()).topRows(3);
-	}
-}
-
-void get_joint_positions_from_parameters(Eigen::VectorXd& p0, Eigen::MatrixXd& joints)
-{
-	int num_b = p0.rows() / 12;
-	joints.resize(num_b, 3);
-
-	Eigen::Matrix4d A;
-	Eigen::RowVector4d l;
-	for (int i = 0; i < num_b; i++)
-	{
-		A = matrix4f_from_parameters(p0, i).cast<double>();
-		joints.row(i) = A.block(0, 3, 3, 1).transpose();
-	}
-}
+#include "get_tip_positions_from_parameters.h"
+#include "get_joint_positions_from_parameters.h"
 
 /*
 Given rest pose params and relative params, computes absolute params
@@ -73,10 +50,11 @@ void get_relative_parameters(Eigen::VectorXd& p0, Eigen::VectorXd& p, Eigen::Vec
 
 }
 
-SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
+SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir)
 	: pl(pl), pI(pI)
 {
 	handleI = 10;
+	thickness = 1e-2;
 	this->p_rest = p0;
 	int num_b = p_rest.rows() / 12;
 
@@ -85,7 +63,7 @@ SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, 
 	//convert flattened matrix to affine matrix
 	//flattened_parameters_to_Affine3d_list(this->p0, A0);
 
-	//Get edge connectivity 
+	//Get edge connectivity  YIKES can't believe I wrote this...How did this work???
 	Eigen::VectorXi I1, I2;
 	igl::colon(0, num_b - 1, I1);
 	I2 = I1.array() + num_b;
@@ -96,6 +74,12 @@ SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, 
 	reset();
 
 	init_guizmo_viewer(viewer, guizmo);
+
+	current_animation_id = -1;
+	this->animation_dir = animation_dir;
+	get_all_json_in_dir(animation_dir, animation_filepaths, animation_filenames);
+
+	
 }
 
 
@@ -103,10 +87,13 @@ SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, 
 void SkeletonRigFKMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
 	this->guizmo = guizmo;
-	vis_id = viewer->data_list.size();
-	viewer->append_mesh();
+	vis_id = 2; // all skeleton rigs by default go to 2 here
+	while (viewer->data_list.size() <= 2)
+		viewer->append_mesh();
 	viewer->data_list[vis_id].clear();
 	
+	//bone radius
+
 
 	viewer->data_list[vis_id].point_size = 10;
 	viewer->data_list[vis_id].line_width = 10;
@@ -156,7 +143,7 @@ void SkeletonRigFKMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer*
 		C.topRows(joints.rows()) = joints;
 		C.bottomRows(tips.rows()) = tips;
 
-		get_skeleton_mesh(p_glob, this->pl, renderV, renderF, renderC);
+		get_skeleton_mesh(thickness, p_glob, this->pl, renderV, renderF, renderC);
 		//Just nee
 	//	get_tip_positions_from_parameters(p_rel)
 		//V.row(handleI) = A.block(0, 3, 3, 1).transpose().cast<double>();
@@ -165,6 +152,59 @@ void SkeletonRigFKMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer*
 		//V.row(handleI) = Eigen::RowVector3d(p(c*0 + handleI * 4), p(c*1 + handleI * 4), p(c * 2 + handleI * 4));
 	};
 }
+
+
+
+
+void SkeletonRigFKMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
+{
+	// Draw additional windows
+	menu.callback_draw_custom_window = [&]()
+	{
+	//	ImGui::Text("Rig Controller Menu");
+		// Define next window position + size
+		ImGui::SetNextWindowPos(ImVec2(180.f * menu.menu_scaling(), 10), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400,200), ImGuiCond_FirstUseEver);
+		ImGui::Begin(
+			"Rig Controller Menu", nullptr,
+			ImGuiWindowFlags_NoSavedSettings
+		);
+
+		ImGui::SliderFloat("Bone Thickness", &thickness, 1e-3, 10, "%3e", ImGuiSliderFlags_Logarithmic);
+
+
+		//List all the animations in our directory
+		if (ImGui::BeginListBox("Animations"))
+		{
+			for (int n = 0; n < animation_filenames.size(); n++)
+			{
+				const bool is_selected = (current_animation_id == n);
+				if (ImGui::Selectable(animation_filenames[n].c_str(), is_selected))
+				{
+					//start animation!!!
+					current_animation_id = n;
+					
+					load_animation_and_fit(animation_filepaths[n], p_rest, this->pI,  anim_P, is_global_anim);
+					loaded_anim = true;
+					
+				}
+					//new_animation = n;
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndListBox();
+		}
+		ImGui::End();
+
+		if (ImGui::Button("Reload data_dir"))
+			pause != pause;
+
+	};
+
+}
+
 
 //show your mesh girl!
 void SkeletonRigFKMouseController::render(igl::opengl::glfw::Viewer& viewer)
@@ -184,9 +224,9 @@ void SkeletonRigFKMouseController::render(igl::opengl::glfw::Viewer& viewer)
 /*
 From absolute world rig parameters p, build your skeleton mesh.
 */
-void get_skeleton_mesh(Eigen::VectorXd& p, Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC)
+void get_skeleton_mesh(float thickness, Eigen::VectorXd& p, Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC)
 {
-	double thickness = 1;
+
 
 	Eigen::MatrixXd BV(5, 3);
 	BV <<
@@ -267,7 +307,7 @@ void SkeletonRigFKMouseController::reset()
 	}
 	Eigen::VectorXd p_glob;
 	get_absolute_parameters(p_rest, p_rel, p_glob);
-	get_skeleton_mesh(p_glob, this->pl, renderV, renderF, renderC);
+	get_skeleton_mesh(thickness, p_glob, this->pl, renderV, renderF, renderC);
 
 	//get our local rotations for each bone...
 	Eigen::Quaterniond q = Eigen::Quaterniond::Identity();
@@ -276,6 +316,18 @@ void SkeletonRigFKMouseController::reset()
 }
 
 
+
+void SkeletonRigFKMouseController::set_scripted_motion(int step) 
+{
+	if (loaded_anim && !pause)
+	{
+		Eigen::VectorXd p_tmp = anim_P.col(step);
+		get_relative_parameters(p_rest, p_tmp, p_rel);
+
+	}
+
+
+};
 
 bool SkeletonRigFKMouseController::mouse_down(igl::opengl::glfw::Viewer& viewer, int button, int modifier)
 {
