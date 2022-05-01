@@ -12,6 +12,7 @@
 
 #include "get_tip_positions_from_parameters.h"
 #include "get_joint_positions_from_parameters.h"
+#include "get_relative_parameters.h"
 
 /*
 Given rest pose params and relative params, computes absolute params
@@ -31,24 +32,7 @@ void get_absolute_parameters(Eigen::VectorXd& p0, Eigen::VectorXd& p_rel, Eigen:
 
 }
 
-/*
-From rest pose parameters p0, and deformed pose parameters p, get p_rel
-*/
-void get_relative_parameters(Eigen::VectorXd& p0, Eigen::VectorXd& p, Eigen::VectorXd& p_rel)
-{
-	int num_b = p0.rows() / 12;
-	Eigen::Matrix4f A0, A_rel, A;
-	p_rel.resizeLike(p0);
-	for (int i = 0; i < num_b; i++)
-	{
-		A0 = matrix4f_from_parameters(p0, i);
-		A = matrix4f_from_parameters(p, i);
-		A_rel =  A* A0.inverse();
-		update_parameters_at_handle(p_rel, A, i);
-	}
 
-
-}
 
 SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir)
 	: pl(pl), pI(pI)
@@ -78,6 +62,7 @@ SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, 
 	current_animation_id = -1;
 	this->animation_dir = animation_dir;
 	get_all_json_in_dir(animation_dir, animation_filepaths, animation_filenames);
+	anim_step = 0;
 
 	
 }
@@ -173,6 +158,8 @@ void SkeletonRigFKMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu&
 		ImGui::SliderFloat("Bone Thickness", &thickness, 1e-3, 10, "%3e", ImGuiSliderFlags_Logarithmic);
 
 
+		if (ImGui::CollapsingHeader("Animation"))
+		{
 		//List all the animations in our directory
 		if (ImGui::BeginListBox("Animations"))
 		{
@@ -183,9 +170,10 @@ void SkeletonRigFKMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu&
 				{
 					//start animation!!!
 					current_animation_id = n;
-					
+					anim_step = 0;
 					load_animation_and_fit(animation_filepaths[n], p_rest, this->pI,  anim_P, is_global_anim);
 					loaded_anim = true;
+					guizmo->visible = false;
 					
 				}
 					//new_animation = n;
@@ -196,11 +184,18 @@ void SkeletonRigFKMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu&
 			}
 			ImGui::EndListBox();
 		}
+
+		if (ImGui::Button("Pause/Play Anim"))
+		{
+			pause = !pause;
+		}
+
+		if (ImGui::Button("Show/Hide Guizmo"))
+		{
+			guizmo->visible = !guizmo->visible;
+		}
+		}
 		ImGui::End();
-
-		if (ImGui::Button("Reload data_dir"))
-			pause != pause;
-
 	};
 
 }
@@ -321,9 +316,19 @@ void SkeletonRigFKMouseController::set_scripted_motion(int step)
 {
 	if (loaded_anim && !pause)
 	{
-		Eigen::VectorXd p_tmp = anim_P.col(step);
+		
+		Eigen::VectorXd p_tmp = anim_P.col(anim_step);
 		get_relative_parameters(p_rest, p_tmp, p_rel);
+		get_skeleton_mesh(thickness, p_tmp, this->pl, renderV, renderF, renderC);
 
+		Eigen::MatrixXd joints, tips;
+		get_tip_positions_from_parameters(p_tmp, this->pl, tips);
+		get_joint_positions_from_parameters(p_tmp, joints);
+		C.resize(joints.rows() + tips.rows(), 3);
+		C.topRows(joints.rows()) = joints;
+		C.bottomRows(tips.rows()) = tips;
+		anim_step += 1;
+		anim_step = anim_step % anim_P.cols();
 	}
 
 

@@ -69,4 +69,6 @@ public:
 
 	bool pause;
 	bool loaded_anim;
+	int anim_step;
+
 };
