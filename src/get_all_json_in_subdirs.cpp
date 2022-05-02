@@ -56,3 +56,28 @@ void get_all_json_in_dir(const std::string& query_directory, std::vector<std::st
             
     }
 }
+
+
+
+void get_all_json_or_dmat_in_dir(const std::string& query_directory, std::vector<std::string>& valid_directories, std::vector<std::string>& json_names)
+{
+    namespace fs = std::filesystem;
+
+
+    json_names.clear();
+    valid_directories.clear();
+    if (!fs::exists(fs::path(query_directory)))
+    {
+        fs::create_directories(fs::path(query_directory));
+    }
+    for (const auto& entry : fs::directory_iterator(query_directory))
+    {
+        const std::string ext = entry.path().extension().string();
+        if (ext == ".json" || ext == ".dmat")
+        {
+            json_names.push_back(entry.path().stem().string());
+            valid_directories.push_back(entry.path().string());
+        }
+
+    }
+}

@@ -2,10 +2,17 @@
 #include "igl/project.h"
 #include "compute_handle_positions_from_rig_parameters.h"
 #include "update_parameters_at_handle.h"
+#include "get_all_json_in_subdirs.h"
+#include "load_animation.h"
+#include "save_rig_recording.h"
+#include "get_relative_parameters.h"
 #include <igl/slice.h>
 #include <igl/cat.h>
+#include <string>
+#include <iostream>
+#include <filesystem>
 
-HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0,  igl::opengl::glfw::Viewer* viewer,igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
+HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0,  igl::opengl::glfw::Viewer* viewer,igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir)
 {
 	// initialize guizmo to be at first rig parameters
 	handleI = 0;
@@ -28,24 +35,89 @@ HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0,  igl::op
 
 	this->guizmo = guizmo;
 	init_guizmo_viewer(viewer, guizmo);
+
+
+	recording = false;
+	current_animation_id = -1;
+	this->animation_dir = animation_dir;
+	get_all_json_or_dmat_in_dir(animation_dir, animation_filepaths, animation_filenames);
+	anim_step = 0;
+	record_P.resize(p0.rows(), 0);
 }
 
 void HandleRigMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
 {
 
+	namespace fs = std::filesystem;
 	// Draw additional windows
 	menu.callback_draw_custom_window = [&]()
 	{
 		//	ImGui::Text("Rig Controller Menu");
 			// Define next window position + size
 		ImGui::SetNextWindowPos(ImVec2(180.f * menu.menu_scaling(), 10), ImGuiCond_FirstUseEver);
-		ImGui::SetNextWindowSize(ImVec2(200, 160), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowSize(ImVec2(400, 120), ImGuiCond_FirstUseEver);
 		ImGui::Begin(
 			"Rig Controller Menu", nullptr,
 			ImGuiWindowFlags_NoSavedSettings
 		);
 
 		// Expose the same variable directly ...
+
+		if(ImGui::Button("Record On/Off"))
+		{
+			recording = !recording;
+		}
+		if (recording) ImGui::Text("Recording!");
+		ImGui::Text("Save as");
+		std::string hi = "hi";
+		//char str0[128] = custom_anim_name.c_str();
+		ImGui::InputText("", custom_anim_name, 128);
+		if (ImGui::Button("Save"))
+		{
+			std::string anim_filepath(custom_anim_name);
+			anim_filepath = fs::path(animation_dir).string() + "/" + custom_anim_name + ".dmat";
+			save_rig_recording(anim_filepath, record_P);
+		}
+
+
+		if (ImGui::CollapsingHeader("Load Animation"))
+		{
+			//List all the animations in our directory
+			if (ImGui::BeginListBox("Animations"))
+			{
+				for (int n = 0; n < animation_filenames.size(); n++)
+				{
+					const bool is_selected = (current_animation_id == n);
+					if (ImGui::Selectable(animation_filenames[n].c_str(), is_selected))
+					{
+						//start animation!!!
+						current_animation_id = n;
+						anim_step = 0;
+						bool is_global = false;
+						load_animation(animation_filepaths[n], anim_P, is_global);
+						loaded_anim = true;
+						guizmo->visible = false;
+
+					}
+					//new_animation = n;
+
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndListBox();
+			}
+
+			if (ImGui::Button("Pause/Play Anim"))
+			{
+				pause = !pause;
+			}
+
+			if (ImGui::Button("Show/Hide Guizmo"))
+			{
+				guizmo->visible = !guizmo->visible;
+			}
+		}
 
 
 		ImGui::End();
@@ -195,6 +267,30 @@ bool HandleRigMouseController::key_callback(igl::opengl::glfw::Viewer& viewer, u
 	return false;
 }
 
+
+void HandleRigMouseController::set_scripted_motion(int step)
+{
+
+	if (loaded_anim && !pause)
+	{
+
+		Eigen::VectorXd p_tmp = anim_P.col(anim_step);
+		get_relative_parameters(p_rest, p_tmp, p_rel);
+		compute_handle_positions_from_parameters(p_tmp, V);
+
+		anim_step += 1;
+		anim_step = anim_step % anim_P.cols();
+	}
+	else
+	{
+
+	if (recording)
+	{
+		record_P.conservativeResize(p_rel.rows(), record_P.cols() + 1);
+		record_P.col(record_P.cols() - 1) = p_rel;
+ 	}
+	}
+}
 
 
 

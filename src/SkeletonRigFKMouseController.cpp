@@ -59,6 +59,9 @@ SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, 
 
 	init_guizmo_viewer(viewer, guizmo);
 
+
+	std::string custom_anim_name = "custom_anim";
+	recording= false;
 	current_animation_id = -1;
 	this->animation_dir = animation_dir;
 	get_all_json_in_dir(animation_dir, animation_filepaths, animation_filenames);
@@ -160,40 +163,51 @@ void SkeletonRigFKMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu&
 
 		if (ImGui::CollapsingHeader("Animation"))
 		{
-		//List all the animations in our directory
-		if (ImGui::BeginListBox("Animations"))
-		{
-			for (int n = 0; n < animation_filenames.size(); n++)
+			//List all the animations in our directory
+			if (ImGui::BeginListBox("Animations"))
 			{
-				const bool is_selected = (current_animation_id == n);
-				if (ImGui::Selectable(animation_filenames[n].c_str(), is_selected))
+				for (int n = 0; n < animation_filenames.size(); n++)
 				{
-					//start animation!!!
-					current_animation_id = n;
-					anim_step = 0;
-					load_animation_and_fit(animation_filepaths[n], p_rest, this->pI,  anim_P, is_global_anim);
-					loaded_anim = true;
-					guizmo->visible = false;
+					const bool is_selected = (current_animation_id == n);
+					if (ImGui::Selectable(animation_filenames[n].c_str(), is_selected))
+					{
+						//start animation!!!
+						current_animation_id = n;
+						anim_step = 0;
+						load_animation_and_fit(animation_filepaths[n], p_rest, this->pI,  anim_P, is_global_anim);
+						loaded_anim = true;
+						guizmo->visible = false;
 					
+					}
+						//new_animation = n;
+
+					// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
 				}
-					//new_animation = n;
-
-				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-				if (is_selected)
-					ImGui::SetItemDefaultFocus();
+				ImGui::EndListBox();
 			}
-			ImGui::EndListBox();
+
+			if (ImGui::Button("Pause/Play Anim"))
+			{
+				pause = !pause;
+			}
+
+			if (ImGui::Button("Show/Hide Guizmo"))
+			{
+				guizmo->visible = !guizmo->visible;
+			}
 		}
 
-		if (ImGui::Button("Pause/Play Anim"))
+		if (ImGui::CollapsingHeader("Record Rig"))
 		{
-			pause = !pause;
-		}
+			if (ImGui::Button("Pause/Play Anim"))
+			{
+				pause = !pause;
+			}
 
-		if (ImGui::Button("Show/Hide Guizmo"))
-		{
-			guizmo->visible = !guizmo->visible;
-		}
+
+
 		}
 		ImGui::End();
 	};

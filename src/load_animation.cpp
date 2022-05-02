@@ -11,6 +11,8 @@
 #include <stdio.h>
 
 #include "get_bone_length_scales.h"
+
+#include <igl/readDMAT.h>
 #include <filesystem>
 #include <Eigen/Geometry>
 #include <igl/PI.h>
@@ -22,7 +24,7 @@ using namespace nlohmann;
 
 void load_animation(std::string anim_filepath, Eigen::MatrixXd& anim_P, bool is_global)
 {
-
+	igl::readDMAT(anim_filepath, anim_P);
 }
 
 

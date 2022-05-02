@@ -13,7 +13,7 @@ class HandleRigMouseController : public RigController
 public:
 	HandleRigMouseController() {};
 
-	HandleRigMouseController(Eigen::VectorXd& p0,  igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
+	HandleRigMouseController(Eigen::VectorXd& p0,  igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir="");
 	/*
 	returns the constrained displacement of all vertices pinned by this rig.
 	*/
@@ -39,6 +39,7 @@ public:
 	void reset();
 
 
+	virtual void set_scripted_motion(int step);
 	
 
 
@@ -57,4 +58,16 @@ public:
 	std::vector<std::string> animation_filenames;
 	Eigen::MatrixXd anim_P;
 	bool is_global_anim;			//if true, then anim_P are GLOBAL transformation matrices, not relative as CD is used to. Each parameter needs to then be converted to a relative anim. Mixamo transformations are global
+
+
+	bool pause;
+	bool loaded_anim;
+	int anim_step;
+
+	char custom_anim_name[128] = "custom_anim";
+	bool recording;
+
+	Eigen::MatrixXd record_P;
+
+
 };

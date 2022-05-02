@@ -8,3 +8,7 @@ void get_all_json_in_subdirs(const std::string& query_directory, std::vector<std
 
 
 void get_all_json_in_dir(const std::string& query_directory, std::vector<std::string>& valid_directories, std::vector<std::string>& json_names);
+
+
+
+void get_all_json_or_dmat_in_dir(const std::string& query_directory, std::vector<std::string>& valid_directories, std::vector<std::string>& json_names);

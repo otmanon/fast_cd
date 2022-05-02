@@ -309,7 +309,7 @@ void InteractiveCDHook::pick_rig_controller(Rig* rig)
     }
     else
     {
-        as.rig_controller = new HandleRigMouseController(rig->p0, viewer, guizmo);
+        as.rig_controller = new HandleRigMouseController(rig->p0, viewer, guizmo, as.rig_anim_dir);
     }
 }
 
