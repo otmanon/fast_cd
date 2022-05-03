@@ -30,7 +30,6 @@
 #include <igl/get_seconds.h>
 bool InteractiveCDHook::simulateOneStep()
 {
-
     //Q += dt * Eigen::MatrixXd::Ones(Q.rows(), Q.cols());
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -74,8 +73,6 @@ bool InteractiveCDHook::simulateOneStep()
     if (as.animation_mode == ANIMATION_MODE::EIGENMODES_ANIMATION)
     {
         sim_step_modal_animation();
-
-        
     }
 
     auto end = std::chrono::high_resolution_clock::now();

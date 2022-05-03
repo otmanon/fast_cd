@@ -6,6 +6,7 @@
 #include "fast_complementary_dynamics_sim.h"
 #include "fast_sim.h"
 #include "RigController.h"
+#include "FastCDViewer.h"
 //#include "ConstraintController.h" //TODO make this its own rig tbh that way we can use model reduction and have all modes be orthogonal to the constraints
 enum ANIMATION_MODE{ INTERACTIVE_ANIMATION, EIGENMODES_ANIMATION};
 enum CONSTRAINT_TYPE{COMPLEMENTARY_DYNAMICS, PINNING};
@@ -244,6 +245,8 @@ public:
 //   bool new_do_reduction;
     //viewer
     igl::opengl::glfw::Viewer* viewer;
+
+    FastCDViewer fcd_viewer;
     igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo;
     FastCDSim cd_sim;
     FastSim sim;

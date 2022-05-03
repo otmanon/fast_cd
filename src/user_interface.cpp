@@ -290,6 +290,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
 {
   
     this->viewer = &v;
+    fcd_viewer = FastCDViewer(&v);
 
     if (viewer->data_list.size() == 1)
         this->viewer->append_mesh();
@@ -303,16 +304,19 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
         if (as.constraint_type == PINNING)
         {
             Eigen::MatrixXd Z;
-            set_viewer_defo_textures(*viewer, this->V0, this->F, sim.B, Z, v_state.coarse_vis_id, v_state.coarse_vis_id);
+            fcd_viewer.configure_deformation_texture(this->V0, this->F, sim.B, Z);
+           // set_viewer_defo_textures(*viewer, this->V0, this->F, sim.B, Z, v_state.coarse_vis_id, v_state.coarse_vis_id);
         }
         else
-            set_viewer_defo_textures(*viewer, this->V0, this->F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.coarse_vis_id);
+            fcd_viewer.configure_deformation_texture(this->V0, this->F, sim.B, rig->W);
+            //set_viewer_defo_textures(*viewer, this->V0, this->F, cd_sim.B, rig->W, v_state.coarse_vis_id, v_state.coarse_vis_id);
     }
     else
     {
         if (v_state.vis_mode == VIS_MODE::MATCAP)
         {
-            set_viewer_matcap(*viewer, V_ext, F_ext, "../data" + as.matcap_file, v_state.coarse_vis_id, v_state.fine_vis_id);
+         //   set_viewer_matcap(*viewer, V_ext, F_ext, "../data" + as.matcap_file, v_state.coarse_vis_id, v_state.fine_vis_id);
+            fcd_viewer.configure_matcap("../data/" + as.matcap_file, V_ext, F_ext);
         }
         else if (v_state.vis_mode == VIS_MODE::CLUSTERS)
         {
@@ -320,12 +324,15 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
             labels = as.constraint_type == PINNING ? sim.labels : cd_sim.labels;
 
             igl::slice(labels, FiT, labels_faces);
-            set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
+          //  set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
+            fcd_viewer.configure_clusters(V_ext, F_ext, labels_faces);
         }
         else if (v_state.vis_mode == VIS_MODE::TEXTURES)
         {
-            set_viewer_color_textures(*viewer, as.texture_png_path, V0_ext, F_ext, V_high_res,
-                F_high_res, UV_high_res, FUV_high_res, v_state.coarse_vis_id, v_state.fine_vis_id);
+            fcd_viewer.configure_color_texture(as.texture_png_path, V0_ext, F_ext, V_high_res,
+                F_high_res, UV_high_res, FUV_high_res);
+           // set_viewer_color_textures(*viewer, as.texture_png_path, V0_ext, F_ext, V_high_res,
+           //     F_high_res, UV_high_res, FUV_high_res, v_state.coarse_vis_id, v_state.fine_vis_id);
         }
     }
 }

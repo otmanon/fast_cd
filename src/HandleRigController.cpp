@@ -6,6 +6,7 @@
 #include "load_animation.h"
 #include "save_rig_recording.h"
 #include "get_relative_parameters.h"
+
 #include <igl/slice.h>
 #include <igl/cat.h>
 #include <string>
