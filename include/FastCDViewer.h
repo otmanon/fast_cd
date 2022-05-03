@@ -9,11 +9,73 @@ public:
 
 	FastCDViewer(igl::opengl::glfw::Viewer* viewer);
 
-;
+	//attach guizmo too
+	FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuiWidget* guizmo);
 
 	void launch();
 
 	void set_pre_draw_callback(std::function<bool()>& callback);
+
+	void set_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, int id)
+	{
+		viewer->data_list[id].set_mesh(V, F);
+	}
+
+	void set_vertices(Eigen::MatrixXd& V, int id)
+	{
+		viewer->data_list[id].set_vertices(V);
+	}
+
+	void clear(int id)
+	{
+		viewer->data_list[id].clear();
+	}
+
+	void set_color(Eigen::RowVector3d & d, int id)
+	{
+		viewer->data_list[id].set_colors(d);
+	}
+	void set_color(Eigen::MatrixXd& d, int id)
+	{
+		viewer->data_list[id].set_colors(d);
+	}
+
+	void invert_normals(int id)
+	{
+		viewer->data_list[id].invert_normals = !viewer->data_list[id].invert_normals;
+	}
+
+	void set_points(Eigen::MatrixXd& points, int id)
+	{
+		Eigen::RowVector3d z(0, 0, 0);
+		viewer->data_list[id].set_points(points, z);
+	}
+
+	void set_points(Eigen::MatrixXd& points, Eigen::RowVector3d& z, int id)
+	{
+		viewer->data_list[id].set_points(points, z);
+	}
+
+	void set_points(Eigen::MatrixXd& points, Eigen::MatrixXd& color, int id)
+	{
+		viewer->data_list[id].set_points(points, color);
+	}
+
+	void set_lines(Eigen::MatrixXd& V, Eigen::MatrixXi& E, Eigen::MatrixXd& color, int id)
+	{
+		viewer->data_list[id].set_edges(V, E, color);
+	}
+
+	void set_lines(Eigen::MatrixXd& V, Eigen::MatrixXi& E, Eigen::RowVector3d& z, int id)
+	{
+		viewer->data_list[id].set_edges(V, E, z);
+	}
+
+	void set_lines(Eigen::MatrixXd& V, Eigen::MatrixXi& E, int id)
+	{
+		Eigen::RowVector3d z(0, 0, 0);
+		viewer->data_list[id].set_edges(V, E, z);
+	}
 
 	void configure_clusters( Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters);
 
@@ -43,6 +105,7 @@ public:
 
 public:
 	igl::opengl::glfw::Viewer* viewer;
+	igl::opengl::glfw::imgui::ImGuiWidget* guizmo; //add guizmo
 
 	std::function<bool()> callback;
 	int fid, cid; //indices in the viewer.data_list array corresponding to the fine mesh, and the coarse mesh
