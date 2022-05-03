@@ -103,7 +103,7 @@ void InteractiveCDHook::full_sim_step_pinning_control()
     if (as.record_metrics)
     {
         double energy, grad_norm, start, time;
-        Eigen::VectorXd u_null = sim.full_step(u_curr, u_prev, bc, energy, grad_norm);  //get the energy
+        Eigen::VectorXd u_null = sim.full_step_eval_metrics(u_curr, u_prev, bc, energy, grad_norm);  //get the energy
         start = igl::get_seconds(); //call this again to get timing, method above takes more time to record.
         u_next = sim.full_step(u_curr, u_prev, bc);
         time = igl::get_seconds() - start;
@@ -142,7 +142,7 @@ void InteractiveCDHook::reduced_sim_step_pinning_control()
     if (as.record_metrics)
     {
         double energy, grad_norm, start, time;
-        Eigen::VectorXd z_null = sim.reduced_step(z_curr, z_prev, bc, energy, grad_norm);  //get the energy
+        Eigen::VectorXd z_null = sim.reduced_step_eval_metrics(z_curr, z_prev, bc, energy, grad_norm);  //get the energy
         start = igl::get_seconds(); //call this again to get timing, method above takes more time to record.
         z_next = sim.reduced_step(z_curr, z_prev, bc);
         Eigen::VectorXd u_null = pinned_B_ext * z_next;   //gotta include this step so that it's fair

@@ -46,7 +46,7 @@ void compute_clusters_matlab(const Eigen::MatrixXi& T, const Eigen::MatrixXd& B,
 }
 
 
-void compute_clusters_matlab_initguess(const Eigen::MatrixXi& T, const Eigen::MatrixXd& B, const Eigen::VectorXd& L, const int num_clusters, const int num_feature_modes, const Eigen::MatrixXd& C0, Eigen::VectorXi& labels, Eigen::MatrixXd& C)
+void compute_clusters_matlab_initguess(const Eigen::MatrixXi& T, const Eigen::MatrixXd& B, const Eigen::MatrixXd& L, const int num_clusters, const int num_feature_modes, const Eigen::MatrixXd& C0, Eigen::VectorXi& labels, Eigen::MatrixXd& C)
 {
 
     int c, k;

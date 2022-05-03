@@ -116,7 +116,7 @@ Eigen::VectorXd FastSim::full_step(const Eigen::VectorXd& u_curr, const Eigen::V
 	return u_next;
 }
 
-Eigen::VectorXd FastSim::reduced_step(const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, double& e, double& grad_e)
+Eigen::VectorXd FastSim::reduced_step_eval_metrics(const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, double& e, double& grad_e)
 {
 	Eigen::VectorXd z_next = reduced_step(z_curr, z_prev, bc);
 	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
@@ -128,7 +128,7 @@ Eigen::VectorXd FastSim::reduced_step(const Eigen::VectorXd& z_curr, const Eigen
 	return z_next;
 }
 
-Eigen::VectorXd FastSim::full_step(const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, const Eigen::VectorXd& bc, double& e, double& grad_e)
+Eigen::VectorXd FastSim::full_step_eval_metrics(const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, const Eigen::VectorXd& bc, double& e, double& grad_e)
 {
 	Eigen::VectorXd u_next = full_step(u_curr, u_prev, bc);
 	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
