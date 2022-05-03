@@ -6,6 +6,8 @@
 #include "kmeans.h"
 #include "compute_modes_matlab.h"
 #include "compute_modes_spectra.h"
+#include "compute_clusters_igl.h"
+#include "compute_clusters_matlab.h"
 #include "arap_hessian.h"
 
 #include <igl/polar_svd3x3.h>
@@ -209,17 +211,13 @@ void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 		if (! (l == T.rows()))
 		{
 			printf("Could not find cached clusters at %s,  clustering... \n", labels_file_path.c_str());
-			num_feature_modes = num_feature_modes < B_full.cols() ? num_feature_modes : B_full.cols();
-			Eigen::RowVectorXd L = L_full.topRows(num_feature_modes).transpose();
-			Eigen::MatrixXd B = B_full.block(0, 0, 3*X.rows(), num_feature_modes);
-			Eigen::MatrixXd B_verts = Eigen::Map<Eigen::MatrixXd>(B.data(), B.rows() / 3, B.cols() * 3);
-			//optionally normalize by J
 			double t_start = igl::get_seconds();
-			B.array().rowwise() /= L.row(0).array();
-			B.array().rowwise() /= L.row(0).array();
-			Eigen::MatrixXd B_faces, C;
-			igl::average_onto_faces(T, B_verts, B_faces);
-			igl::kmeans(B_faces, l, C, labels);
+			Eigen::MatrixXd C;
+			#ifdef FAST_CD_USE_MATLAB
+						compute_clusters_matlab(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+			#else
+						compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+			#endif
 
 			printf("Done clustering! took %g seconds \n", igl::get_seconds() - t_start);
 		

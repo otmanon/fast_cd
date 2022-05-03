@@ -12,7 +12,9 @@
 #include <igl/unique.h>
 
 #include <iostream>
-#include "kmeans.h"
+
+
+
 #include "arap_hessian.h"
 #include "trace_matrix_operator.h"
 #include "covariance_scatter_matrix.h"
@@ -23,8 +25,10 @@
 #include "complementary_equality_constraint.h"
 #include "compute_modes_matlab.h"
 #include "compute_modes_spectra.h"
+#include "compute_clusters_igl.h"
+#include "compute_clusters_matlab.h"
 #include "deformation_gradient_from_u_prefactorized_matrices.h"
-#include "igl/sum.h"
+#include <igl/sum.h>
 #include "igl/count.h"
 #include <igl/colon.h>
 #include <igl/volume.h>
@@ -136,8 +140,6 @@ Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen:
 
 	return uc_next;
 }
-
-
 
 void FastCDSim::update_compelementary_constraint(const Eigen::SparseMatrix<double>& J, std::string new_modes_dir, std::string new_clusters_dir)
 {
@@ -268,31 +270,7 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		Eigen::VectorXd elastic_grad = stiffness * bending_grad +incompressibility * volume_grad;
 		Eigen::VectorXd g = elastic_grad + inertia_grad;
 		return g;
-		/*
-		const int l = do_clustering ? num_clusters : T.rows();
 
-		Eigen::VectorXd FV_flat = fmp.GMH + rmp.GMKB * z + dm.GMKur; //Perfect
-		Eigen::MatrixXd F_stack = Eigen::Map<Eigen::MatrixXd>(FV_flat.data(), l * X.cols(), X.cols());
-		Eigen::MatrixXd R = Eigen::MatrixXd::Zero(F_stack.rows(), F_stack.cols());
-		Eigen::MatrixXd R_cov = R;
-
-		Eigen::Matrix3d rot, F, cov, rot_cov;
-		for (int i = 0; i < l; i++)
-		{
-			F = F_stack.block(3 * i, 0, 3, 3).transpose();
-			igl::polar_svd3x3(F, rot);
-			R.block(3 * i, 0, 3, 3) = rot.transpose();
-		}
-		const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
-
-		Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (rmp.BMB * z - dm.BMy_tilde);
-		Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB *z + dm.BKMKur  - rmp.BKMG * R_flat;//sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
-																							//by the way K^T M K is the same as the cotan laplacian!!
-		Eigen::VectorXd volume_grad = rmp.BKMTIH+ rmp.BKMTIKB * z + dm.BKMTIKur - rmp.BKMTIG * R_flat;
-		Eigen::VectorXd elastic_grad = stiffness * bending_grad + 0*incompressibility * volume_grad;
-		Eigen::VectorXd g = elastic_grad + inertia_grad;
-
-		return g;*/
 	};
 }
 
@@ -399,15 +377,12 @@ void FastCDSim::make_positional_constraints(Eigen::VectorXi& bi, Eigen::MatrixXd
 	precompute_solvers();
 }
 
-
 void FastCDSim::update_positional_constraints(Eigen::MatrixXd& bc)
 {
 	assert(constraint_prefactorization.S.rows() > 0 && "Cannot update physical constraints if we did not make them first. Please provide list of constrained indices \
 								and call FastCDSim.make_positional_constraints(indeces, constraints)");
 	constraint_prefactorization.Pbc = Eigen::Map<Eigen::VectorXd>(bc.data(), bc.rows() * bc.cols());
 }
-
-
 
 void FastCDSim::init_modes(int num_modes)
 {
@@ -465,6 +440,7 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 
 	const int l = do_clustering ? num_clusters : T.rows();
 	std::string labels_file_path = clusters_file_dir + "labels_" + std::to_string(l) + "_features_" + std::to_string(num_feature_modes) + ".DMAT";
+	std::string centroids_file_path = clusters_file_dir + "centroids_" + std::to_string(l) + "_features_" + std::to_string(num_feature_modes) + ".DMAT";
 
 	bool found_clusters = igl::readDMAT(labels_file_path, labels);
 	if (!found_clusters)
@@ -472,18 +448,14 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 		if (!(l == T.rows()))
 		{
 			printf("Could not find cached clusters at %s,  clustering...\n", labels_file_path.c_str());
-			//10 modes is usually enough for a fine clustering
-			num_feature_modes = num_feature_modes < B_full.cols() ? num_feature_modes : B_full.cols();
-			Eigen::RowVectorXd L = L_full.topRows(num_feature_modes).transpose();
-			Eigen::MatrixXd B = B_full.block(0, 0, 3 * X.rows(), num_feature_modes);
-			Eigen::MatrixXd B_verts = Eigen::Map<Eigen::MatrixXd>(B.data(), B.rows() / 3, B.cols() * 3);
-			//optionally normalize by S
 			double t_start = igl::get_seconds();
-			B.array().rowwise() /= L.row(0).array();
-			B.array().rowwise() /= L.row(0).array();
-			Eigen::MatrixXd B_faces, C;
-			igl::average_onto_faces(T, B_verts, B_faces);
-			igl::kmeans(B_faces, num_clusters, C, labels);
+
+			Eigen::MatrixXd C;
+		#ifdef FAST_CD_USE_MATLAB
+			compute_clusters_matlab(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+		#else
+			compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+		#endif
 			printf("Done clustering! took %g seconds \n", igl::get_seconds() - t_start);
 
 			if (!fs::exists(fs::path(labels_file_path).parent_path()))
@@ -493,6 +465,7 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 			printf("Saving at %s...\n", labels_file_path.c_str());
 			Eigen::MatrixXi labels_mat = Eigen::Map<Eigen::MatrixXi>(labels.data(), labels.rows(), 1);
 			igl::writeDMAT(labels_file_path, labels_mat, false);
+			igl::writeDMAT(centroids_file_path, C, false);
 		}
 		else {
 			igl::colon(0, T.rows() - 1, labels);
@@ -507,7 +480,6 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 	grouping_matrix_from_clusters(labels, fmp.G);
 
 }
-
 
 void FastCDSim::init_full_system_matrices()
 {
