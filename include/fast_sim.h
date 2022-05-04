@@ -43,13 +43,15 @@ public:
 	/*
 	Also recomputes energy and grad_e
 	*/
-	virtual Eigen::VectorXd reduced_step(const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, double& e, double& grad_e);
+	virtual Eigen::VectorXd reduced_step_eval_metrics(const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, double& e, double& grad_e);
+
 
 	/*
 	Also returns e and grad_e
 	*/
-	virtual Eigen::VectorXd full_step(const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, const Eigen::VectorXd& bc, double& e, double& grad_e);
-	//not a priority
+	virtual Eigen::VectorXd full_step_eval_metrics(const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, const Eigen::VectorXd& bc, double& e, double& grad_e);
+	
+
 	virtual void init_modes(int num_modes); //shared with parent
 
 	//slightly more of a priority

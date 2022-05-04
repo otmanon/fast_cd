@@ -11,6 +11,7 @@ FastCDViewer::FastCDViewer()
 
 	while (viewer->data_list.size() < 2) viewer->append_mesh();
 
+    viewer->core().background_color.setOnes();
 	viewer->core().animation_max_fps = 240;
 	viewer->core().is_animating = true;
     fid = 1;
@@ -19,10 +20,17 @@ FastCDViewer::FastCDViewer()
 }
 
 
-void FastCDViewer::launch()
+FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuiWidget* guizmo)
 {
-	launch_viewer_custom_shader(*viewer, true, false, "fast CD app", 1920, 1080);
+    this->viewer = viewer;
+    while (viewer->data_list.size() < 3) viewer->append_mesh();
+    viewer->core().animation_max_fps = 240;
+    viewer->core().is_animating = true;
+    fid = 1;
+    cid = 0;
+    this->guizmo = guizmo;
 }
+
 
 FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* viewer)
 {
@@ -33,6 +41,11 @@ FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* viewer)
     fid = 1;
     cid = 0;
 }
+void FastCDViewer::launch()
+{
+	launch_viewer_custom_shader(*viewer, true, false, "fast CD app", 1920, 1080);
+}
+
 
 void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters)
 {
