@@ -627,6 +627,7 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
 
     if (ImGui::CollapsingHeader("Rigs"))
     {
+       
         if (ImGui::BeginListBox("Saved Rigs"))
         {
             for (int n = 0; n < rig_names.size(); n++)

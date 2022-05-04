@@ -14,9 +14,12 @@
 #include <igl/setdiff.h>
 #include <igl/slice_into.h>
 #include <igl/list_to_matrix.h>
+#include <igl/colon.h>
 #include <igl/matrix_to_list.h>
-
-
+#include "compute_handle_positions_from_rig_parameters.h"
+#include "get_tip_positions_from_parameters.h"
+#include "get_joint_positions_from_parameters.h"
+#include "interweaving_matrix.h"
 #include <filesystem>
 
 #include <Eigen/Geometry>
@@ -41,6 +44,75 @@ namespace fs = std::filesystem;
 }
 
 
+
+void SkeletonRig::init_rig_selection_matrix(double radius)
+{
+
+	bI.resize(W.cols()); // get one index list per bone
+
+	int ci = 0; //keeps track of the number of constrained vertices
+	if (rig_pinning == "ball")
+	{
+		Eigen::MatrixXd joints, tips, C;
+		get_joint_positions_from_parameters(p0, joints);
+		get_tip_positions_from_parameters(p0, lengths, tips);
+		C.resize(joints.rows() + tips.rows(), 3);
+		C.topRows(joints.rows()) = joints;
+		C.bottomRows(tips.rows()) = tips;
+
+		Eigen::MatrixXi BE;
+		Eigen::VectorXi BE1, BE2;
+		igl::colon<int>(0, joints.rows() - 1, BE1);
+		igl::colon<int>(joints.rows(), tips.rows() + joints.rows() -1, BE2);
+		BE.resize(BE1.rows(), 2);
+		BE.col(0) = BE1;
+		BE.col(1) = BE2;
+
+
+		//get closest point
+		Eigen::VectorXd sqrD;
+		Eigen::MatrixXd CP;
+		Eigen::VectorXi I;
+		igl::point_mesh_squared_distance(X, C, BE, sqrD, I, CP);
+		for (int i = 0; i < I.rows(); i++)
+		{
+			//if closer than r away
+			if (sqrD(i) < radius*radius)
+			{
+				bI[I(i)].conservativeResize(bI[I(i)].size() + 1);
+				bI[I(i)](bI[I(i)].size() - 1) = i;
+				ci += 1;
+			}
+		}
+	}
+	/*Can also do this by weight, or by slab One approach, there are a few others we can try
+
+	}
+	*/
+	std::vector<Eigen::Triplet<double>> tripletList;
+	int count = 0;
+	//go through list of bones
+	for (int b = 0; b < bI.size(); b++)
+	{
+		//go through list of indices constrained by bones
+		for (int i = 0; i < bI[b].rows(); i++)
+		{
+			tripletList.push_back(Eigen::Triplet<double>(i + 0 * ci + count, bI[b](i) + 0 * X.rows(), 1));
+			tripletList.push_back(Eigen::Triplet<double>(i + 1 * ci + count, bI[b](i) + 1 * X.rows(), 1));
+			tripletList.push_back(Eigen::Triplet<double>(i + 2 * ci + count, bI[b](i) + 2 * X.rows(), 1));
+
+		}
+		count += bI[b].rows();
+	}
+
+	S.resize(3 * ci, 3 * X.rows());
+	S.setFromTriplets(tripletList.begin(), tripletList.end());
+
+	Eigen::SparseMatrix<double> r2c;
+	interweaving_matrix(S.rows() / 3, 3, r2c);
+
+	//S = (r2c.transpose()) * S;
+}
 
 void read_bones_from_json(json& j, int num_X, Eigen::MatrixXd& surfaceW, Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& lengths)
 {
@@ -95,7 +167,7 @@ void read_bones_from_json(json& j, int num_X, Eigen::MatrixXd& surfaceW, Eigen::
 	}
 }
 
-SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T)
+SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
 {
 
 	printf("Converting a surface rig file format to a volume one. Will attempt to map from surface volume mesh X provided, to the coarse tet mesh we are trying to rig."
@@ -178,17 +250,18 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	init_rig_jacobian();
 	init_null_space();
 	S.resize(0, 3*X.rows());
+	init_rig_selection_matrix(radius);
 	//init_rig_selection_matrix(); // hold off on this for now
 	//TODO: mesh bones into the mesh. hold off on this.
 
 }
 
-SkeletonRig::SkeletonRig(std::string volume_file_name)
+SkeletonRig::SkeletonRig(std::string volume_file_name, double radius)
 {
 	read_rig_from_json(volume_file_name);
 
 	init_rig_jacobian();
-	init_rig_selection_matrix();
+	init_rig_selection_matrix(radius);
 
 }
 

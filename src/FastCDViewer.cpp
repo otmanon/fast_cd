@@ -9,7 +9,7 @@ FastCDViewer::FastCDViewer()
 {
 	viewer = new igl::opengl::glfw::Viewer();
 
-	while (viewer->data_list.size() < 2) viewer->append_mesh();
+	while (viewer->data_list.size() < 3) viewer->append_mesh();
 
     viewer->core().background_color.setOnes();
 	viewer->core().animation_max_fps = 240;

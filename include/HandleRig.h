@@ -11,16 +11,16 @@ class HandleRig : public Rig
 	public:
 		HandleRig() {};
 
-		HandleRig(std::string filename);
+		HandleRig(std::string filename, double radius = 5e-2);
 
 		/*
 		Build single handle at centroid of mesh
 		*/
-		HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T);
+		HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius = 5e-2);
 
-		HandleRig(Eigen::MatrixXd& X, Eigen::VectorXd& p, Eigen::MatrixXd& W);
+		HandleRig(Eigen::MatrixXd& X, Eigen::VectorXd& p, Eigen::MatrixXd& W, double radius = 5e-2);
 
-		HandleRig(Eigen::MatrixXd& X, std::vector<Eigen::Matrix4f>& P, Eigen::MatrixXd& W);
+		HandleRig(Eigen::MatrixXd& X, std::vector<Eigen::Matrix4f>& P, Eigen::MatrixXd& W, double radius = 5e-2);
 
 		virtual void init_rig_jacobian();
 

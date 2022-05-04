@@ -13,16 +13,16 @@
 #include <igl/colon.h>
 #include <igl/list_to_matrix.h>
 #include <igl/matrix_to_list.h>
-HandleRig::HandleRig(std::string filename)
+HandleRig::HandleRig(std::string filename, double radius)
 {
 	read_rig_from_json(filename);
 	init_rig_jacobian();
 	init_null_space();
 
-	init_rig_selection_matrix();
+	init_rig_selection_matrix(radius);
 }
 
-HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T)
+HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
 {
 	this->X = X;
 	this->W = SparseMatrix<double>(X.rows(), 1);
@@ -46,12 +46,12 @@ HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T)
 	init_null_space();
 
 	rig_pinning = "ball";
-	init_rig_selection_matrix();
+	init_rig_selection_matrix(radius);
 
 
 }
 
-HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::VectorXd& p, Eigen::MatrixXd& W)
+HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::VectorXd& p, Eigen::MatrixXd& W, double radius)
 {
 	this->p0 = p;
 	this->X = X;
@@ -59,7 +59,7 @@ HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::VectorXd& p, Eigen::MatrixXd& W)
 	init_rig_jacobian();
 	init_null_space();
 
-	init_rig_selection_matrix();
+	init_rig_selection_matrix(radius);
 	//get exterior indices
 	//Eigen::VectorXi bI;
 	//Eigen::MatrixXi F;
@@ -168,7 +168,7 @@ void HandleRig::init_rig_selection_matrix(double radius)
 }
 
 
-HandleRig::HandleRig(Eigen::MatrixXd& X,  std::vector<Eigen::Matrix4f>& P, Eigen::MatrixXd& W)
+HandleRig::HandleRig(Eigen::MatrixXd& X,  std::vector<Eigen::Matrix4f>& P, Eigen::MatrixXd& W, double radius)
 {
 	this->X = X;
 	this->W = W;
@@ -189,7 +189,7 @@ HandleRig::HandleRig(Eigen::MatrixXd& X,  std::vector<Eigen::Matrix4f>& P, Eigen
 	p0 = p;
 	init_rig_jacobian();
 	init_null_space();
-	init_rig_selection_matrix();
+	init_rig_selection_matrix(radius);
 	//get exterior indices
 
 	//also keep track of exterior slices of jacobian

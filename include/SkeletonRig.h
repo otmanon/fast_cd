@@ -22,15 +22,15 @@ public:
 	Constructor for an input source file with the surface_file format. This specific case is common and needs to be configured/converted
 	to a Volume rig, by diffusing the surface weights. into the mesh.
 	*/
-	SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T);
+	SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius=5e-2);
 
 		/*
 		Constructor with an input rig file in the volume format. This format just includes mesh vertex rest positions, rest pose rig parameters p0,
 		A weight for each bone, bone lengths, and a bone hierarchy list, which is an index into the bone list for each parent
 	*/
-	SkeletonRig(std::string volume_file_name);
+	SkeletonRig(std::string volume_file_name, double radius=5e-2);
 
-	void init_rig_selection_matrix(double radius = 0.05) {};
+	void init_rig_selection_matrix(double radius = 0.05);
 
 	bool write_rig_to_json(std::string filename);		
 

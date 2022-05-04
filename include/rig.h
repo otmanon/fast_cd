@@ -96,6 +96,8 @@ public:
 	Eigen::SparseMatrix<double> N; 
 
 	//Matrix that selects out vertices bounded by the rig, assuming a radius of mesh width 0.05*mesh_width
+	float radius;
+
 	//S u -> flattened displacement of only the constrained vertices
 	Eigen::SparseMatrix<double> S;
 
