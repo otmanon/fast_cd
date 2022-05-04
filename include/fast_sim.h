@@ -91,6 +91,9 @@ public:
 
 	virtual void update_clusters_cache_dir(std::string new_clusters_dir);
 
+	virtual void energy(const Eigen::VectorXd& u, double& bending, double& volume, double& inertia);
+
+
 public:
 	//Initial simulation mesh
 	Eigen::MatrixXd X;

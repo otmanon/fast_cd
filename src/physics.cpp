@@ -183,7 +183,7 @@ void InteractiveCDHook::reduced_sim_step_pinning_control()
 
 void InteractiveCDHook::full_sim_step_cd_control()
 {
-    Eigen::VectorXd  p_next = as.rig_controller->p_rel;
+    p_next = as.rig_controller->p_rel;
     Eigen::VectorXd uc_next = cd_sim.full_step(p_next, p_curr, p_prev, uc_curr, uc_prev);
     uc_prev = uc_curr;
     uc_curr = uc_next;

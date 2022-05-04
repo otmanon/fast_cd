@@ -70,13 +70,17 @@ void InteractiveCDHook::render_cd(igl::opengl::glfw::Viewer& viewer)
     }
     else
     {   // no need to worry about proj_gpu. just use set_vertices
-
         Eigen::MatrixXd P_ext;
         if (v_state.vis_mode == TEXTURES)
         {
-            Eigen::VectorXd r = cd_WJ * p_curr;
-            Eigen::VectorXd p = uc_curr + r;
-            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
+
+            Eigen::VectorXd r = cd_WJ * p_next;
+            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(r.data(), r.rows() / 3, 3);
+            if (v_state.vis_cd)
+            {
+                Eigen::VectorXd uc = W_low_to_high* uc_curr;
+                P += Eigen::Map<Eigen::MatrixXd>(uc.data(), uc.rows()/3, 3);
+            }
             igl::slice(P, ext_ind, 1, P_ext);
             render_full(viewer, P, v_state.fine_vis_id);
             if (v_state.show_cage)
@@ -86,9 +90,11 @@ void InteractiveCDHook::render_cd(igl::opengl::glfw::Viewer& viewer)
         }
         else
         {
-            Eigen::VectorXd r = rig->J * p_curr;
-            Eigen::VectorXd p = uc_curr + r;
-            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
+            Eigen::VectorXd uc = uc_curr;
+            Eigen::VectorXd r = rig->J * as.rig_controller->p_rel;
+            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(r.data(), r.rows() / 3, 3);
+            if (v_state.vis_cd)
+                P += Eigen::Map<Eigen::MatrixXd>(uc.data(), uc.rows() / 3, 3);
             igl::slice(P, ext_ind, 1, P_ext);
             render_full(viewer, P_ext, v_state.coarse_vis_id);
         }
@@ -128,21 +134,26 @@ void InteractiveCDHook::render_pinning(igl::opengl::glfw::Viewer& viewer)
         Eigen::MatrixXd P_ext;
         if (v_state.vis_mode == TEXTURES)
         {
-            Eigen::VectorXd p = uc_curr;
-            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
-            igl::slice(P, ext_ind, 1, P_ext);
-            P += V_high_res0;
+            Eigen::MatrixXd P = V_high_res0;
+            if (v_state.vis_cd)
+            {
+                Eigen::VectorXd u = W_low_to_high * u_curr;
+                P += Eigen::Map<Eigen::MatrixXd>(u.data(), u.rows() / 3, 3);
+            }
             render_full(viewer, P, v_state.fine_vis_id);
             if (v_state.show_cage)
             {
+                igl::slice(P, ext_ind, 1, P_ext);
                 render_full(viewer, P_ext, v_state.coarse_vis_id);
             }
         }
         else
         {
-            Eigen::VectorXd p = uc_curr;
-            Eigen::MatrixXd P = Eigen::Map<Eigen::MatrixXd>(p.data(), p.rows() / 3, 3);
-            P += V_high_res0;
+            Eigen::MatrixXd P = V0;
+            if (v_state.vis_cd)
+            {
+                P += Eigen::Map<Eigen::MatrixXd>(u_curr.data(), u_curr.rows() / 3, 3);
+            }
             igl::slice(P, ext_ind, 1, P_ext);
             render_full(viewer, P_ext, v_state.coarse_vis_id);
         }
@@ -172,7 +183,9 @@ void InteractiveCDHook::render_reduced_cpu_proj(igl::opengl::glfw::Viewer& v, Ei
     glUniform1i(cd_loc, false); //dopn't use gpu to compute displacements!!
     GLint pin_loc = glGetUniformLocation(prog_id, "pin");
     glUniform1i(pin_loc, false);
-    Eigen::VectorXd u = B * z.cast<double>() +  J * p.cast<double>();  //the titular cpu proj
+    Eigen::VectorXd u =  J * p.cast<double>();  //the titular cpu proj
+    if (v_state.vis_cd)
+        u += B * z.cast<double>();
     Eigen::MatrixXd V = Eigen::Map<Eigen::MatrixXd>(u.data(), u.rows() / 3, 3);
 
     v.data_list[cid].set_vertices(V);

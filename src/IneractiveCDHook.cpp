@@ -131,7 +131,7 @@ void InteractiveCDHook::init_vis_state()
     v_state.coarse_vis_id = 0;
     v_state.fine_vis_id = 1;
     v_state.vis_cd = true;
-    v_state.vis_mode = VIS_MODE::CLUSTERS;
+    v_state.vis_mode = VIS_MODE::TEXTURES;
     v_state.show_cage = false;
 }
 

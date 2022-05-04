@@ -63,6 +63,8 @@ SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, 
 	std::string custom_anim_name = "custom_anim";
 	recording= false;
 	current_animation_id = -1;
+	loaded_anim = false;
+	pause = true;
 	this->animation_dir = animation_dir;
 	get_all_json_in_dir(animation_dir, animation_filepaths, animation_filenames);
 	anim_step = 0;
@@ -158,7 +160,7 @@ void SkeletonRigFKMouseController::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu&
 			ImGuiWindowFlags_NoSavedSettings
 		);
 
-		ImGui::SliderFloat("Bone Thickness", &thickness, 1e-3, 10, "%3e", ImGuiSliderFlags_Logarithmic);
+		ImGui::SliderFloat("Bone Thickness", &thickness, 1e-3, 1);
 
 
 		if (ImGui::CollapsingHeader("Animation"))

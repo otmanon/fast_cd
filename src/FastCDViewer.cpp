@@ -9,13 +9,13 @@ FastCDViewer::FastCDViewer()
 {
 	viewer = new igl::opengl::glfw::Viewer();
 
-	while (viewer->data_list.size() < 3) viewer->append_mesh();
+	while (viewer->data_list.size() < 2) viewer->append_mesh();
 
 	viewer->core().animation_max_fps = 240;
 	viewer->core().is_animating = true;
     fid = 1;
     cid = 0;
-	
+    viewer->data_list[2].is_visible = true;
 }
 
 
@@ -42,7 +42,7 @@ void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Ei
   //  viewer->data_list[fid].set_mesh(V_high_res, F_high_res); //should only send V_ext
     viewer->data_list[fid].is_visible = false; //dont wanna see or hear about you when drawing clusters young man!
     viewer->data_list[cid].is_visible = true; //dont wanna see or hear about you when using matcap young man... though tbh why not??
-
+    //viewer->data_list[2].is_visible = false;
     viewer->data_list[cid].show_face_labels = false;
     viewer->data_list[cid].show_vertex_labels = false;
 
@@ -163,6 +163,9 @@ void FastCDViewer::configure_deformation_texture( Eigen::MatrixXd& V, Eigen::Mat
     }
     //This is very important... otherwise when the new mesh is set, it triggers a dirty call , and igl overwrites the texture with junk...
     viewer->data_list[cid].dirty &= ~igl::opengl::MeshGL::DIRTY_TEXTURE;
+
+
+
 }
 
 void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
@@ -172,31 +175,28 @@ void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::
     //TODO: should keep matcap separate for each mesh, and load it up once we pick our mesh
     viewer->data_list[fid].clear();
     viewer->data_list[cid].clear();
-
-    viewer->data_list[fid].is_visible = true;
-    viewer->data_list[cid].show_lines = true;
+   // viewer->data_list[2].is_visible = true;
+    viewer->data_list[cid].show_lines = false;
     viewer->data_list[cid].show_faces = false;
     viewer->data_list[cid].is_visible = false;//dont wanna see or hear about you when using textures
+    viewer->data_list[cid].show_face_labels = false;
+    viewer->data_list[cid].show_vertex_labels = false;
+    viewer->data_list[cid].set_mesh(V_coarse, F_coarse);
 
-    viewer->data_list[fid].clear();
 
+
+    viewer->data_list[fid].is_visible = true;
     viewer->data_list[fid].invert_normals = false;
     viewer->data_list[fid].double_sided = false;
     viewer->data_list[fid].set_face_based(true);
-
-
-    viewer->data_list[cid].show_face_labels = false;
-    viewer->data_list[cid].show_vertex_labels = false;
-
-    viewer->data_list[fid].show_face_labels = false;
     viewer->data_list[fid].show_vertex_labels = false;
+    viewer->data_list[fid].show_face_labels = false;
+    viewer->data_list[fid].set_mesh(V_fine, F_fine);
 
     Eigen::Matrix<unsigned char, -1, -1> R, G, B, A;
     std::string texture_path = texture_filepath;
     bool read = igl::png::readPNG(texture_path, R, G, B, A);
 
-    viewer->data_list[cid].set_mesh(V_coarse, F_coarse);
-    viewer->data_list[fid].set_mesh(V_fine, F_fine);
     if (UV_fine.rows() > 0)  //if our texture matches the display mesh
     {
         //  viewer->data().set_normals(FN);

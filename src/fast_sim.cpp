@@ -77,12 +77,14 @@ Eigen::VectorXd FastSim::reduced_step(const Eigen::VectorXd& z_curr, const Eigen
 	reduced_qnewton_energy_grad(f, grad_f);
 
 	Eigen::VectorXd z_next;
+
+	bool do_line_search = incompressibility < 1e-8 ? false : true;
 	if (bc.rows() > 0)
 	{
-		z_next = reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc);
+		z_next = reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc, do_line_search);
 	}
 	else {
-		z_next = reduced_newton_solver->solve(z_curr, f, grad_f);
+		z_next = reduced_newton_solver->solve(z_curr, f, grad_f, do_line_search);
 	}
 	return z_next;
 }
@@ -103,14 +105,14 @@ Eigen::VectorXd FastSim::full_step(const Eigen::VectorXd& u_curr, const Eigen::V
 	full_qnewton_energy_grad(energy, grad_f);
 
 	Eigen::VectorXd u_next;
-
+	bool do_line_search = incompressibility < 1e-8 ? false : true;
 	if (bc.rows() > 0) // should set a flag instead of doing this
 	{
-		u_next = full_newton_solver->solve_with_equality_constraints(u_curr, energy, grad_f, bc);
+		u_next = full_newton_solver->solve_with_equality_constraints(u_curr, energy, grad_f, bc, do_line_search);
 	}
 	else
 	{
-		u_next = full_newton_solver->solve(u_curr, energy, grad_f);
+		u_next = full_newton_solver->solve(u_curr, energy, grad_f, do_line_search);
 	}
 
 	return u_next;
@@ -228,6 +230,7 @@ void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 			printf("Saving at %s...\n", labels_file_path.c_str());
 			Eigen::MatrixXi labels_mat = Eigen::Map<Eigen::MatrixXi>(labels.data(), labels.rows(), 1);
 			igl::writeDMAT(labels_file_path, labels_mat, false);
+			labels = labels_mat.col(0);
 		}
 		else {
 			igl::colon(0, T.rows() - 1, labels);
@@ -595,4 +598,44 @@ void FastSim::update_modes_cache_dir(std::string new_mode_dir)
 void FastSim::update_clusters_cache_dir(std::string new_clusters_dir)
 {
 	clusters_file_dir = new_clusters_dir;
+}
+
+
+void FastSim::energy(const Eigen::VectorXd& u, double& bending, double& volume, double& inertia)
+{
+	const int l = do_clustering ? num_clusters : T.rows();
+	Eigen::VectorXd FV_flat = fmp.GmH + fmp.GmK * u;//sm.G_exp * sm.FM * (sm.H + sm.K * u);
+	Eigen::MatrixXd F_stack = Eigen::Map<Eigen::MatrixXd>(FV_flat.data(), l * X.cols(), X.cols());
+	Eigen::MatrixXd R = Eigen::MatrixXd::Zero(F_stack.rows(), F_stack.cols());
+	Eigen::MatrixXd R_cov = R;
+
+	Eigen::VectorXd volume_energy_tet = Eigen::VectorXd::Zero(l);
+
+	Eigen::Matrix3d rot, F, cov, rot_cov;
+	double tr;
+	for (int i = 0; i < l; i++)
+	{
+		F = F_stack.block(3 * i, 0, 3, 3);
+		igl::polar_svd3x3(F, rot);
+		R.block(3 * i, 0, 3, 3) = rot;
+
+		tr = (rot.transpose() * F).diagonal().sum() - 3.0;
+		volume_energy_tet(i) = 0.5 * fmp.Vol_c.coeff(i, i) * tr * tr;
+	}
+	const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
+
+	Eigen::VectorXd u_y = u - dm.y;
+	inertia = 0.5 * (1.0 / (dt * dt)) * u_y.transpose() * fmp.M * u_y;
+
+	Eigen::VectorXd f_r = fmp.H + fmp.K * u - fmp.G_1.transpose() * R_flat;
+
+	bending = 0.5 * f_r.transpose() * fmp.Vol_exp * f_r;
+	//Eigen::VectorXd tr = fmp.traceMat * f_r;
+	volume = 0.5 * incompressibility * (volume_energy_tet.sum());//sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
+	//elastic = stiffness * bending + incompressibility * (volume_energy_tet.sum());
+
+	//sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
+	//elastic = stiffness * bending + incompressibility * volume;
+	//printf("bending : %e, inertia : %e, volume : %e ", elastic, inertia, volume);
+	//double e = elastic + inertia;
 }

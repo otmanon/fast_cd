@@ -12,8 +12,8 @@ DenseQuasiNewtonSolver::DenseQuasiNewtonSolver(const int max_iter, const double 
 void DenseQuasiNewtonSolver::precompute(const Eigen::MatrixXd& Q)
 {
     Eigen::MatrixXd A;
-    ldlt_precomp.compute(Q);
-    if (ldlt_precomp.info() != Success) {
+    llt_precomp.compute(Q);
+    if (llt_precomp.info() != Success) {
         std::cout << "LLT factorization of system matrix failed" << std::endl;
         exit(0);
     }
@@ -40,7 +40,7 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
 }
 
 Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search)
 {
     Eigen::VectorXd z_prev, z_next;
     Eigen::VectorXd dz, g, ub;
@@ -49,8 +49,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
     Eigen::VectorXd rhs(z.rows());
     rhs.setZero();
 
-    z_next = z - S.transpose() * S * z;
-
+    z_next = z;
     for (int i = 0; i < max_iters; i++)
     {
         alpha = 2.0;
@@ -60,29 +59,34 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
         if (g.squaredNorm() < 1e-5)
             break;
         rhs.topRows(g.rows()) = -g;             //leave rhs dealing with constraints = 0 always
-        dz = ldlt_precomp.solve(rhs);
+        dz = llt_precomp.solve(rhs);
 
         // z_next += dz;
           //itty bitty line search. should have a flag to do this instead of just stepping by 1. Not too costly tho, especially once we reduce
-        const double energy0 = rhs.norm(); // f(z_next);
-        int line_search_step = 0;
-        const double threshold = g.transpose() * dz.topRows(z_next.rows());
-        do
+        if (do_line_search)
         {
-            alpha *= 0.5;
-            z_next = z_prev + alpha * dz.topRows(z_next.rows());
-            energy = grad_f(z_next).norm();
-            //   printf("line_search_iter : %i, energy0 : %e, energy : %e,  alpha : %e , threshold : %e\n", line_search_step, energy0, energy, alpha, threshold);
-            line_search_step += 1;
-        } while (energy > energy0 + 1e-5 && line_search_step < 10);
-        // std::cout << alpha << std::endl;
+            const double energy0 = rhs.norm(); // f(z_next);
+            int line_search_step = 0;
+            const double threshold = g.transpose() * dz.topRows(z_next.rows());
+            do
+            {
+                alpha *= 0.5;
+                z_next = z_prev + alpha * dz.topRows(z_next.rows());
+                energy = grad_f(z_next).norm();
+                //   printf("line_search_iter : %i, energy0 : %e, energy : %e,  alpha : %e , threshold : %e\n", line_search_step, energy0, energy, alpha, threshold);
+                line_search_step += 1;
+            } while (energy > energy0 + 1e-5 && line_search_step < 100);
+        }
+        else
+        {
+            z_next += dz;
+        }
     }
-    std::cout << "energy : " << f(z_next) << std::endl;
     return z_next;
 }
 
 Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search)
 {
    
     assert(S.rows() == bc0.rows() && "Gave linear equality constraint rhs, but don't have a linear equality constraint matrix precomputed. \
@@ -115,18 +119,26 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
         const Eigen::VectorXd dir = ldlt_precomp.solve(rhs);
         dz = dir.topRows(z_next.rows());
        // z_next += dz;
+
+        if (do_line_search)
+        {
+           alpha = 2.0;
+           double e0 = f(z_next);
+           int line_search_step = 0;
+           do
+           {
+               alpha *= 0.5;
+               z_next = z_prev + alpha * dz;          
+               e = f(z_next);
+           //     printf("line_search_iter : %i, energy0 : %e, energy : %e,  alpha : %e \n", line_search_step, e0, e, alpha);
+               line_search_step += 1;
+           } while (e > e0 + 1e-9 && line_search_step <10);
+        }
+        else
+        {
+            z_next += dz;
+        }
         
-       alpha = 2.0;
-       double e0 = f(z_next);
-       int line_search_step = 0;
-       do
-       {
-           alpha *= 0.5;
-           z_next = z_prev + alpha * dz;          
-           e = f(z_next);
-       //     printf("line_search_iter : %i, energy0 : %e, energy : %e,  alpha : %e \n", line_search_step, e0, e, alpha);
-           line_search_step += 1;
-       } while (e > e0 + 1e-9 && line_search_step <10);
     }
     return z_next;
     

@@ -41,6 +41,8 @@ HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0,  igl::op
 	recording = false;
 	current_animation_id = -1;
 	this->animation_dir = animation_dir;
+	loaded_anim = false;
+	pause = true;
 	get_all_json_or_dmat_in_dir(animation_dir, animation_filepaths, animation_filenames);
 	anim_step = 0;
 	record_P.resize(p0.rows(), 0);

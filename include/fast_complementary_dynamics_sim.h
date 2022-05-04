@@ -69,11 +69,14 @@ public:
 
 	void precompute_solvers();
 
+	void energy(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, double& bending, double& volume, double& inertia);
+
+	void energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& bending, double& volume, double& inertia);
+
+
 public:
 	//Rig jacobian
 	Eigen::SparseMatrix<double> J;
-
-private:
 
 	
 
@@ -107,7 +110,7 @@ private:
 		Eigen::SparseMatrix<double> M;
 
 		//grouping matrix that sums a scalar value across clusters |#clusters|x |T|, followed by the same thing but expanded out for all 9 entries in R
-		Eigen::SparseMatrix<double> G, G_exp, G_m;
+		Eigen::SparseMatrix<double> G, G_1, G_m;
 
 		//precomputed constant multiplications, needed for inertia, stuff like that
 		Eigen::SparseMatrix<double> MJ;
@@ -119,7 +122,8 @@ private:
 		Eigen::SparseMatrix<double> traceMat; //trace linear operator
 		Eigen::SparseMatrix<double> Vol; //volume for each tet.
 		Eigen::SparseMatrix<double> Vol_exp; //expanded volume for each tet that multiplies each entry in flattened vec(F) by the tet's mass.
-	
+		Eigen::SparseMatrix<double> Vol_c; //diagonal matrix of cluster volumes.
+
 		//Bending energy (ARAP) matrices
 		//matrices used in full space simulation (included grouping matrix by default
 		Eigen::SparseMatrix<double> KMK, KMG, GMK;
@@ -138,7 +142,7 @@ private:
 		Eigen::VectorXd KMTIH;
 		Eigen::SparseMatrix<double> KMTIK;
 		Eigen::SparseMatrix<double> KMTIG;
-
+		Eigen::SparseMatrix<double> JMJ;
 
 	
 	}fmp;
@@ -164,6 +168,8 @@ private:
 		Eigen::MatrixXd  BKMTIKB, BKMTIG, BKMTIKJ;
 		Eigen::VectorXd BKMTIH, BKMTIKX, BKMTIKNX;
 
+		Eigen::MatrixXd BMJ;
+		Eigen::MatrixXd JMB;
 
 	}rmp;
 	
@@ -176,18 +182,22 @@ private:
 		Eigen::VectorXd y_tilde;
 		Eigen::VectorXd My_tilde;
 		Eigen::VectorXd BMy_tilde;
-		Eigen::VectorXd Kur;
 		Eigen::VectorXd GMKur;
 		Eigen::VectorXd KMKur;
 		Eigen::VectorXd BKMKur;
 		Eigen::VectorXd BKMTIKur;
 
+		Eigen::VectorXd u_curr, u_prev;
+
+		double y_tildeMy_tilde;
+	
+
 		Eigen::VectorXd GmKur;
 	} dm;
 
 
-	CDNewtonSolver* full_newton_solver;
-	FastCDNewtonSolver* reduced_newton_solver;
+	QuasiNewtonSolver* full_newton_solver;
+	DenseQuasiNewtonSolver * reduced_newton_solver;
 
 
 };
