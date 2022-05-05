@@ -254,11 +254,11 @@ void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepa
         rig_file_format = get_rig_file_format(rig_file);
         if (rig_file_format == "surface")
         {
-            rig = new SkeletonRig(rig_file, V0, T);
+            rig = new SkeletonRig(rig_file, V0, T, 0.0);
         }
         else
         {
-            rig = new SkeletonRig(rig_file);
+            rig = new SkeletonRig(rig_file, 0.0);
         }
       
         break;

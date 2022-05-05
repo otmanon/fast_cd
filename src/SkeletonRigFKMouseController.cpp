@@ -37,7 +37,7 @@ void get_absolute_parameters(Eigen::VectorXd& p0, Eigen::VectorXd& p_rel, Eigen:
 SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir)
 	: pl(pl), pI(pI)
 {
-	handleI = 10;
+	handleI = 0;
 	thickness = 1e-2;
 	this->p_rest = p0;
 	int num_b = p_rest.rows() / 12;

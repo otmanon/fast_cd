@@ -15,12 +15,11 @@ double get_bone_length_scales(Eigen::VectorXd& p, Eigen::VectorXi& pI)
 		if (pI(i) >= 0)
 		{
 			const Eigen::RowVector3d disp = C.row(i) - C.row(pI(i));
-			const double dist = disp.squaredNorm();
-			if (dist)
-			{
-				lengths.conservativeResize(lengths.rows() + 1);
-				lengths(lengths.rows() - 1) = dist;
-			}
+			const double dist = disp.norm();
+
+			lengths.conservativeResize(lengths.rows() + 1);
+			lengths(lengths.rows() - 1) = dist;
+
 		}
 	}
 

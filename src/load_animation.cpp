@@ -100,8 +100,9 @@ void load_animation_and_fit(std::string anim_filepath, Eigen::VectorXd& p0, Eige
 	//get_tip_positions_from_parameters(p_tmp, pl, tips); //damn Im done... we actually can't do this because pl is just the bone length... need to loop through each bone, go to its parent, calc the diff.
 	double l_ref = get_bone_length_scales(p0, pI);
 
+	double s0 = 0.023111821982290396;
 	double s = l / l_ref;
-
+	//anim_P *= s;
 	anim_P /= s;
 
 	Eigen::VectorXd ptmp1, ptmp2;
