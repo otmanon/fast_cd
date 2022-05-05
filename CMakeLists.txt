@@ -5,7 +5,6 @@ file(GLOB HEADER_FILES ./include/*)
 
 
 option(FAST_CD_USE_MATLAB "use matlab" ON)
-option(FAST_CD_USE_SUITESPARSE "use suitesparse" ON)
 option(LIBIGL_PNG  "Build target igl::png"  ON)
 option(LIBIGL_GLFW "Build target igl::glfw" ON)
 option(LIBIGL_IMGUI   "Build target igl::imgui" ON)
