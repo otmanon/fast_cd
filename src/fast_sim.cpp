@@ -319,8 +319,11 @@ void FastSim::init_clustering_matrices()
 	igl::sum(G_tmp, 2, cluster_mass);
 	fmp.Vol_c = cluster_mass.asDiagonal();
 
+
 	fmp.G_m = fmp.G_1 * fmp.Vol_exp;
 	igl::sum(fmp.G_m, 2, cluster_mass);
+	
+	
 	cluster_mass.array() = 1.0/cluster_mass.array();
 	fmp.G_m = cluster_mass.asDiagonal() * fmp.G_m;
 

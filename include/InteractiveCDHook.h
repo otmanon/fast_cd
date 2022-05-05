@@ -110,7 +110,6 @@ public:
     void save_params();
 
     void save_results();
-    RIG_TYPE get_rig_type(std::string rig_path, std::string& rig_type);
 
     void save_params(std::string custom_filename);
     //reduced_solver functions

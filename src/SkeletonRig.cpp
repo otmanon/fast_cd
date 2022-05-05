@@ -23,26 +23,6 @@
 #include <filesystem>
 
 #include <Eigen/Geometry>
-std::string get_rig_file_format(std::string filename)
-{
-	//open surface_file as json
-namespace fs = std::filesystem;
-
-	json j;
-	std::ifstream i(filename);
-	i >> j;
-
-	if (j.value("format", "volume") == "volume")
-	{
-		return "volume";
-	}
-	else
-	{
-		return "surface";
-	}
-
-}
-
 
 
 void SkeletonRig::init_rig_selection_matrix(double radius)

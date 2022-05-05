@@ -35,6 +35,7 @@
 #include <igl/get_seconds.h>
 #include <filesystem>
 
+#include <igl/invert_diag.h>
 #include "DenseQuasiNewtonSolver.h"
 #include "QuasiNewtonSolver.h"
 
@@ -555,7 +556,11 @@ void FastCDSim::init_clustering_matrices()
 
 	fmp.G_m = fmp.G_1 * fmp.Vol_exp;
 	igl::sum(fmp.G_m, 2, cluster_mass);
-	fmp.G_m =  cluster_mass.asDiagonal().inverse()* fmp.G_m  ;
+
+	Eigen::SparseMatrix<double> cm, cmi;
+	cm = cluster_mass.asDiagonal();
+	igl::invert_diag(cm, cmi);
+	fmp.G_m =  cmi* fmp.G_m  ;
 	
 	Eigen::VectorXd row_sum_check;
 	igl::sum(fmp.G_m, 2, row_sum_check);

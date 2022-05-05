@@ -52,7 +52,8 @@
 
 #include <iostream>
 
-
+#include "get_rig_type.h"
+#include "get_rig.h"
 #include "create_two_handle_rig.h"
 
 
@@ -237,46 +238,15 @@ void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepa
   
     std::cout << "Using " << rig_type_str << " rig type..." << std::endl;
     
-    std::string rig_file_name = fs::path(rig_file).stem().string();
-    std::string cache_dir =  fs::path(mesh_filepath).parent_path().string() + "/rigs/" + rig_file_name+ "/cache/";     
+    std::string rig_name = fs::path(rig_file).stem().string();
+    std::string cache_dir =  fs::path(mesh_filepath).parent_path().string() + "/rigs/" + rig_name+ "/cache/";     
 
     as.rig_id = -1;
 
     new_as = as;
 
-    //build our affine rig ... shouldn't do this here, TODO: make a rig builder class that initializes the rig for us. 
-    //We should be building the rig in the same spot we call load_rig_file_paths
-    std::string rig_file_format;
-    switch (as.rig_type)
-    {
-    case RIG_TYPE::LBS_RIG:
-        // check if the LBS_rig is in surface format.
-        rig_file_format = get_rig_file_format(rig_file);
-        if (rig_file_format == "surface")
-        {
-            rig = new SkeletonRig(rig_file, V0, T, 0.0);
-        }
-        else
-        {
-            rig = new SkeletonRig(rig_file, 0.0);
-        }
-      
-        break;
-    case RIG_TYPE::AFFINE_RIG:
-        rig = new HandleRig(V0, T);
-       // as.constraint_controller = new ConstraintController(viewer, guizmo); //null constraints
-        break;
-    case RIG_TYPE::NULL_RIG:
-        rig = new NullRig(V0, T); 
-        std::cout << "" << std::endl;
-        break;
-    case RIG_TYPE::HANDLE_RIG:
-        rig = new HandleRig(rig_file);
-      //  as.constraint_controller = new ConstraintController(viewer, guizmo);
-       // exit(0);
-        break;
-    }
-
+    //build our affine rig ... shouldn't do this here, TODO: Expose this radius parameter to user
+    rig = get_rig(rig_file, V0, T, 0.05);
 }
 
 void InteractiveCDHook::init_rig_controller(Rig * rig)
