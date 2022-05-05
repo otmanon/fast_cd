@@ -56,7 +56,7 @@
 #include "get_rig.h"
 #include "create_two_handle_rig.h"
 
-
+#include "pick_rig_controller.h"
 InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
     namespace fs = std::filesystem;
@@ -76,7 +76,7 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
 
 
     //init_rig_controller(rig);
-    pick_rig_controller(rig);
+    as.rig_controller = pick_rig_controller(rig, as.rig_anim_dir, viewer, guizmo);
     //finds all rigs found in the mesh/rigs/ directory
     get_all_json_in_subdirs(fs::path(as.mesh_file_path).parent_path().string() + "/rigs/", rig_paths, rig_names);
 
@@ -268,19 +268,6 @@ void InteractiveCDHook::init_rig_controller(Rig * rig)
        as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig *)rig)->pI, ((SkeletonRig*)rig)->lengths, viewer, guizmo);
     }
     //TODO add one more that is for IK
-}
-
-void InteractiveCDHook::pick_rig_controller(Rig* rig)
-{
-    //picks the default rig controller according to the rig type. 
-    if (dynamic_cast<SkeletonRig*>(rig) != nullptr)   //dealing with a skeleton... make a controller
-    { 
-        as.rig_controller = new SkeletonRigFKMouseController(rig->p0, ((SkeletonRig*)rig)->pI, ((SkeletonRig*)rig)->lengths, viewer, guizmo, as.rig_anim_dir);
-    }
-    else
-    {
-        as.rig_controller = new HandleRigMouseController(rig->p0, viewer, guizmo, as.rig_anim_dir);
-    }
 }
 
 void InteractiveCDHook::init_constraint(FastCDSim& cd_sim)

@@ -25,7 +25,7 @@ public:
     void init_rig(std::string& rig_file, std::string& mesh_name);
 
     void init_rig_controller(Rig* rig);
-    void pick_rig_controller(Rig* rig);
+
     void init_constraint(FastCDSim& cd_sim);
     
     void init_create_rigs(std::string mesh_dir,std::vector<std::string>& create_rig_paths, std::vector<std::string>& create_rig_names);
@@ -94,7 +94,6 @@ public:
     //should have a rigReader class that takes this in as an option
     void change_rig_type();
     
-    void change_constraint(FastCDSim& cd_sim, CONSTRAINT_TYPE constraint_type);
 
     bool mouse_down(igl::opengl::glfw::Viewer& viewer, int button, int modifier);
 
@@ -106,8 +105,6 @@ public:
 
     void change_animation_mode();
 
-    //system
-    void save_params();
 
     void save_results();
 
