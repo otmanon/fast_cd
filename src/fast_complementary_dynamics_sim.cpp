@@ -49,7 +49,7 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	this->do_reduction = do_reduction;
 	this->modes_file_dir = modes_file_dir;
 	this->clusters_file_dir = clusters_file_dir;
-
+	this->dt = dt;
 	this->num_modal_features = num_modal_features;
 	stiffness = ym / (2.0 * (1.0 + pr));
 	incompressibility = ym* pr / ((1.0 + pr) * (1.0 - 2.0 * pr));
