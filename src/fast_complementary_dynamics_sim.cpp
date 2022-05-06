@@ -588,11 +588,11 @@ void FastCDSim::init_clustering_matrices()
 
 void FastCDSim::energy(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, double& bending, double& volume, double& inertia)
 {
-	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * 3 );
 	Eigen::VectorXd u_curr, u_prev, u_next;
 	u_next = B * z + J * p_next - x;
 	u_curr = B * z_curr + J * p_curr - x;
-	u_prev = B * z + J * p_prev - x;
+	u_prev = B * z_prev + J * p_prev - x;
 
 	energy(u_next, u_curr, u_prev, bending, volume, inertia);
 }
@@ -620,13 +620,18 @@ void FastCDSim::energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, 
 	}
 	const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
 
-	Eigen::VectorXd y = 2 * u_curr - u_prev;
+	Eigen::VectorXd u_next = u;
+	Eigen::VectorXd y = (2.0 * u_curr) - u_prev;
 	Eigen::VectorXd u_y = u - y;
-	inertia = 0.5 * (1.0 / (dt * dt)) * u_y.transpose() * fmp.M * u_y;
+	Eigen::VectorXd Mu_y = fmp.M * u_y;
+	double uMu = u_y.transpose() * Mu_y;
+	//std::cout << uMu << std::endl;
+	//std::cout << 0.5 * (1.0 / (dt * dt));
+	inertia = 0.5 * (1.0 / (dt * dt)) * uMu;
 
 	Eigen::VectorXd f_r = fmp.H + fmp.K * u - fmp.G_1.transpose() * R_flat;
 
-	bending = 0.5 * f_r.transpose() * fmp.Vol_exp * f_r;
+	bending = 0.5 * stiffness* f_r.transpose() * fmp.Vol_exp * f_r;
 	//Eigen::VectorXd tr = fmp.traceMat * f_r;
 	volume = 0.5 * incompressibility * (volume_energy_tet.sum());//sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
 	//elastic = stiffness * bending + incompressibility * (volume_energy_tet.sum());

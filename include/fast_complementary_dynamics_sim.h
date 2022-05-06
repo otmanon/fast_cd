@@ -74,6 +74,8 @@ public:
 	void energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& bending, double& volume, double& inertia);
 
 
+
+
 public:
 	//Rig jacobian
 	Eigen::SparseMatrix<double> J;

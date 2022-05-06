@@ -44,4 +44,22 @@ public:
 	Eigen::VectorXd p_rest; //  world-to-rig matrices, mapping a vector in the world space to the joint's rest frame
 	Eigen::VectorXd p_rel;  //  rig parameters relative to rest frame of joint. To get full params do P_full =  P_rel * P_rest;
 	Eigen::VectorXd p_rest_inv;  //inverse rest frame, useful to figure out P_rel from P_full. P_rel = P_full * P_rest_inv
+
+
+	int current_animation_id;
+	std::string animation_dir;
+	std::vector<std::string> animation_filepaths;
+	std::vector<std::string> animation_filenames;
+	Eigen::MatrixXd anim_P;
+	bool is_global_anim;			//if true, then anim_P are GLOBAL transformation matrices, not relative as CD is used to. Each parameter needs to then be converted to a relative anim. Mixamo transformations are global
+
+
+	bool pause;
+	bool loaded_anim;
+	int anim_step;
+
+	char custom_anim_name[128] = "custom_anim";
+	bool recording;
+
+	Eigen::MatrixXd record_P;
 };

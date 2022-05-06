@@ -19,6 +19,7 @@
 #include <igl/cat.h>
 #include <igl/colon.h>
 #include <igl/edge_lengths.h>
+#include "update_parameters_at_handle.h"
 #include "get_relative_parameters.h"
 using namespace nlohmann;
 
@@ -105,12 +106,39 @@ void load_animation_and_fit(std::string anim_filepath, Eigen::VectorXd& p0, Eige
 	//anim_P *= s;
 	anim_P /= s;
 
-	Eigen::VectorXd ptmp1, ptmp2;
-	for (int i = 0; i < anim_P.cols(); i++)
+	Eigen::MatrixXd joints_anim, joints_ref;
+	Eigen::VectorXd p_first = anim_P.col(0);
+	get_joint_positions_from_parameters(p_first, joints_anim);
+	get_joint_positions_from_parameters(p0, joints_ref);
+
+	//fit translation
+	Eigen::RowVector3d t = joints_anim.colwise().mean() - joints_ref.colwise().mean();
+	Eigen::Matrix4f Transl;
+	Transl <<	0, 0, 0, t(0),
+				0, 0, 0, t(1),
+				0, 0, 0, t(2),
+				0, 0, 0, 0;
+
+	Eigen::Matrix4f Transl_anim; Eigen::VectorXd p_step;
+	for (int step = 0; step < anim_P.cols(); step++)
 	{
-		ptmp1 = anim_P.col(i);
-		get_relative_parameters(p0, ptmp1, ptmp2);
-	//	anim_P.col(i) = ptmp2;
+		Eigen::VectorXd p_step = anim_P.col(step);
+		for (int i = 0; i < p_step.rows() / 12; i++)  //go for every bone in the step
+		{
+			Transl_anim =matrix4f_from_parameters(p_step, i);
+			Transl_anim -= Transl; // get rid of this translation.
+			update_parameters_at_handle(p_step, Transl_anim, i);
+		}
+		anim_P.col(step) = p_step;
 	}
+
+
+//Eigen::VectorXd ptmp1, ptmp2;
+//for (int i = 0; i < anim_P.cols(); i++)
+//{
+//	ptmp1 = anim_P.col(i);
+//	get_relative_parameters(p0, ptmp1, ptmp2);
+////	anim_P.col(i) = ptmp2;
+//}
 	is_global = false;
 }

@@ -35,4 +35,6 @@ Rig* get_rig(std::string rig_file, Eigen::MatrixXd& V0, Eigen::MatrixXi& T, doub
          // exit(0);
         break;
     }
+
+    return rig;
 }
