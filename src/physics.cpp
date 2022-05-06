@@ -258,19 +258,11 @@ void InteractiveCDHook::reduced_sim_step_cd_control()
 
 void InteractiveCDHook::sim_step_modal_animation()
 {
-    step += 1;
-    if (step % mas.period == 0)
+    int i = step % mas.period;
+
+    if (i == 0)
     {
         mas.mode += 1;
-        mas.mode = mas.mode % as.r;
-
-        V = V0;
-    }
-
-    int progress = step - mas.period * (step / mas.period);
-    if (progress == mas.half_period)
-    {
-        mas.scale *= -1;
     }
     Eigen::VectorXd B_flat;
     if (as.constraint_type == COMPLEMENTARY_DYNAMICS)
@@ -282,13 +274,11 @@ void InteractiveCDHook::sim_step_modal_animation()
         B_flat = sim.B.col(mas.mode);
     }
 
-
+    double scale = 0.1* (1.0 - cos( (2* igl::PI / (mas.period)) * i));
+    std::cout << scale << std::endl;
+    u_curr = scale * B_flat;
    // V += mas.scale * Eigen::Map<Eigen::MatrixXd>(B_flat.data(), V.rows(), 3);
    // igl::slice(V, ext_ind, 1, V_ext);
+    step += 1;
 
-    if (v_state.vis_mode == TEXTURES) //visualize high res embedded mesh.
-    {
-   //     Eigen::VectorXd v = W_low_to_high * Eigen::Map<Eigen::VectorXd>(V.data(), V.rows() * 3);
-   //     V_high_res = Eigen::Map<Eigen::MatrixXd>(v.data(), v.rows() / 3, 3);
-    }
 }

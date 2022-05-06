@@ -30,12 +30,25 @@
 bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
 {
   
-    if (as.constraint_type == PINNING)
-        render_pinning(viewer);
-    else
-        render_cd(viewer);
+    if (as.animation_mode == ANIMATION_MODE::INTERACTIVE_ANIMATION)
+    {
+        if (as.constraint_type == PINNING)
+            render_pinning(viewer);
+        else
+            render_cd(viewer);
    
-    as.rig_controller->render(viewer);
+        as.rig_controller->render(viewer);
+    }
+    else
+    {
+        this->fcd_viewer.configure_matcap(as.matcap_file, V0, F);
+        viewer.data_list[0].clear();
+        viewer.data_list[0].invert_normals = true;
+        viewer.data_list[0].double_sided = true;
+        Eigen::MatrixXd U = Eigen::Map<Eigen::MatrixXd>(u_curr.data(), u_curr.rows(), u_curr.cols());
+        Eigen::MatrixXd P = U + V0;
+        viewer.data_list[0].set_mesh(P, F);
+    }
     return false;
      
 }
@@ -669,9 +682,11 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
 
     ImGui::Text("Animation Mode");
     ImGui::RadioButton("Play Around", (int*)&as.animation_mode, (int)ANIMATION_MODE::INTERACTIVE_ANIMATION); ImGui::SameLine();
-    ImGui::RadioButton("Mode Anim", (int*)&as.animation_mode, (int)ANIMATION_MODE::EIGENMODES_ANIMATION);
-    if (new_as.animation_mode == ANIMATION_MODE::EIGENMODES_ANIMATION)
+    if (ImGui::RadioButton("Mode Anim", (int*)&as.animation_mode, (int)ANIMATION_MODE::EIGENMODES_ANIMATION))
+        step = 0;
+    if (as.animation_mode == ANIMATION_MODE::EIGENMODES_ANIMATION)
     {
+
         std::string current_mode_str = "Current Mode : " + std::to_string(mas.mode);
         ImGui::Text(current_mode_str.c_str());
     }

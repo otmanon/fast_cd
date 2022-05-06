@@ -246,7 +246,7 @@ void InteractiveCDHook::init_rig(std::string& rig_file, std::string& mesh_filepa
     new_as = as;
 
     //build our affine rig ... shouldn't do this here, TODO: Expose this radius parameter to user
-    rig = get_rig(rig_file, V0, T, 0.05);
+    rig = get_rig(rig_file, V0, T, 0.00);
 }
 
 void InteractiveCDHook::init_rig_controller(Rig * rig)

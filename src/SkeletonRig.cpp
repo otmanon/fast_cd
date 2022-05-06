@@ -120,7 +120,7 @@ void read_bones_from_json(json& j, int num_X, Eigen::MatrixXd& surfaceW, Eigen::
 	int bone_index = 0;
 	for (const json& jbone : j["bones"])
 	{
-		bone_index = jbone["bone_idx"];  //maybe the bones are ordered in a different way in parent idx than what we loop throughh... so we need this
+		//bone_index = jbone["bone_idx"];  //maybe the bones are ordered in a different way in parent idx than what we loop throughh... so we need this
 		pI(bone_index) = jbone["parent_idx"];
 		lengths(bone_index) = jbone["bone_length"];
 		Eigen::Matrix4f A = parse_affine(jbone["bone_transform"]).matrix();
@@ -138,7 +138,7 @@ void read_bones_from_json(json& j, int num_X, Eigen::MatrixXd& surfaceW, Eigen::
 		col(0) = bone_index;
 		igl::slice_into(wV_mat, wI, col, surfaceW);
 	
-
+		bone_index += 1;
 		if (wI.rows() == 0 || wV.rows() == 0)
 		{
 			std::cout << "Bone " + std::to_string(bone_index) + " has no effect on any vertices. This will result in singular rig Jacobian. Change your rig" << std::endl;

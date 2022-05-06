@@ -119,18 +119,18 @@ void load_animation_and_fit(std::string anim_filepath, Eigen::VectorXd& p0, Eige
 				0, 0, 0, t(2),
 				0, 0, 0, 0;
 
-	Eigen::Matrix4f Transl_anim; Eigen::VectorXd p_step;
-	for (int step = 0; step < anim_P.cols(); step++)
-	{
-		Eigen::VectorXd p_step = anim_P.col(step);
-		for (int i = 0; i < p_step.rows() / 12; i++)  //go for every bone in the step
-		{
-			Transl_anim =matrix4f_from_parameters(p_step, i);
-			Transl_anim -= Transl; // get rid of this translation.
-			update_parameters_at_handle(p_step, Transl_anim, i);
-		}
-		anim_P.col(step) = p_step;
-	}
+  Eigen::Matrix4f Transl_anim; Eigen::VectorXd p_step;
+  for (int step = 0; step < anim_P.cols(); step++)
+  {
+  	Eigen::VectorXd p_step = anim_P.col(step);
+  	for (int i = 0; i < p_step.rows() / 12; i++)  //go for every bone in the step
+  	{
+  		Transl_anim =matrix4f_from_parameters(p_step, i);
+  		Transl_anim -= Transl; // get rid of this translation.
+  		update_parameters_at_handle(p_step, Transl_anim, i);
+  	}
+  	anim_P.col(step) = p_step;
+  }
 
 
 //Eigen::VectorXd ptmp1, ptmp2;
