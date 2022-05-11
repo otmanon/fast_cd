@@ -55,7 +55,7 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	stiffness = ym / (2.0 * (1.0 + pr));
 	incompressibility = ym* pr / ((1.0 + pr) * (1.0 - 2.0 * pr));
 
-
+	constraints.use_constraints = false;
 
 	Eigen::VectorXi _n; //throwaway var
 	igl::boundary_facets(T, F, FiT, _n);
@@ -65,12 +65,63 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	reduced_newton_solver = new DenseQuasiNewtonSolver(10, 1e-10);
 	full_newton_solver = new QuasiNewtonSolver(10, 1e-10);
 
+	constraints.reduced_newton_solver = new DenseQuasiNewtonSolver(10, 1e-10);
+	constraints.full_newton_solver = new QuasiNewtonSolver(10, 1e-10);
 	update_compelementary_constraint(J, modes_file_dir, clusters_file_dir);
+}
+
+Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc)
+{
+
+	if (!constraints.use_constraints)
+	{
+		std::cout << "simulator is configured to NOT use equality constraints... please call reduced_step() instead" << std::endl;
+		return Eigen::VectorXd::Zero(0);
+	}
+	if (!do_reduction)
+	{
+		std::cout << "simulator not configured for calling reduced_step(). Please switch simulator to reduced mode with sim.switch_reduced(true)..." << std::endl;
+		return Eigen::VectorXd::Zero(0);
+	}
+
+	Eigen::VectorXd r, ur, BMy;
+	//have a valid rig
+
+
+	BMy = rmp.BTMB * (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0 * p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
+	dm.r = J * p_next;
+	dm.BMy_tilde = BMy - rmp.BTMJ * p_next;
+
+	dm.GMKur = fmp.GMKJ * p_next - fmp.GMKX;
+	dm.BKMKur = rmp.BKMKJ * p_next - rmp.BKMKX;
+
+	dm.BKMTIKur = rmp.BKMTIKJ * p_next - rmp.BKMTIKX;
+	dm.GmKur = fmp.GmKJ * p_next - fmp.GmKX;
+
+	Eigen::VectorXd uc_bc;
+
+	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
+	std::function<double(const Eigen::VectorXd&)> f;
+	reduced_qnewton_energy_grad(f, grad_f);
+
+	Eigen::VectorXd z_next;
+
+	bool do_line_search = incompressibility < 1e-8 ? false : true;
+	z_next = constraints.reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc, do_line_search);
+
+	return z_next;
+
 }
 
 
 Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev)
 {
+
+	if (constraints.use_constraints)
+	{
+		std::cout << "simulator is configured to use equality constraints... please call reduced_step_with_equality_constraints() instead" << std::endl;
+		return Eigen::VectorXd::Zero(0);
+	}
 	if (!do_reduction)
 	{
 		std::cout << "simulator not configured for calling reduced_step(). Please switch simulator to reduced mode with sim.switch_reduced(true)..." << std::endl;
@@ -145,6 +196,45 @@ Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen:
 	return uc_next;
 }
 
+Eigen::VectorXd FastCDSim::full_step_with_equality_constraints(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
+	const Eigen::VectorXd& bc)
+{
+	if (do_reduction)
+	{
+		std::cout << "simulator not configured for calling full_step. Please switch simulator to full mode with sim.switch_reduced(false)..." << std::endl;
+		return Eigen::VectorXd::Zero(0);
+	}
+	Eigen::VectorXd My, r;
+	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+
+	r = J * p_next;
+	//compute dynamic matrix at the start of the timestep
+	dm.r = r;//TODO: delete this once we're done playing around with it... unnecessary
+	//precompute_with_constraints AJ and MJ for more speed
+	My = fmp.M * (2.0 * uc_curr - uc_prev) + fmp.MJ * (2.0 * p_curr - p_prev);
+
+	dm.u_prev = uc_prev + J * p_next - x;
+
+	dm.u_curr = uc_curr + J * p_curr - x;
+
+	dm.My_tilde = My - fmp.M * dm.r;// +2 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+	dm.GmKur = fmp.GmKJ * p_next - fmp.GmKX;
+	//	dm.y_tilde = y - dm.r;// +2.0 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+
+	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
+	std::function<double(const Eigen::VectorXd&)> energy;
+	full_qnewton_energy_grad(energy, grad_f);
+
+	Eigen::VectorXd uc_bc;
+	Eigen::VectorXd uc_next;
+	Eigen::VectorXd zero = Eigen::VectorXd::Zero(J.cols());
+	Eigen::VectorXd b = igl::cat(1, zero, bc);
+	bool do_line_search = incompressibility < 1e-8 ? false : true;
+	uc_next = constraints.full_newton_solver->solve_with_equality_constraints(uc_curr, energy, grad_f, b, do_line_search);
+
+	return uc_next;
+}
+
 void FastCDSim::update_compelementary_constraint(const Eigen::SparseMatrix<double>& J, std::string new_modes_dir, std::string new_clusters_dir)
 {
 
@@ -169,11 +259,24 @@ void FastCDSim::update_compelementary_constraint(const Eigen::SparseMatrix<doubl
 
 void FastCDSim::precompute_solvers()
 {
+
 	reduced_newton_solver->precompute(rmp.BTAB);
 	if (!do_reduction)
 	{
-		full_newton_solver->precompute_with_equality_constraints(fmp.A, fmp.Aeq);
+			full_newton_solver->precompute_with_equality_constraints(fmp.A, fmp.Aeq);
 	}	
+	
+	if(constraints.use_constraints)
+	{
+		constraints.reduced_newton_solver->precompute_with_equality_constraints(rmp.BTAB, constraints.SB);
+		if (!do_reduction)
+		{
+			Eigen::SparseMatrix<double> Heq;
+			igl::cat(1, fmp.Aeq, constraints.S, Heq);
+
+			constraints.full_newton_solver->precompute_with_equality_constraints(fmp.A, Heq);
+		}
+	}
 }
 
 void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::VectorXd&)>& f, std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f)
@@ -310,44 +413,23 @@ void FastCDSim::full_qnewton_energy_grad(std::function<double(const Eigen::Vecto
 Makes sure the simulation enforces positional constraints on mesh indices bi. bc is a list of desired vertex positions which will pe 
 enforce as hard constraints in the optimizaiton
 */
-void FastCDSim::make_positional_constraints(Eigen::VectorXi& bi, Eigen::MatrixXd& bc)
+void FastCDSim::make_constraints(Eigen::SparseMatrix<double> S)
 {
-	
-	//Need to make constraint index matrix C  ! This is 3n x 3c matrix This is essentially a selection matrix that maps each constraint to its vertex
-	std::vector<Eigen::Triplet<double >> tripletList;
-	tripletList.reserve(bi.rows() * 3);
-	for (int i = 0; i < bi.rows(); i++)
-	{	
-		tripletList.emplace_back(Eigen::Triplet<double>( i + bi.rows() * 0, bi(i) + X.rows() * 0, 1));
-		tripletList.emplace_back(Eigen::Triplet<double>(i + bi.rows() * 1, bi(i) + X.rows() * 1, 1));
-		tripletList.emplace_back(Eigen::Triplet<double>(i + bi.rows() * 2, bi(i) + X.rows() * 2, 1));
-	}
-	constraint_prefactorization.S.resize( 3*bi.rows(), 3 * X.rows());
-	constraint_prefactorization.S.setFromTriplets(tripletList.begin(), tripletList.end());
-
-	constraint_prefactorization.Pbc = Eigen::Map<Eigen::VectorXd>(bc.data(), bc.rows() * bc.cols()); // additionally will have to change this each timestep because we are solving for displacement, not position
-																// this is constrained position = uc + ur + x. We solve_with_constraints for uc so constraint should become Cu^c = f - Cr													
-	//precompute some constraint matrices.
-	constraint_prefactorization.SB = constraint_prefactorization.S * B;
-	constraint_prefactorization.SJ = constraint_prefactorization.S * J;
-	constraint_prefactorization.SX = constraint_prefactorization.S * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows()*X.cols());
-
+	constraints.S = S;
+	constraints.SB = constraints.S * B;
+	constraints.SJ = constraints.S * J;
+	constraints.SX = constraints.S * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows()*X.cols());
+	constraints.use_constraints = true;
 	precompute_solvers();
 }
 
-void FastCDSim::update_positional_constraints(Eigen::MatrixXd& bc)
-{
-	assert(constraint_prefactorization.S.rows() > 0 && "Cannot update physical constraints if we did not make them first. Please provide list of constrained indices \
-								and call FastCDSim.make_positional_constraints(indeces, constraints)");
-	constraint_prefactorization.Pbc = Eigen::Map<Eigen::VectorXd>(bc.data(), bc.rows() * bc.cols());
-}
 
 void FastCDSim::init_modes(int num_modes)
 {
 	namespace fs = std::filesystem;
 
 	std::string B_file_path = modes_file_dir + "B.DMAT";
-	std::string L_file_path = modes_file_dir + "S.DMAT";
+	std::string L_file_path = modes_file_dir + "L.DMAT";
 	bool found_modes = igl::readDMAT(B_file_path, B_full);
 	bool found_evals = igl::readDMAT(L_file_path, L_full);
 	bool enough_modes = false;
@@ -590,9 +672,12 @@ void FastCDSim::energy(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, 
 {
 	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * 3 );
 	Eigen::VectorXd u_curr, u_prev, u_next;
-	u_next = B * z + J * p_next - x;
-	u_curr = B * z_curr + J * p_curr - x;
-	u_prev = B * z_prev + J * p_prev - x;
+	Eigen::VectorXd ur_next = J * p_next - x;
+	Eigen::VectorXd ur_curr = J * p_curr - x;
+	Eigen::VectorXd ur_prev = J * p_prev - x;
+	u_next = B * z + ur_next ;
+	u_curr = B * z_curr + ur_curr;
+	u_prev = B * z_prev + ur_prev;
 
 	energy(u_next, u_curr, u_prev, bending, volume, inertia);
 }
@@ -641,3 +726,29 @@ void FastCDSim::energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, 
 	//printf("bending : %e, inertia : %e, volume : %e ", elastic, inertia, volume);
 	//double e = elastic + inertia;
 }
+
+
+void FastCDSim::kinetic_energy_complementary_full(const Eigen::VectorXd& uc, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, double& inertia)
+{
+	Eigen::VectorXd u_next = uc;
+	Eigen::VectorXd y = (2.0 * uc_curr) - uc_prev;
+	Eigen::VectorXd u_y = uc - y;
+	Eigen::VectorXd Mu_y = fmp.M * u_y;
+	double uMu = u_y.transpose() * Mu_y;
+	inertia = 0.5 * (1.0 / (dt * dt)) * uMu;
+}
+
+void FastCDSim::kinetic_energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev,double& inertia)
+{
+
+	Eigen::VectorXd uc = B * z, uc_curr = B * z_curr, uc_prev = B * z_prev;
+	Eigen::VectorXd y = (2.0 * uc_curr) - uc_prev;
+	Eigen::VectorXd u_y = uc - y;
+	Eigen::VectorXd Mu_y = fmp.M * u_y;
+	double uMu = u_y.transpose() * Mu_y;
+	inertia = 0.5 * (1.0 / (dt * dt)) * uMu;
+
+
+}
+
+

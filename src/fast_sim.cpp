@@ -148,7 +148,7 @@ void FastSim::init_modes(int num_modes){
 	
 
 	std::string B_file_path = modes_file_dir + "B.DMAT";
-	std::string L_file_path = modes_file_dir + "J.DMAT";
+	std::string L_file_path = modes_file_dir + "L.DMAT";
 	bool found_modes = igl::readDMAT(B_file_path, B_full);
 	bool found_evals = igl::readDMAT(L_file_path, L_full);
 	bool enough_modes = false;

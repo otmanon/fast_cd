@@ -55,15 +55,19 @@ public:
 			bc - c x 3 desired vertex positions
 
 	*/
-	void make_positional_constraints(Eigen::VectorXi& bI, Eigen::MatrixXd& bc);
+	void make_constraints(Eigen::SparseMatrix<double> S);
 
-	void update_positional_constraints(Eigen::MatrixXd& bc);
+	
 
 	Eigen::VectorXd reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev);
 
+	Eigen::VectorXd reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc);
+
+
 	Eigen::VectorXd full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev);
 
-
+	Eigen::VectorXd full_step_with_equality_constraints(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
+		const Eigen::VectorXd& bc);
 	void update_compelementary_constraint(const Eigen::SparseMatrix<double>& J, std::string new_modes_dir, std::string new_clusters_dir);
 
 
@@ -74,8 +78,13 @@ public:
 	void energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& bending, double& volume, double& inertia);
 
 
+	void kinetic_energy_complementary_full(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& inertia);
 
+	void kinetic_energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, double& inertia);
 
+	void energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev,  double& inertia, double&  bending,  double& volume);
+
+	void energy_complementary_full(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& bending, double& volume, double& inertia);
 public:
 	//Rig jacobian
 	Eigen::SparseMatrix<double> J;
@@ -93,7 +102,12 @@ public:
 		Eigen::MatrixXd SB;
 		Eigen::MatrixXd SJ, SX;
 
-	}constraint_prefactorization;
+		bool use_constraints;
+
+		QuasiNewtonSolver* full_newton_solver;
+		DenseQuasiNewtonSolver* reduced_newton_solver;
+
+	} constraints;
 
 
 

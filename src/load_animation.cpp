@@ -29,57 +29,9 @@ void load_animation(std::string anim_filepath, Eigen::MatrixXd& anim_P, bool is_
 }
 
 
-void load_animation_and_fit(std::string anim_filepath, Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::MatrixXd& anim_P, bool& is_global)
+void load_animation_and_fit_to_rest_skeleton_json(std::string anim_filepath, Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::MatrixXd& anim_P, bool& is_global)
 {
-	namespace fs = std::filesystem;
-
-
-		std::vector<std::vector<double>> a ;
-		
-	if (!fs::exists(fs::path(anim_filepath)))
-	{
-		std::cout << "no animation found" << std::endl;
-		return;
-	}
-
-	std::ifstream i(anim_filepath);
-	json j;
-	i >> j;
-
-	std::string bone_aligned_to = j.value("bone_aligned_to:", "z");   //blender bones go locally forward in the x direciton i believe
-	std::string world_up = j.value("up:", "z"); //blender uses a different world up than us by default 
-	std::vector<std::vector<std::vector<std::vector<double>>>> list = j["anim_world_space_matrices"];
-	anim_P.resize(12*list[0].size(), list.size());
-	Eigen::Matrix4d A, A_ref;
-	Eigen::Affine3d T, T_ref, T2;
-
-
-	std::vector<std::vector<std::vector<std::vector<double>>>> tmp;
-	for (int i = 0; i < list.size(); i++)
-	{
-		for (int bi = 0; bi < list[i].size(); bi++)
-		{
-			a = list[i][bi];
-			A << a[0][0], a[0][1], a[0][2], a[0][3],
-				a[1][0], a[1][1], a[1][2], a[1][3],
-				a[2][0], a[2][1], a[2][2], a[2][3],
-				a[3][0], a[3][1], a[3][2], a[3][3];
-			T.matrix() = A;
-
-
-				//z is up... change that to y TODO: make thes econditional
-			T2 = Eigen::AngleAxisd(-igl::PI * 0.5, Eigen::Vector3d::UnitX())* T *Eigen::AngleAxisd(igl::PI * 0.5, Eigen::Vector3d::UnitZ());
-	
-
-			//go to bone entry in parameter list
-			anim_P.block(12 * bi, i, 4, 1) = T2.matrix().row(0).transpose();
-			anim_P.block(12 * bi + 4, i, 4, 1) = T2.matrix().row(1).transpose();
-			anim_P.block(12 * bi + 8, i, 4, 1) = T2.matrix().row(2).transpose();
-
-		}
-	}		
-
-	list.swap(tmp);
+	load_animation_json(anim_filepath, anim_P, is_global);
 
 
 	int num_b = p0.rows() / 12;
@@ -119,26 +71,75 @@ void load_animation_and_fit(std::string anim_filepath, Eigen::VectorXd& p0, Eige
 				0, 0, 0, t(2),
 				0, 0, 0, 0;
 
-  Eigen::Matrix4f Transl_anim; Eigen::VectorXd p_step;
-  for (int step = 0; step < anim_P.cols(); step++)
-  {
-  	Eigen::VectorXd p_step = anim_P.col(step);
-  	for (int i = 0; i < p_step.rows() / 12; i++)  //go for every bone in the step
-  	{
-  		Transl_anim =matrix4f_from_parameters(p_step, i);
-  		Transl_anim -= Transl; // get rid of this translation.
-  		update_parameters_at_handle(p_step, Transl_anim, i);
-  	}
-  	anim_P.col(step) = p_step;
-  }
+   Eigen::Matrix4f Transl_anim; Eigen::VectorXd p_step;
+   for (int step = 0; step < anim_P.cols(); step++)
+   {
+   	Eigen::VectorXd p_step = anim_P.col(step);
+   	for (int i = 0; i < p_step.rows() / 12; i++)  //go for every bone in the step
+   	{
+   		Transl_anim =matrix4f_from_parameters(p_step, i);
+   		Transl_anim -= Transl; // get rid of this translation.
+   		update_parameters_at_handle(p_step, Transl_anim, i);
+   	}
+   	anim_P.col(step) = p_step;
+   }
 
 
-//Eigen::VectorXd ptmp1, ptmp2;
-//for (int i = 0; i < anim_P.cols(); i++)
-//{
-//	ptmp1 = anim_P.col(i);
-//	get_relative_parameters(p0, ptmp1, ptmp2);
-////	anim_P.col(i) = ptmp2;
-//}
-	is_global = false;
+
+}
+
+
+void load_animation_json(std::string anim_filepath, Eigen::MatrixXd& anim_P, bool& is_global)
+{
+	namespace fs = std::filesystem;
+
+
+	std::vector<std::vector<double>> a;
+
+	if (!fs::exists(fs::path(anim_filepath)))
+	{
+		std::cout << "no animation found" << std::endl;
+		return;
+	}
+
+	std::ifstream i(anim_filepath);
+	json j;
+	i >> j;
+
+	std::string bone_aligned_to = j.value("bone_aligned_to:", "z");   //blender bones go locally forward in the x direciton i believe
+	std::string world_up = j.value("up:", "z"); //blender uses a different world up than us by default 
+	std::vector<std::vector<std::vector<std::vector<double>>>> list = j["anim_world_space_matrices"];
+	anim_P.resize(12 * list[0].size(), list.size());
+	Eigen::Matrix4d A, A_ref;
+	Eigen::Affine3d T, T_ref, T2;
+
+
+	std::vector<std::vector<std::vector<std::vector<double>>>> tmp;
+	for (int i = 0; i < list.size(); i++)
+	{
+		for (int bi = 0; bi < list[i].size(); bi++)
+		{
+			a = list[i][bi];
+			A << a[0][0], a[0][1], a[0][2], a[0][3],
+				a[1][0], a[1][1], a[1][2], a[1][3],
+				a[2][0], a[2][1], a[2][2], a[2][3],
+				a[3][0], a[3][1], a[3][2], a[3][3];
+			T.matrix() = A;
+
+
+			//z is up... change that to y TODO: make thes econditional
+			T2 = Eigen::AngleAxisd(-igl::PI * 0.5, Eigen::Vector3d::UnitX()) * T * Eigen::AngleAxisd(igl::PI * 0.5, Eigen::Vector3d::UnitZ());
+
+
+			//go to bone entry in parameter list
+			anim_P.block(12 * bi, i, 4, 1) = T2.matrix().row(0).transpose();
+			anim_P.block(12 * bi + 4, i, 4, 1) = T2.matrix().row(1).transpose();
+			anim_P.block(12 * bi + 8, i, 4, 1) = T2.matrix().row(2).transpose();
+
+		}
+	}
+
+
+	is_global = true; //assume this is always true for now... might be easier if it were just local rotations for LBS but whatevs
+
 }

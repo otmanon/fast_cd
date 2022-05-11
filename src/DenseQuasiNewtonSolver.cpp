@@ -27,7 +27,15 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
     Eigen::MatrixXd Q;
 
     augment_with_linear_constraints(A, S, Q);
-
+  // FullPivLU<MatrixXd> lu_decomp1(S);
+  // double constraint_rank_row = lu_decomp1.rank();
+  // FullPivLU<MatrixXd> lu_decomp2(S.transpose());
+  // double constraint_rank_col = lu_decomp2.rank();
+  // FullPivLU<MatrixXd> lu_decomp3(S * S.transpose());
+  // double constraint_rank = lu_decomp3.rank();
+  // printf("row_rank %g  \n", constraint_rank_row);
+  // printf("col_rank %g  \n", constraint_rank_col);
+  // printf("rank %g  \n", constraint_rank);
     llt_proj.compute(S * S.transpose());
     // std::cout << Qeq.rowwise().sum() << std::endl;
     // ldlt_precomp.compute(Q);
