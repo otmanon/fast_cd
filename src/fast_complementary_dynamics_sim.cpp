@@ -62,15 +62,15 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	//get list of exterior vertex indices
 	igl::unique(F, ext_ind);
 	
-	reduced_newton_solver = new DenseQuasiNewtonSolver(10, 1e-10);
-	full_newton_solver = new QuasiNewtonSolver(10, 1e-10);
+	reduced_newton_solver = new DenseQuasiNewtonSolver();
+	full_newton_solver = new QuasiNewtonSolver();
 
-	constraints.reduced_newton_solver = new DenseQuasiNewtonSolver(10, 1e-10);
-	constraints.full_newton_solver = new QuasiNewtonSolver(10, 1e-10);
+	constraints.reduced_newton_solver = new DenseQuasiNewtonSolver();
+	constraints.full_newton_solver = new QuasiNewtonSolver();
 	update_compelementary_constraint(J, modes_file_dir, clusters_file_dir);
 }
 
-Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc)
+Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, bool to_convergence, int max_iters)
 {
 
 	if (!constraints.use_constraints)
@@ -86,8 +86,6 @@ Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::V
 
 	Eigen::VectorXd r, ur, BMy;
 	//have a valid rig
-
-
 	BMy = rmp.BTMB * (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0 * p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
 	dm.r = J * p_next;
 	dm.BMy_tilde = BMy - rmp.BTMJ * p_next;
@@ -97,15 +95,11 @@ Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::V
 
 	dm.BKMTIKur = rmp.BKMTIKJ * p_next - rmp.BKMTIKX;
 	dm.GmKur = fmp.GmKJ * p_next - fmp.GmKX;
-
 	Eigen::VectorXd uc_bc;
-
 	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
 	std::function<double(const Eigen::VectorXd&)> f;
 	reduced_qnewton_energy_grad(f, grad_f);
-
 	Eigen::VectorXd z_next;
-
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
 	z_next = constraints.reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc, do_line_search);
 
@@ -114,9 +108,8 @@ Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::V
 }
 
 
-Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev)
+Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, bool to_convergence, int max_iters)
 {
-
 	if (constraints.use_constraints)
 	{
 		std::cout << "simulator is configured to use equality constraints... please call reduced_step_with_equality_constraints() instead" << std::endl;
@@ -127,11 +120,8 @@ Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eig
 		std::cout << "simulator not configured for calling reduced_step(). Please switch simulator to reduced mode with sim.switch_reduced(true)..." << std::endl;
 		return Eigen::VectorXd::Zero(0);
 	}
-
 	Eigen::VectorXd r, ur, BMy;
 	//have a valid rig
-
-	
 	BMy = rmp.BTMB *  (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0*p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
 	dm.r = J * p_next;
 	dm.BMy_tilde = BMy - rmp.BTMJ * p_next;
@@ -149,15 +139,13 @@ Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eig
 	reduced_qnewton_energy_grad(f, grad_f);
 
 	Eigen::VectorXd z_next;
-
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
-	z_next = reduced_newton_solver->solve(z_curr, f, grad_f, do_line_search);
+	z_next = reduced_newton_solver->solve(z_curr, f, grad_f, do_line_search, to_convergence, max_iters);
 	
 	return z_next;
-
 }
 
-Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev)
+Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, bool to_convergence, int max_iters)
 {
 	if (do_reduction)
 	{
@@ -191,13 +179,13 @@ Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen:
 	Eigen::VectorXd zero = Eigen::VectorXd::Zero(J.cols());
 
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
-	uc_next = full_newton_solver->solve_with_equality_constraints(uc_curr, energy,  grad_f, zero, do_line_search);
+	uc_next = full_newton_solver->solve_with_equality_constraints(uc_curr, energy,  grad_f, zero, do_line_search, to_convergence, max_iters);
 	
 	return uc_next;
 }
 
 Eigen::VectorXd FastCDSim::full_step_with_equality_constraints(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
-	const Eigen::VectorXd& bc)
+	const Eigen::VectorXd& bc, bool to_convergence, int max_iters)
 {
 	if (do_reduction)
 	{
@@ -230,14 +218,12 @@ Eigen::VectorXd FastCDSim::full_step_with_equality_constraints(const Eigen::Vect
 	Eigen::VectorXd zero = Eigen::VectorXd::Zero(J.cols());
 	Eigen::VectorXd b = igl::cat(1, zero, bc);
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
-	uc_next = constraints.full_newton_solver->solve_with_equality_constraints(uc_curr, energy, grad_f, b, do_line_search);
-
+	uc_next = constraints.full_newton_solver->solve_with_equality_constraints(uc_curr, energy, grad_f, b, do_line_search, to_convergence, max_iters);
 	return uc_next;
 }
 
 void FastCDSim::update_compelementary_constraint(const Eigen::SparseMatrix<double>& J, std::string new_modes_dir, std::string new_clusters_dir)
 {
-
 	this->J = J;
 	if (this->J.cols() == 0)
 	{
@@ -253,19 +239,20 @@ void FastCDSim::update_compelementary_constraint(const Eigen::SparseMatrix<doubl
 	else
 		igl::colon(0, T.rows() - 1, labels);
 	init_system_matrices();
-	
 	precompute_solvers();
 }
 
 void FastCDSim::precompute_solvers()
 {
-
-	reduced_newton_solver->precompute(rmp.BTAB);
-	if (!do_reduction)
+	if (!constraints.use_constraints)
 	{
-			full_newton_solver->precompute_with_equality_constraints(fmp.A, fmp.Aeq);
-	}	
-	
+		reduced_newton_solver->precompute(rmp.BTAB);
+		if (!do_reduction)
+		{
+				full_newton_solver->precompute_with_equality_constraints(fmp.A, fmp.Aeq);
+		}	
+
+	}
 	if(constraints.use_constraints)
 	{
 		constraints.reduced_newton_solver->precompute_with_equality_constraints(rmp.BTAB, constraints.SB);
@@ -452,6 +439,7 @@ void FastCDSim::init_modes(int num_modes)
 		//compute modes and load into S_full and B_full
 		Eigen::MatrixXd modes;
 		#ifdef FAST_CD_USE_MATLAB
+		//	compute_modes_spectra(H, M, num_modes, modes, L_full);
 				compute_modes_matlab(H, M, num_modes, modes, L_full);
 		#else
 				compute_modes_spectra(H, M, num_modes, modes, L_full);
@@ -490,7 +478,8 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 
 			Eigen::MatrixXd C;
 		#ifdef FAST_CD_USE_MATLAB
-			compute_clusters_matlab(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+			//compute_clusters_matlab(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+			compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
 		#else
 			compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
 		#endif

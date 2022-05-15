@@ -32,12 +32,22 @@ bool InteractiveCDHook::render(igl::opengl::glfw::Viewer& viewer)
   
     if (as.animation_mode == ANIMATION_MODE::INTERACTIVE_ANIMATION)
     {
-        if (as.constraint_type == PINNING)
-            render_pinning(viewer);
+        if (v_state.vis_mode == BONE_WEIGHTS)
+        {
+            Eigen::VectorXd c = rig->W.col(v_state.bone_number);
+            Eigen::VectorXd c_faces;
+            igl::slice(c, ext_ind, c_faces);
+            viewer.data_list[0].set_data(c_faces, 0, 1);
+        }
         else
-            render_cd(viewer);
+        {
+            if (as.constraint_type == PINNING)
+                render_pinning(viewer);
+            else
+                render_cd(viewer);
    
-        as.rig_controller->render(viewer);
+            as.rig_controller->render(viewer);
+        }
     }
     else
     {
@@ -360,6 +370,21 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
            // set_viewer_color_textures(*viewer, as.texture_png_path, V0_ext, F_ext, V_high_res,
            //     F_high_res, UV_high_res, FUV_high_res, v_state.coarse_vis_id, v_state.fine_vis_id);
         }
+        else if (v_state.vis_mode == BONE_WEIGHTS)
+        {
+            fcd_viewer.igl_v->data_list[0].show_texture = false;
+            //  set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
+            fcd_viewer.clear_all();
+            fcd_viewer.set_mesh(V_ext, F_ext, 0);
+            fcd_viewer.invert_normals(0);
+            fcd_viewer.set_double_sided(true, 0);
+     
+            Eigen::VectorXd c, c_faces;
+            c = rig->W.col(v_state.bone_number);
+            igl::slice(c, ext_ind, c_faces);
+            fcd_viewer.set_data(c_faces, 0);
+      
+        }
     }
 }
 
@@ -623,6 +648,7 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
             ImGui::RadioButton("Matcap", (int*)&new_v_state.vis_mode, (int)VIS_MODE::MATCAP); ImGui::SameLine();
             ImGui::RadioButton("Clusters", (int*)&new_v_state.vis_mode, (int)VIS_MODE::CLUSTERS); ImGui::SameLine();
             ImGui::RadioButton("Textures", (int*)&new_v_state.vis_mode, (int)VIS_MODE::TEXTURES);
+            ImGui::RadioButton("Bone Weights", (int*)&new_v_state.vis_mode, (int)VIS_MODE::BONE_WEIGHTS);
             if (v_state.vis_mode != new_v_state.vis_mode || changed_proj)
             {
                 v_state.vis_mode = new_v_state.vis_mode;
@@ -635,8 +661,17 @@ void InteractiveCDHook::draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu)
                 viewer->data_list[v_state.coarse_vis_id].is_visible = v_state.show_cage;
 
             }
+            if (v_state.vis_mode == BONE_WEIGHTS)
+            {
+
+                ImGui::SliderInt("Bone Number", &v_state.bone_number, 0, rig->p0.rows() / 12 - 1);
+            }
+
+
         }
     }
+
+
 
     if (ImGui::CollapsingHeader("Rigs"))
     {

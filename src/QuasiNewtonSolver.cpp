@@ -4,8 +4,7 @@
 #include <iostream>
 #include "augment_with_linear_constraints.h"
 #include "igl/min_quad_with_fixed.h"
-QuasiNewtonSolver::QuasiNewtonSolver(const int max_iter, const double tolerance, double alpha, int max_iter_line_search) :
-    max_iters(max_iter), tolerance(tolerance), alpha(alpha), max_iter_line_search(max_iter_line_search)
+QuasiNewtonSolver::QuasiNewtonSolver()
 {}
 
 
@@ -40,7 +39,7 @@ void QuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::Sparse
 }
 
 Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search, bool to_convergence, double max_iters)
 {
     Eigen::VectorXd z_prev, z_next;
     Eigen::VectorXd dz, g, ub;
@@ -50,15 +49,16 @@ Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function
     rhs.setZero();
 
     z_next = z - S.transpose() * S * z;
-   
-    for (int i = 0; i < max_iters; i++)
+    bool converged = false;
+    double diff = 0;
+    int i = 0;
+    while (!converged)
     {
         alpha = 2.0;
         z_prev = z_next;
         g = grad_f(z_next);
 
-        if (g.squaredNorm() < 1e-5)
-            break;
+       
         rhs.topRows(g.rows()) = -g;             //leave rhs dealing with constraints = 0 always
         dz = ldlt_precomp.solve(rhs);
 
@@ -80,14 +80,29 @@ Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function
         {
             z_next += dz;
         }
+
+        //stopping criteria
+        i += 1;
+
+        diff = (z_next - z_prev).norm();
+        if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
+        {
+            converged = true;
+        }
+        else if (!to_convergence && i == max_iters)
+        {
+            break;
+        }
         // std::cout << alpha << std::endl;
     }
-    std::cout << "energy : " << f(z_next) << std::endl;
+
+    printf("Converged after %i iterations, with %g difference \n ", i, diff);
+
     return z_next;
 }
 
 Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search, bool to_convergence, double max_iters)
 {
     assert(S.rows() == bc0.rows() && "Gave linear equality constraint rhs, but don't have a linear equality constraint matrix precomputed. \
                                                     Make sure you called precompute_with_constraints(Q, Qeq) before this");
@@ -106,7 +121,11 @@ Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::
    //  z_next = z - S.transpose() * (S * z - bc0);
     double e0 = 1;
     double e = e0 + 1;
-    for (int i = 0; i < max_iters; i++)
+
+    bool converged = false;
+    double diff = 0;
+    int i = 0;
+    while(!converged)
     {
         e0 = e;
         z_prev = z_next;
@@ -137,6 +156,22 @@ Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::
         {
             z_next += dz;
         }
+
+        //stopping criteria
+        i += 1;
+
+        diff = (z_next - z_prev).norm();
+        if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
+        {
+            converged = true;
+        }
+        else if (!to_convergence && i == max_iters)
+        {
+            break;
+        }
     }
+    printf("Converged after %i iterations, with %g difference \n ", i, diff);
+
+
     return z_next;
 }

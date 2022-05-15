@@ -10,7 +10,7 @@ Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::Vect
 	C *= -1;
 	Eigen::MatrixXd Beq;
 
-	Eigen::MatrixXi BI = bI.replicate(1, surfaceW.rows());
+ 	Eigen::MatrixXi BI = bI.replicate(1, surfaceW.rows());
 	Eigen::MatrixXd B = Eigen::MatrixXd::Zero(C.rows(), surfaceW.cols());
 	igl::min_quad_with_fixed_data<double> data;
 	igl::min_quad_with_fixed_precompute(C, bI, Aeq, true, data);

@@ -31,8 +31,7 @@ void SkeletonRig::init_rig_selection_matrix(double radius)
 	bI.resize(W.cols()); // get one index list per bone
 
 	int ci = 0; //keeps track of the number of constrained vertices
-	if (rig_pinning == "ball")
-	{
+
 		Eigen::MatrixXd joints, tips, C;
 		get_joint_positions_from_parameters(p0, joints);
 		get_tip_positions_from_parameters(p0, lengths, tips);
@@ -64,7 +63,7 @@ void SkeletonRig::init_rig_selection_matrix(double radius)
 				ci += 1;
 			}
 		}
-	}
+	
 	/*Can also do this by weight, or by slab One approach, there are a few others we can try
 
 	}
@@ -145,6 +144,19 @@ void read_bones_from_json(json& j, int num_X, Eigen::MatrixXd& surfaceW, Eigen::
 			exit(0);
 		}
 	}
+}
+
+SkeletonRig::SkeletonRig(Eigen::MatrixXd& X, Eigen::VectorXd& p0, Eigen::MatrixXd& W, Eigen::VectorXi& pI, Eigen::VectorXd& lengths, double radius)
+{
+	this->X = X;
+	this->p0 = p0;
+	this->W = W;
+	this->pI = pI;
+	this->lengths = lengths;
+	this->radius = radius;
+
+	init_rig_jacobian();
+	init_rig_selection_matrix(radius);
 }
 
 SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
@@ -254,7 +266,7 @@ namespace fs = std::filesystem;
 	std::ifstream i(filename);
 	i >> j;
 
-	rig_pinning = j.value("rig_pinning", "ball");
+	std::string rig_pinning = j.value("rig_pinning", "ball");
 	std::vector<std::vector<double>> X_list = j["X"];
 	std::vector<std::vector<double>> W_list = j["W"];
 	std::vector<double> p0_list = j["p0"];
@@ -266,6 +278,8 @@ namespace fs = std::filesystem;
 	p0 = Eigen::Map<Eigen::VectorXd>(&p0_list[0], p0_list.size());
 	pI = Eigen::Map<Eigen::VectorXi>(&pI_list[0], pI_list.size());
 	lengths = Eigen::Map<Eigen::VectorXd>(&length_list[0], length_list.size());
+
+	i.close();
 	return true;
 }
 
@@ -293,13 +307,14 @@ bool SkeletonRig::write_rig_to_json(std::string filename)
 	pI_list = std::vector<int>(pI.data(), pI.data() + pI.rows());
 	length_list = std::vector<double>(lengths.data(), lengths.data() + lengths.rows());
 
-	j["rig_type"] = "handle_rig";
-	//save mesh positions
+	j["rig_type"] = std::string("handle_rig");
+	////save mesh positions
 	j["X"] = X_list;
 	j["W"] = W_list;
 	j["p0"] = p0_list;
-
-	o << std::setw(4) << j << std::endl;
-
+	j["pI"] = pI_list;
+	j["lengths"] = length_list;
+	o << j << std::endl;
+	o.close();
 	return true;
 }

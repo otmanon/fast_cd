@@ -420,7 +420,7 @@ void FastCDViewer::render_reduced_gpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& 
 
 void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
-void FastCDViewer::set_pre_draw_callback(std::function<bool()>& callback)
+void FastCDViewer::set_pre_draw_callback(std::function<void()>& callback)
 {
 	igl_v->callback_pre_draw = [&](igl::opengl::glfw::Viewer&)->bool
 	{

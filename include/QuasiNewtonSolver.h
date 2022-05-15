@@ -9,21 +9,20 @@ class QuasiNewtonSolver
 {
 public:
 
-	QuasiNewtonSolver(const int max_iter, const double tolerance, double alpha = 1, int max_iter_line_search = 1);
+	QuasiNewtonSolver();
 
 	void precompute(const Eigen::SparseMatrix<double>& Q);
 	
 	void precompute_with_equality_constraints(const Eigen::SparseMatrix<double>& Q, const Eigen::SparseMatrix<double>& S);
 
 	Eigen::VectorXd solve(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-		std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search = true); //this hess_f should just evaluate the laplacian, in the rest state... remains constant for now and doesn't change with z
+		std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search = true, bool to_convergence = false, double max_iters = 10); //this hess_f should just evaluate the laplacian, in the rest state... remains constant for now and doesn't change with z
 
 	//solves for z using a newton iterative scheme with constraints bc.
 	Eigen::VectorXd solve_with_equality_constraints(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-		std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search = true);
+		std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search = true, bool to_convergence = false, double max_iters = 10);
 public:
-	int max_iters;
-	int max_iter_line_search;
+
 
 	double alpha;
 

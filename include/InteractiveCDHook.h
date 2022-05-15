@@ -10,7 +10,7 @@
 //#include "ConstraintController.h" //TODO make this its own rig tbh that way we can use model reduction and have all modes be orthogonal to the constraints
 enum ANIMATION_MODE{ INTERACTIVE_ANIMATION, EIGENMODES_ANIMATION};
 enum CONSTRAINT_TYPE{COMPLEMENTARY_DYNAMICS, PINNING};
-enum VIS_MODE { CLUSTERS, MATCAP, TEXTURES };
+enum VIS_MODE { CLUSTERS, MATCAP, TEXTURES, BONE_WEIGHTS };
 class InteractiveCDHook
 {
 public:
@@ -186,6 +186,7 @@ public:
         bool vis_cd;
         bool show_cage; // if vis_mode==Textures, whether or not to render the cage with it
         VIS_MODE vis_mode;
+        int bone_number;
     } v_state, new_v_state;
 
     Eigen::Matrix< float, Eigen::Dynamic, 3, Eigen::RowMajor> tex;

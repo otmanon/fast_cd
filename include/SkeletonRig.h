@@ -24,6 +24,10 @@ public:
 	*/
 	SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius=5e-2);
 
+	SkeletonRig(Eigen::MatrixXd& X, Eigen::VectorXd& p0, Eigen::MatrixXd& W, Eigen::VectorXi& pI, Eigen::VectorXd& lengths, double radius = 5e-2);
+
+		//new SkeletonRig(V0, rig->p0, permuted_W, rig->pI, rig->lengths);)
+
 		/*
 		Constructor with an input rig file in the volume format. This format just includes mesh vertex rest positions, rest pose rig parameters p0,
 		A weight for each bone, bone lengths, and a bone hierarchy list, which is an index into the bone list for each parent

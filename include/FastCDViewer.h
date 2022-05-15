@@ -13,7 +13,16 @@ public:
 	FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuiWidget* guizmo);
 	void launch();
 
-	void set_pre_draw_callback(std::function<bool()>& callback);
+	void set_pre_draw_callback(std::function<void()>& callback);
+
+	void set_key_pressed_callback(std::function<void(unsigned int key, int modifier)>& callback_key_pressed)
+	{
+		igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
+		{
+			callback_key_pressed(key, modifier);
+			return false;
+		};
+	}
 
 	void attach_guizmo(igl::opengl::glfw::imgui::ImGuizmoWidget& guizmo)
 	{
@@ -67,6 +76,10 @@ public:
 		igl_v->data_list[id].set_colors(d);
 	}
 
+	void set_double_sided(bool ds, int id)
+	{
+		igl_v->data_list[id].double_sided = ds;
+	}
 	void invert_normals(int id)
 	{
 		igl_v->data_list[id].invert_normals = !igl_v->data_list[id].invert_normals;
@@ -76,6 +89,19 @@ public:
 	{
 		Eigen::RowVector3d z(0, 0, 0);
 		igl_v->data_list[id].set_points(points, z);
+	}
+
+	void configure_wireframe_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, int id)
+	{
+		igl_v->data_list[id].clear();
+		igl_v->data_list[id].set_mesh(V, F);
+		igl_v->data_list[id].show_faces = false;
+		igl_v->data_list[id].show_lines = true;
+	}
+
+	void set_data(Eigen::VectorXd D, int i)
+	{
+		igl_v->data_list[i].set_data(D);
 	}
 
 	void set_points(Eigen::MatrixXd& points, Eigen::RowVector3d& z, int id)

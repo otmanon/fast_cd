@@ -28,6 +28,5 @@ void compute_modes_matlab(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<do
     t = igl::matlab::mlgetscalar(&engine, "time");
     printf("Total matlab::eigs decomposition time: %g... \n", t);
     S = S_mat.diagonal(); // Eigen::Map<Eigen::VectorXd>(S_mat.data(), S_mat.rows(), 1);
-  
 }
 #endif

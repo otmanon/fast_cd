@@ -134,6 +134,8 @@ void InteractiveCDHook::init_vis_state()
     v_state.vis_cd = true;
     v_state.vis_mode = VIS_MODE::TEXTURES;
     v_state.show_cage = false;
+
+    v_state.bone_number = 0;
 }
 
 void InteractiveCDHook::init_modal_anim_state()
@@ -211,6 +213,8 @@ void InteractiveCDHook::init_app_from_json(std::string& file)
 
     as.proj_gpu = 1;
     new_as = as;
+
+
 
 
 }

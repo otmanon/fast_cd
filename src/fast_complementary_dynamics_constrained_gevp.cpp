@@ -33,4 +33,10 @@ void fast_complementary_dynamics_constrained_geivp(const Eigen::MatrixXd& X, con
     M_exp = sparse_diag(diag);
 
 
+    Eigen::SparseMatrix<double> I;
+    I.resize(H.rows(), H.rows());
+    I.setIdentity();
+
+   // H += 1e-8 * I;
+
 }

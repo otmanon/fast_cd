@@ -37,8 +37,8 @@ FastSim::FastSim(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, const Eigen
 	stiffness = ym / (2.0 * (1.0 + pr));
 	incompressibility = ym * pr / ((1.0 + pr) * (1.0 - 2.0 * pr));
 
-	reduced_newton_solver = new DenseQuasiNewtonSolver(10, 1e-10);
-	full_newton_solver = new QuasiNewtonSolver(10, 1e-6, 1, 1);
+	reduced_newton_solver = new DenseQuasiNewtonSolver();
+	full_newton_solver = new QuasiNewtonSolver();
 
 	do_clustering = false;
 	do_reduction = false;

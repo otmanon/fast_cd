@@ -28,6 +28,7 @@
 #include <write_sparse_ijv_DMAT.h>
 
 #include <igl/get_seconds.h>
+
 bool InteractiveCDHook::simulateOneStep()
 {
     //Q += dt * Eigen::MatrixXd::Ones(Q.rows(), Q.cols());
@@ -52,7 +53,7 @@ bool InteractiveCDHook::simulateOneStep()
             {
                 full_sim_step_pinning_control();
             }
-        }
+        }     
         else
         {
          //   as.constraint_controller->get_interactive_motion(bc);
@@ -274,7 +275,7 @@ void InteractiveCDHook::sim_step_modal_animation()
         B_flat = sim.B.col(mas.mode);
     }
 
-    double scale = 0.1* (1.0 - cos( (2* igl::PI / (mas.period)) * i));
+    double scale = 0.005* (1.0 - cos( (2* igl::PI / (mas.period)) * i));
     std::cout << scale << std::endl;
     u_curr = scale * B_flat;
    // V += mas.scale * Eigen::Map<Eigen::MatrixXd>(B_flat.data(), V.rows(), 3);
