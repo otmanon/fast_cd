@@ -404,6 +404,22 @@ void FastCDSim::make_constraints(Eigen::SparseMatrix<double> S)
 {
 	constraints.S = S;
 	constraints.SB = constraints.S * B;
+
+	
+	//FullPivLU<MatrixXd> lu_decomp3(B.transpose() * B);
+	//std::cout << "rank of B : " << lu_decomp3.rank() << std::endl;
+	//std::cout << "number of row of B : " << B.transpose().cols() << std::endl;
+	//
+	//
+	//Eigen::MatrixXd ST = S.transpose();
+	//FullPivLU<MatrixXd> lu_decomp(S.transpose() * S);
+	//std::cout << "rank of J : " << lu_decomp.rank() << std::endl;
+	//std::cout << "number of row of J : " << S.transpose().rows() << std::endl;
+	//
+	//
+	//FullPivLU<MatrixXd> lu_decomp2(constraints.SB.transpose() * constraints.SB);
+	//std::cout << "rank of JB : " << lu_decomp2.rank() << std::endl;
+	//std::cout << "number of row of JB : " << constraints.SB.rows() << std::endl;
 	constraints.SJ = constraints.S * J;
 	constraints.SX = constraints.S * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows()*X.cols());
 	constraints.use_constraints = true;
@@ -523,9 +539,13 @@ void FastCDSim::init_full_system_matrices()
 	//constructs A matrix, and does preomputation if we will use it directly
 	fmp.A = stiffness * fmp.C + (1.0 / dt) * (1.0 / dt) * fmp.M;
 
+
 	complementary_equality_constraint(X, T, J, fmp.Aeq);
+
 	fmp.MJ = fmp.M * J;
 	fmp.MX = fmp.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+
+
 
 	//flattened_deformation_gradient matrices. 
 	deformation_gradient_from_u_prefactorized_matrices(X, T, fmp.H, fmp.K, fmp.Vol_exp);

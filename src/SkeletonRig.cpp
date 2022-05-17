@@ -21,9 +21,9 @@
 #include "get_joint_positions_from_parameters.h"
 #include "interweaving_matrix.h"
 #include <filesystem>
-
+#include "igl/writeDMAT.h"
 #include <Eigen/Geometry>
-
+#include <igl/writeMSH.h>
 
 void SkeletonRig::init_rig_selection_matrix(double radius)
 {
@@ -231,7 +231,10 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	igl::slice(W_tmp, bI, 1, surface_W);
 	Eigen::MatrixXd volume_W = surface_to_volume_weights(surface_W, bI, X, T);
 
+	Eigen::MatrixXd WT = volume_W.transpose();
 	//finally
+	Eigen::RowVectorXd colSums = volume_W.colwise().sum();
+	Eigen::RowVectorXd rowSums = volume_W.rowwise().sum();
 	this->W = volume_W;
 	this->X = X;
 
@@ -246,6 +249,12 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	//init_rig_selection_matrix(); // hold off on this for now
 	//TODO: mesh bones into the mesh. hold off on this.
 
+
+	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/weights.dmat", W);
+	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/jacobian.dmat", J.toDense());
+	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/X.dmat", X);
+	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/T.dmat", T);
+//	igl::writeMSH(fs::path(surface_file_name).parent_path().string() + "coarse_elephant.msh", X, T);
 }
 
 SkeletonRig::SkeletonRig(std::string volume_file_name, double radius)

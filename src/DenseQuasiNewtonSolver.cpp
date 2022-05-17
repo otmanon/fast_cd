@@ -3,7 +3,7 @@
 #include "line_search.h"
 #include <iostream>
 #include "augment_with_linear_constraints.h"
-
+#include <igl/matlab/matlabinterface.h>
 DenseQuasiNewtonSolver::DenseQuasiNewtonSolver()
 {}
 
@@ -31,7 +31,12 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
     this->S = S;
     Eigen::MatrixXd Q;
 
+
+   // FullPivLU<MatrixXd> lu_decomp2(A);
+   // std::cout << "rank of A : " << lu_decomp2.rank() << std::endl;
+   // std::cout << "number of row of A : " << A.rows() << std::endl;
     augment_with_linear_constraints(A, S, Q);
+
   // FullPivLU<MatrixXd> lu_decomp1(S);
   // double constraint_rank_row = lu_decomp1.rank();
   // FullPivLU<MatrixXd> lu_decomp2(S.transpose());
@@ -41,15 +46,57 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
   // printf("row_rank %g  \n", constraint_rank_row);
   // printf("col_rank %g  \n", constraint_rank_col);
   // printf("rank %g  \n", constraint_rank);
-    llt_proj.compute(S * S.transpose());
+  //  Engine* engine;
+  //  Eigen::MatrixXd H = S * S.transpose();
+  //  Eigen::MatrixXd I(S.rows(), S.rows());
+  //  I.setIdentity();
+  //  H += 1e-8 * I;
+
+  // llt_proj.compute(H);
+  // Eigen::VectorXd z, v;
+  // Eigen::VectorXd ones = Eigen::VectorXd::Ones(H.rows());
+  // if (H.rows() > 0)
+  // {
+  // z = llt_proj.solve(ones);
+  // v = H * z;
+  // std::cout << " Partial differentce error : " << (v - ones).norm() << std::endl;
+  //  FullPivLU<MatrixXd> lu_decomp1(H);
+  //  std::cout << "rank of H : " << lu_decomp1.rank() << std::endl;
+  //  std::cout << "number of row of H : " << H.rows() << std::endl;
+  //
+  //  Eigen::MatrixXd testH = lu_decomp1.reconstructedMatrix();
+  //  std::cout << "H difference " << (H - testH).norm() << std::endl;
+  //
+  //  Eigen::MatrixXd ST = S.transpose();
+  //  FullPivLU<MatrixXd> lu_decomp4(ST);
+  //  std::cout << "rank of S : " << lu_decomp4.rank() << std::endl;
+  //  std::cout << "number of row of S : " << S.rows() << std::endl;
+
+ //  }
+ //  igl::matlab::mlinit(&engine);
+ //  igl::matlab::mlsetmatrix(&engine, "S", S);
+ //  igl::matlab::mleval(&engine, "spy(S)");
     // std::cout << Qeq.rowwise().sum() << std::endl;
     // ldlt_precomp.compute(Q);
+   // Eigen::VectorXd rowsumH = H.rowwise().sum();
+   // Eigen::VectorXd rowsumS = S.rowwise().sum();
     ldlt_precomp.compute(Q);
+  //  ones = Eigen::VectorXd::Ones(Q.rows());
+  //  z = lu_precomp.solve(ones);
+  //  v = Q * z;
+  //  Eigen::MatrixXd testQ = lu_precomp.reconstructedMatrix();
+  //  std::cout << "Q difference " << (Q - testQ).norm() << std::endl;
+  //  std::cout << " Full differentce error : " << (v - ones).norm() << std::endl;
+  //
+  //  std::cout << "Is invertible : " << lu_precomp.isInvertible() << std::endl;
+  //
+  //  std::cout << "rank of Q : " << lu_precomp.rank() << std::endl;
+  //  std::cout << "number of row of Q : " << Q.rows() << std::endl;
     //llt_precomp.compute(A);
-   if (ldlt_precomp.info() != Success) {
-       std::cout << "LDLT factorization of system matrix failed" << std::endl;
-       exit(0);
-   }
+  // if (ldlt_precomp.info() != Success) {
+  //     std::cout << "LDLT factorization of system matrix failed" << std::endl;
+  //     exit(0);//
+  // }
 }
 
 Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
@@ -137,6 +184,8 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     //project to constraint space first (this helps with convergence of high stiffness)
   //  z_next = -z + S.transpose() * (llt_proj.solve(bc0 + S * z));
     z_next = z + S.transpose() * (llt_proj.solve(bc0 - S * z));
+
+    Eigen::VectorXd z_test = S * z;
     double e0 = 1;
     double e = e0 + 1;
     int i = 0;
@@ -145,6 +194,9 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     while (!converged)
     {
         e0 = e;
+        z_next = z_next + S.transpose() * (llt_proj.solve(bc0 - S * z_next));
+        z_test = S * z_next;
+        std::cout << z_test.norm() << ": constraint enforcement" << std::endl;
         z_prev = z_next;
         g = grad_f(z_next);
         
@@ -153,6 +205,8 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
         rhs.bottomRows(S.rows()).setZero();
         const Eigen::VectorXd dir = ldlt_precomp.solve(rhs);
         dz = dir.topRows(z_next.rows());
+
+       // Eigen::VectorXd v = lu_precomp.appl(rhs.transpose());
        // z_next += dz;
 
         if (do_line_search)

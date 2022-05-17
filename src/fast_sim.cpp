@@ -177,11 +177,11 @@ void FastSim::init_modes(int num_modes){
 		Eigen::MatrixXd modes;
 #ifdef FAST_CD_USE_MATLAB
 //#error "should not get here"
-		compute_modes_matlab(H, M, num_modes, modes, L_full);
+		compute_modes_matlab(H, M, num_modes+6, modes, L_full);
 #else
 		compute_modes_spectra(H, M, num_modes, modes, L_full);
 #endif
-		B_full = modes.block(0, 0, 3*X.rows(), num_modes);
+		B_full = modes.block(0, 6, 3*X.rows(), num_modes); //not the affine ones
 
 		if (!fs::exists(fs::path(B_file_path).parent_path()))
 		{
@@ -519,7 +519,7 @@ void FastSim::precompute_solvers()
 			//Eigen::VectorXi all = igl::colon<int>(0, X.rows() * 3-1);
 			//Eigen::VectorXi bi_flat = sm.J.cast<int>() * all;
 
-		full_newton_solver->precompute_with_equality_constraints(fmp.A, J);
+		full_newton_solver->precompute_with_equality_constraints(fmp.A, J.transpose());
 	}
 }
 

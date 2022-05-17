@@ -32,6 +32,6 @@ public:
 	
 	Eigen::LLT<Eigen::MatrixXd> llt_precomp;
 	Eigen::LDLT<Eigen::MatrixXd> ldlt_precomp;
-
+	Eigen::FullPivLU<Eigen::MatrixXd> lu_precomp;
 	Eigen::LLT<Eigen::MatrixXd> llt_proj;
 };

@@ -29,9 +29,9 @@ void QuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::Sparse
     // std::cout << Qeq.rowwise().sum() << std::endl;
     // ldlt_precomp.compute(Q);
     ldlt_precomp.compute(Q);
+  
 
-    llt_proj.compute(S * S.transpose());
-   
+    
     if (ldlt_precomp.info() != Success) {
         std::cout << "LDLT factorization of system matrix failed" << std::endl;
         exit(0);

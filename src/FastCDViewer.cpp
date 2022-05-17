@@ -114,6 +114,8 @@ void FastCDViewer::configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixX
 
     igl_v->data_list[id].set_mesh(V, F);
     igl_v->data_list[id].set_colors(color);
+    igl_v->data_list[id].double_sided = true;
+    igl_v->data_list[id].set_face_based(true);
 
 }
 
