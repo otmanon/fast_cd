@@ -1,7 +1,8 @@
 #include "compute_clusters_igl.h"
 #include "kmeans.h"
 #include <igl/average_onto_faces.h>
-
+#include "split_components.h"
+#include "tet_adjacency_matrix.h"
 void compute_clusters_igl(const Eigen::MatrixXi& T, const Eigen::MatrixXd& B, const Eigen::VectorXd& L, const int num_clusters, const int num_feature_modes, Eigen::VectorXi& labels, Eigen::MatrixXd& C)
 {
     int c, k;
@@ -15,5 +16,11 @@ void compute_clusters_igl(const Eigen::MatrixXi& T, const Eigen::MatrixXd& B, co
     //optionally normalize by S
     Eigen::MatrixXd B_faces;
     igl::average_onto_faces(T, B_verts, B_faces);
-    igl::kmeans(B_faces, num_clusters, C, labels);
+    Eigen::VectorXi labels_global;
+    igl::kmeans(B_faces, num_clusters, C, labels_global);
+
+    Eigen::SparseMatrix<bool, 0, int> A;
+    tet_adjacency_matrix_vert_share(T, A); 
+
+    igl::split_components(labels_global, A, labels);
 }

@@ -29,7 +29,7 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
 {
 
     this->S = S;
-    Eigen::MatrixXd Q;
+
 
 
    // FullPivLU<MatrixXd> lu_decomp2(A);
@@ -52,17 +52,17 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
   //  I.setIdentity();
   //  H += 1e-8 * I;
 
-  // llt_proj.compute(H);
+  // llt_proj.compute(H_hello_demo);
   // Eigen::VectorXd z, v;
-  // Eigen::VectorXd ones = Eigen::VectorXd::Ones(H.rows());
-  // if (H.rows() > 0)
-  // {
+  // Eigen::VectorXd ones = Eigen::VectorXd::Ones(H_hello_demo.rows());
+  // if (H.rows() > 0) sddfadsf;
+  // { sddfadsf;
   // z = llt_proj.solve(ones);
   // v = H * z;
   // std::cout << " Partial differentce error : " << (v - ones).norm() << std::endl;
   //  FullPivLU<MatrixXd> lu_decomp1(H);
-  //  std::cout << "rank of H : " << lu_decomp1.rank() << std::endl;
-  //  std::cout << "number of row of H : " << H.rows() << std::endl;
+  //  std::cout << "rank of H : " << lu_decomp1.rank() << std::endl; sddfadsf;
+  //  std::cout << "number of row of H : " << H_hello_demo.rows() << std::endl d
   //
   //  Eigen::MatrixXd testH = lu_decomp1.reconstructedMatrix();
   //  std::cout << "H difference " << (H - testH).norm() << std::endl;
@@ -80,7 +80,16 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
     // ldlt_precomp.compute(Q);
    // Eigen::VectorXd rowsumH = H.rowwise().sum();
    // Eigen::VectorXd rowsumS = S.rowwise().sum();
+    //add a regularization term
+    Eigen::MatrixXd I(Q.rows(), Q.rows());
+    I.setIdentity(); // only in bottom rows
+    //I.topLeftCorner(A.rows(), A.rows()) = Eigen::MatrixXd::Zero(A.rows(), A.rows());
+    FullPivLU<MatrixXd> lu(-Q);
+    Q -= 1e-10* I;
+    printf("rank of Q %i : ", lu.rank());
     ldlt_precomp.compute(Q);
+   // lu_precomp.compute(Q);
+  //  int rank = lu_precomp.rank();
   //  ones = Eigen::VectorXd::Ones(Q.rows());
   //  z = lu_precomp.solve(ones);
   //  v = Q * z;
@@ -113,13 +122,15 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
     int i = 0;
     bool converged = false;
     double diff = 0;
+
+   // printf("z0 : % g, \n", z.norm(), diff);
     while (!converged)
     {
         alpha = 2.0;
         z_prev = z_next;
         g = grad_f(z_next);
 
-      
+ //       printf("grad : %g, \n", g.norm());
         rhs.topRows(g.rows()) = -g;             //leave rhs dealing with constraints = 0 always
         dz = llt_precomp.solve(rhs);
 
@@ -149,6 +160,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
         i += 1;
 
         diff = (z_next - z_prev).norm();
+   //     printf("iter : % i, diff : %g \n", i, diff);
         if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
@@ -159,8 +171,8 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
         }
 
     }
-    printf("Converged after %i iterations, with %g difference \n ", i, diff);
-
+   // printf("Converged after %i iterations, with %g difference \n ", i, diff);
+  //  printf("z_next : % g, \n", z_next.norm(), diff);
 
     return z_next;
 }
@@ -195,8 +207,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     {
         e0 = e;
         z_next = z_next + S.transpose() * (llt_proj.solve(bc0 - S * z_next));
-        z_test = S * z_next;
-        std::cout << z_test.norm() << ": constraint enforcement" << std::endl;
+    
         z_prev = z_next;
         g = grad_f(z_next);
         
@@ -245,6 +256,9 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     }
 
     printf("Converged after %i iterations, with %g difference \n ", i, diff);
+    z_test = S * z_next;
+
+    printf("constraint_satisfaction: %g \n", z_test.norm());
     return z_next;
     
   

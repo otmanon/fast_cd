@@ -18,4 +18,6 @@ template void  igl::procrustes< Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen:
 #include <igl/polar_dec.cpp>
 template void igl::polar_dec<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&);
 
+#include <igl/tet_tet_adjacency.cpp>
+
 #endif

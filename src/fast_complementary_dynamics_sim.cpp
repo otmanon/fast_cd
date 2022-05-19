@@ -33,6 +33,7 @@
 #include <igl/colon.h>
 #include <igl/volume.h>
 #include <igl/get_seconds.h>
+#include <split_components.h>
 #include <filesystem>
 
 #include <igl/invert_diag.h>
@@ -87,9 +88,10 @@ Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::V
 	Eigen::VectorXd r, ur, BMy;
 	//have a valid rig
 	BMy = rmp.BTMB * (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0 * p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
-	dm.r = J * p_next;
+//	dm.r = J * p_next;
 	dm.BMy_tilde = BMy - rmp.BTMJ * p_next;
 
+//	printf("r: %r\n", dm.r.norm());//
 	dm.GMKur = fmp.GMKJ * p_next - fmp.GMKX;
 	dm.BKMKur = rmp.BKMKJ * p_next - rmp.BKMKX;
 
@@ -102,7 +104,6 @@ Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::V
 	Eigen::VectorXd z_next;
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
 	z_next = constraints.reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc, do_line_search);
-
 	return z_next;
 
 }
@@ -141,7 +142,7 @@ Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eig
 	Eigen::VectorXd z_next;
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
 	z_next = reduced_newton_solver->solve(z_curr, f, grad_f, do_line_search, to_convergence, max_iters);
-	
+
 	return z_next;
 }
 
@@ -238,6 +239,7 @@ void FastCDSim::update_compelementary_constraint(const Eigen::SparseMatrix<doubl
 		init_clusters(num_clusters, num_modal_features);
 	else
 		igl::colon(0, T.rows() - 1, labels);
+	num_clusters = labels.maxCoeff()+1;
 	init_system_matrices();
 	precompute_solvers();
 }
@@ -255,6 +257,7 @@ void FastCDSim::precompute_solvers()
 	}
 	if(constraints.use_constraints)
 	{
+
 		constraints.reduced_newton_solver->precompute_with_equality_constraints(rmp.BTAB, constraints.SB);
 		if (!do_reduction)
 		{
@@ -321,6 +324,8 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		Eigen::MatrixXd R_cov = R;
 
 		Eigen::Matrix3d rot, F;
+
+
 		//fit rotations
 		for (int i = 0; i < l; i++)
 		{
@@ -332,6 +337,7 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 			const double tr = (rot.transpose() * F).diagonal().sum() - 3;
 			trRT_IR.block(3 * i, 0, 3, 3) = tr * rot;
 		}
+	
 		const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
 		const Eigen::VectorXd gb_flat = Eigen::Map<const Eigen::VectorXd>(trRT_IR.data(), R.rows() * R.cols());
 		//	Eigen::VectorXd traces = sm.traceMat *  sm.G_exp.transpose() * R_flat;
@@ -341,8 +347,10 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB * z + dm.BKMKur - rmp.BKMG * R_flat;
 		//Eigen::VectorXd volume_grad = rmp.BKMTIH +  rmp.BKMTIKB* z + dm.BKMTIKur  - rmp.BKMTIG * R_flat; //sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
 		Eigen::VectorXd volume_grad = rmp.BKMG * gb_flat;
-		Eigen::VectorXd elastic_grad = stiffness * bending_grad + incompressibility * volume_grad;
+		Eigen::VectorXd elastic_grad = stiffness * bending_grad +incompressibility * volume_grad;
 		Eigen::VectorXd g = elastic_grad + inertia_grad;
+	    
+	//	printf("inertia: %g, arap: % g  volume: %g", inertia_grad.norm(), bending_grad.norm(), volume_grad.norm());
 		return g;
 	};
 }
@@ -510,6 +518,7 @@ void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
 			igl::writeDMAT(labels_file_path, labels_mat, false);
 			igl::writeDMAT(centroids_file_path, C, false);
 			labels = labels_mat.col(0);
+			
 		}
 		else {
 			igl::colon(0, T.rows() - 1, labels);

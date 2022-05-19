@@ -28,7 +28,7 @@ public:
 
 	double tolerance;
 	Eigen::MatrixXd  S; //equality constraint matrix 3c x 3n
-
+	Eigen::MatrixXd Q;
 	
 	Eigen::LLT<Eigen::MatrixXd> llt_precomp;
 	Eigen::LDLT<Eigen::MatrixXd> ldlt_precomp;

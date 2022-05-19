@@ -68,6 +68,7 @@ public:
 
 	Eigen::VectorXd full_step_with_equality_constraints(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
 		const Eigen::VectorXd& bc, bool to_convergence = true, int max_iters=10);
+
 	void update_compelementary_constraint(const Eigen::SparseMatrix<double>& J, std::string new_modes_dir, std::string new_clusters_dir);
 
 

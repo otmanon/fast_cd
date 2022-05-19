@@ -23,7 +23,7 @@
 
 
 #include <filesystem>
-
+#include "split_components.h"
 #include <igl/get_seconds.h>
 //TODO: need to  implement all these methods... yikes
 FastSim::FastSim(){}
@@ -55,6 +55,7 @@ FastSim::FastSim(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, const Eigen
 
 	init_modes(num_modes);
 	init_clusters(num_clusters, num_modal_features);
+	num_clusters = labels.maxCoeff() + 1;
 	init_system_matrices();
 	precompute_solvers();
 }
@@ -216,7 +217,7 @@ void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 			double t_start = igl::get_seconds();
 			Eigen::MatrixXd C;
 			#ifdef FAST_CD_USE_MATLAB
-						compute_clusters_matlab(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+						compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
 			#else
 						compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
 			#endif
@@ -230,7 +231,7 @@ void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 			printf("Saving at %s...\n", labels_file_path.c_str());
 			Eigen::MatrixXi labels_mat = Eigen::Map<Eigen::MatrixXi>(labels.data(), labels.rows(), 1);
 			igl::writeDMAT(labels_file_path, labels_mat, false);
-			labels = labels_mat.col(0);
+			Eigen::VectorXi labels_joint = labels_mat.col(0);
 		}
 		else {
 			igl::colon(0, T.rows() - 1, labels);
@@ -519,7 +520,7 @@ void FastSim::precompute_solvers()
 			//Eigen::VectorXi all = igl::colon<int>(0, X.rows() * 3-1);
 			//Eigen::VectorXi bi_flat = sm.J.cast<int>() * all;
 
-		full_newton_solver->precompute_with_equality_constraints(fmp.A, J.transpose());
+		full_newton_solver->precompute_with_equality_constraints(fmp.A, J);
 	}
 }
 
@@ -528,6 +529,7 @@ void FastSim::switch_clustering(bool do_clustering)
 {
 	this->do_clustering = do_clustering;
 	init_clusters(num_clusters, num_modal_features);
+	num_clusters = labels.maxCoeff() + 1;
 	init_clustering_matrices();
 	init_reduction_matrices();
 }
