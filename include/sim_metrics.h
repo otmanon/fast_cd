@@ -23,7 +23,14 @@ struct sim_metrics
         sim_timings(i) = sim_timing;
         proj_timings(i) = proj_timing;
     }
-
+    void get_average(int i, double& inertia, double& volume, double& bending, double& sim_timing, double& proj_timing)
+    {
+        inertia = inertias.topRows(i).mean();
+        bending = bendings.topRows(i).mean();
+        volume = volumes.topRows(i).mean();
+        sim_timing = sim_timings.topRows(i).mean();
+        proj_timing = proj_timings.topRows(i).mean();
+    }
     void write(std::string results_path)
     {
         if (!std::filesystem::exists(std::filesystem::path(results_path).parent_path()))
