@@ -9,7 +9,7 @@ FastCDViewer::FastCDViewer()
 {
 	igl_v = new igl::opengl::glfw::Viewer();
 
-	while (igl_v->data_list.size() < 3) igl_v->append_mesh();
+	while (igl_v->data_list.size() < 1) igl_v->append_mesh();
 
     igl_v->core().background_color.setOnes();
 	igl_v->core().animation_max_fps = 30;
@@ -17,11 +17,76 @@ FastCDViewer::FastCDViewer()
 
     fid = 1;
     cid = 0;
+
+    igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers)->bool
+    {
+        return this->default_key_pressed_callback(viewer, unicode_key, modifiers, 0);
+    };
+
+    guizmo = new igl::opengl::glfw::imgui::ImGuizmoWidget();
+    imgui_plugin = new igl::opengl::glfw::imgui::ImGuiPlugin();
+    igl_v->plugins.push_back(imgui_plugin);
+    // push back menu here
+    imgui_plugin->widgets.push_back(guizmo);
+    guizmo->visible = false;
    // igl_v->data_list[2].is_visible = true;
 }
 
+bool FastCDViewer::default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id)
+{
+    
+    switch(unicode_key)
+    {
+      case 'A':
+      case 'a':
+      {
+        igl_v->core().is_animating = !igl_v->core().is_animating;
+        return true;
+      }
+      case 'D':
+      case 'd':
+      {
+        igl_v->data_list[id].double_sided = !igl_v->data_list[id].double_sided;
+        return true;
+      }
+      case 'F':
+      case 'f':
+      {
+          igl_v->data_list[id].set_face_based(!igl_v->data_list[id].face_based);
+          return true;
+      }
+      case 'I':
+      case 'i':
+      {
+          igl_v->data_list[id].dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
+          igl_v->data_list[id].invert_normals = !igl_v->data_list[id].invert_normals;
+          return true;
+      }
+      case 'L':
+      case 'l':
+      {
+          igl_v->core().toggle(igl_v->data_list[id].show_lines);
+          return true;
+      }
+      case 'O':
+      case 'o':
+      {
+          igl_v->core().orthographic = !igl_v->core().orthographic;
+          return true;
+      }
+      case 'T':
+      case 't':
+      {
+          igl_v->core().toggle(igl_v->data_list[id].show_faces);
+        return true;
+      }
+    
+    }
+    return false;
+  
+}
 
-FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v, igl::opengl::glfw::imgui::ImGuiWidget* guizmo)
+FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
     this->igl_v = igl_v;
     while (igl_v->data_list.size() < 3) igl_v->append_mesh();
@@ -41,6 +106,13 @@ FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v)
     igl_v->core().is_animating = true;
     fid = 1;
     cid = 0;
+
+    guizmo = new igl::opengl::glfw::imgui::ImGuizmoWidget();
+    imgui_plugin = new igl::opengl::glfw::imgui::ImGuiPlugin();
+    igl_v->plugins.push_back(imgui_plugin);
+    // push back menu here
+    imgui_plugin->widgets.push_back(guizmo);
+
 }
 void FastCDViewer::launch()
 {
@@ -124,6 +196,7 @@ void FastCDViewer::configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, 
 {
     igl_v->data_list[id].clear();
     igl_v->data_list[id].double_sided = true;
+    igl_v->data_list[id].invert_normals = true;
     igl_v->data_list[id].show_faces = true;
     igl_v->data_list[id].show_lines = false;
 

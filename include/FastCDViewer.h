@@ -10,12 +10,15 @@ public:
 	FastCDViewer(igl::opengl::glfw::Viewer* viewer);
 
 	//attach guizmo too
-	FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuiWidget* guizmo);
+	FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
 	void launch();
+
+
+	bool default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id);
 
 	void set_pre_draw_callback(std::function<void()>& callback);
 
-	void set_key_pressed_callback(std::function<void(unsigned int key, int modifier)>& callback_key_pressed)
+	void set_key_pressed_callback(std::function<void(unsigned int, int)>& callback_key_pressed)
 	{
 		igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
 		{
@@ -23,6 +26,18 @@ public:
 			return false;
 		};
 	}
+
+	void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
+		igl_v->callback_mouse_down = [&](igl::opengl::glfw::Viewer& v,  int button, int modifier)->bool
+		{
+			callback_mouse_down(button, modifier);
+			return false;
+		};
+	};
+
+	void set_mouse_down_callback(std::function<bool(igl::opengl::glfw::Viewer& viewer, int button, int modifier)>& callback_mouse_down) {
+		igl_v->callback_mouse_down = callback_mouse_down;
+	};
 
 	void attach_guizmo(igl::opengl::glfw::imgui::ImGuizmoWidget& guizmo)
 	{
@@ -37,6 +52,8 @@ public:
 	{
 		igl_v->core().lighting_factor = f;
 	}
+
+
 	void clear_all()
 	{
 		for (int i = 0; i < igl_v->data_list.size(); i++)
@@ -52,6 +69,16 @@ public:
 	void set_camera_zoom(double zoom)
 	{
 		igl_v->core().camera_zoom = zoom;
+	}
+
+	void set_camera_eye(Eigen::RowVector3d& p)
+	{
+		igl_v->core().camera_eye = p.cast<float>();
+	}
+
+	void set_camera_center(Eigen::RowVector3d& c)
+	{
+		igl_v->core().camera_center = c.cast<float>();
 	}
 	void set_vertices(Eigen::MatrixXd& V, int id)
 	{
@@ -104,6 +131,10 @@ public:
 		igl_v->data_list[i].set_data(D);
 	}
 
+	void set_data(Eigen::VectorXd D, double min, double max, int i)
+	{
+		igl_v->data_list[i].set_data(D, min, max);
+	}
 	void set_points(Eigen::MatrixXd& points, Eigen::RowVector3d& z, int id)
 	{
 		igl_v->data_list[id].set_points(points, z);
@@ -177,8 +208,8 @@ public:
 
 public:
 	igl::opengl::glfw::Viewer* igl_v;
-	igl::opengl::glfw::imgui::ImGuiWidget* guizmo; //add guizmo
-
+	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo
+	igl::opengl::glfw::imgui::ImGuiPlugin* imgui_plugin;
 	std::function<bool()> callback;
 	int fid, cid; //indices in the viewer.data_list array corresponding to the fine mesh, and the coarse mesh
 };

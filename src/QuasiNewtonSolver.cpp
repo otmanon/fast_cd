@@ -85,7 +85,8 @@ Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function
         i += 1;
 
         diff = (z_next - z_prev).norm();
-        if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
+        printf("iter %i , diff %g  \n ", i, diff);
+        if (diff < 1e-5) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
         }
@@ -161,7 +162,9 @@ Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::
         i += 1;
 
         diff = (z_next - z_prev).norm();
-        if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
+
+        printf("iter %i , diff %g  \n ", i, diff);
+        if (diff < 1e-5) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
         }

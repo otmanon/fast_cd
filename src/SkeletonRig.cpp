@@ -154,7 +154,7 @@ SkeletonRig::SkeletonRig(Eigen::MatrixXd& X, Eigen::VectorXd& p0, Eigen::MatrixX
 	this->pI = pI;
 	this->lengths = lengths;
 	this->radius = radius;
-
+	this->rig_type = "skeleton";
 	init_rig_jacobian();
 	init_rig_selection_matrix(radius);
 }
@@ -179,7 +179,7 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
         igl::list_to_matrix(X_list,surface_X); // hopefully this works
 	Eigen::MatrixXd surface_W;
 	read_bones_from_json(j, surface_X.rows(), surface_W, this->p0, this->pI, this->lengths);
-
+	this->rig_type = "skeleton";
 	//need to do a registration problem between the two methods, for robustness sake... It could be that one is a rotated version of the other.
 	Eigen::MatrixXd Xb;
 	Eigen::MatrixXi F;
@@ -250,10 +250,10 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	//TODO: mesh bones into the mesh. hold off on this.
 
 
-	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/weights.dmat", W);
-	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/jacobian.dmat", J.toDense());
-	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/X.dmat", X);
-	igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/T.dmat", T);
+	//igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/weights.dmat", W);
+	//igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/jacobian.dmat", J.toDense());
+	//igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/X.dmat", X);
+	//igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/T.dmat", T);
 //	igl::writeMSH(fs::path(surface_file_name).parent_path().string() + "coarse_elephant.msh", X, T);
 }
 
@@ -289,6 +289,8 @@ namespace fs = std::filesystem;
 	lengths = Eigen::Map<Eigen::VectorXd>(&length_list[0], length_list.size());
 
 	i.close();
+
+	this->rig_type = "skeleton";
 	return true;
 }
 

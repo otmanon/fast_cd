@@ -1,7 +1,7 @@
 #pragma once
 #include "HandleRigController.h"
 
-
+#include "FastCDViewer.h"
 
 class SkeletonRigFKMouseController : public HandleRigMouseController
 {
@@ -20,6 +20,7 @@ public:
 	*/
 	 SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI , Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget * guizmo, std::string animation_dir="");
 
+	 SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, FastCDViewer* viewer, std::string animation_dir = "");
 
 	 //show the current skeleton visually
 	 void init_guizmo_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);

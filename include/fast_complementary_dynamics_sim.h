@@ -32,7 +32,7 @@ public:
 	clusters_file_dir - std::string - file directory where to find cached labels_<num_labels>_features_<num_features_used_for_labels>.DMAT file, containing a label for each tet denoting which cluster it belongs to (Will recompute if unfindable)
 	modal_features (optional) int - the number of modal features to use in our clustering scheme. We claim that number of features should have diminishing returns.
 	*/
-	FastCDSim(Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters,  std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction=true, bool do_clustering=true, int num_modal_features=10 );
+	FastCDSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction = true, bool do_clustering = true, int num_modal_features = 10, bool do_inertia = true );
 
 	void init_modes(int num_modes);
 	

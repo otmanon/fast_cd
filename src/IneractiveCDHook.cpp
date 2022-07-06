@@ -174,13 +174,13 @@ void InteractiveCDHook::init_app_from_json(std::string& file)
     std::string constraint_type_str = j.value("constraint_type", "complementary_dynamics");  //should be complementary dynamics or pineed
     if (constraint_type_str == "pinned") as.constraint_type = CONSTRAINT_TYPE::PINNING;
     if (constraint_type_str == "complementary_dynamics") as.constraint_type = CONSTRAINT_TYPE::COMPLEMENTARY_DYNAMICS;
-    as.do_reduction = j["use_reduction"] ;
-    as.do_clustering = j["use_clustering"];
+    as.do_reduction = j["do_reduction"] ;
+    as.do_clustering = j["do_clustering"];
     as.r = j["r"];
     as.l = j["l"];
     as.feat = j.value("clustering_modal_features", 10);
-    as.ym = j["youngs_modulus"];
-    as.pr = j["poisson_ratio"];
+    as.ym = j["ym"];
+    as.pr = j["pr"];
 
     as.dt = j["dt"]; // 1.0 / 60;
 

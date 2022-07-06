@@ -1,6 +1,7 @@
 #pragma once
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
 #include <igl/opengl/glfw/imgui/ImGuiPlugin.h>
+#include <get_absolute_parameters.h>
 /*
 Parent Class that provides a libigl-viewer interface to interact with rigs. There are many ways of interacting with rigs, including keyboard controllers,
 mouse controllers, video-stream controllers, scripted controllers, recorded animation controllers. Each one may specialize to a specific type of rig, so the user must make sure not to employ 
@@ -38,6 +39,21 @@ public:
 	*/
 	virtual void set_scripted_motion(int step) {};
 
+	virtual Eigen::VectorXd query_rel()
+	{
+		return this->p_rel;
+	}
+
+	virtual Eigen::VectorXd query_rel(double ss, Eigen::RowVector3d& t)
+	{
+		return this->p_rel;
+	}
+	virtual Eigen::VectorXd query_glob()
+	{
+		Eigen::VectorXd p_glob;
+		get_absolute_parameters(this->p_rest, this->p_rel, p_glob);
+		return p_glob;
+	}
 public:
 	// rig parameters.row order flatteneing of a 3x4 affine matrices for each handle / joint
 	//These rig parameters are row order flattened, as most of the building of the jacobian matrix depends on this assumption.

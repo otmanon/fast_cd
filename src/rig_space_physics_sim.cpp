@@ -44,6 +44,7 @@ RigPhysicsSim::RigPhysicsSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::Spar
 		init_clusters(num_clusters, num_modal_features);
 	else
 		igl::colon(0, T.rows() - 1, labels);
+	this->num_clusters = labels.maxCoeff() + 1;
 	init_system_matrices();
 	precompute_solvers();
 
@@ -54,5 +55,5 @@ RigPhysicsSim::RigPhysicsSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::Spar
 
 Eigen::VectorXd RigPhysicsSim::step(Eigen::VectorXd& p_user_next, Eigen::VectorXd& p_user_curr, Eigen::VectorXd& p_user_prev, Eigen::VectorXd& p_sim_curr, Eigen::VectorXd& p_sim_prev)
 {
-	return reduced_step(p_user_next, p_user_curr, p_user_prev, p_sim_curr, p_sim_prev);  //same as reduced step but B space (allowable motion) is rig jacobian
+	return reduced_step(p_user_next, p_user_curr, p_user_prev, p_sim_curr, p_sim_prev, false, 20);  //same as reduced step but B space (allowable motion) is rig jacobian
 }

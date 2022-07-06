@@ -263,7 +263,7 @@ void FastSim::init_full_system_matrices(){
 	fmp.M = igl::repdiag(fmp.M, 3);
 
 	//constructs A matrix, and does preomputation if we will use it directly
-	fmp.A = stiffness * C + (1.0 / (dt * dt))* fmp.M; //;
+	fmp.A = stiffness * C + do_inertia*(1.0 / (dt * dt))* fmp.M; //;
 
 	//flattened_deformation_gradient matrices. 
 	deformation_gradient_from_u_prefactorized_matrices(X, T, fmp.H, fmp.K, fmp.Vol_exp); 
@@ -389,7 +389,7 @@ void FastSim::full_qnewton_energy_grad(std::function<double(const Eigen::VectorX
 		//double volume = 0.5 * tr.transpose() * fmp.Vol * tr;//sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
 		double elastic = stiffness * bending + incompressibility * (volume_energy_tet.sum());
 
-		double e = elastic + inertia;
+		double e = elastic + do_inertia * inertia;
 		return e;
 	};
 
@@ -424,7 +424,7 @@ void FastSim::full_qnewton_energy_grad(std::function<double(const Eigen::VectorX
 
 		Eigen::VectorXd volume_grad = fmp.KMG * gb_flat;
 		Eigen::VectorXd elastic_grad = stiffness * bending_grad + incompressibility * volume_grad;
-		Eigen::VectorXd g = elastic_grad + inertia_grad;
+		Eigen::VectorXd g = elastic_grad + do_inertia * inertia_grad;
 		return g;
 	};
 
@@ -463,6 +463,7 @@ void FastSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Vect
 		inertia += -2.0 * z.transpose() * dm.BMy;
 		inertia +=  dm.yMy;
 		inertia *= 0.5 * (1.0 / (dt * dt));
+		inertia *= do_inertia;
 
 		double bending = 0.5 * fmp.HMH + 0.5 * z.transpose() * rmp.BKMKB * z + z.transpose() * rmp.BKMH \
 			 + 0.5 * R_flat.transpose() * fmp.GMG * R_flat \
@@ -501,6 +502,7 @@ void FastSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Vect
 
 		//	Eigen::VectorXd traces = sm.traceMat *  sm.G_exp.transpose() * R_flat;
 		Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (rmp.BMB*z - dm.BMy);
+		inertia_grad *= do_inertia;
 		Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB*z - rmp.BKMG * R_flat;
 
 		Eigen::VectorXd volume_grad = rmp.BKMG * gb_flat;

@@ -13,6 +13,43 @@
 #include <iostream>
 #include <filesystem>
 
+
+
+HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0, FastCDViewer* viewer, std::string animation_dir)
+{
+	// initialize guizmo to be at first rig parameters
+	handleI = 0;
+	this->p_rest = p0;
+	this->p_rel = p0;  //these are relative parameters with respect to p_ref. For one rig, unflatten p_rest and p_rel to P_rest and P_rel. Then P_rel = P_rest.inverse() * P_deformed
+	this->p_rest_inv = p0;
+
+	vis_id = 1;
+	Eigen::Matrix4f I, A_inv;
+	I.setIdentity();
+	for (int i = 0; i < p_rest.rows() / 12; i++)
+	{ //update p_rel and p_rest in this loop.
+		update_parameters_at_handle(this->p_rel, I, i);
+		A_inv = matrix4f_from_parameters(p_rest, i);
+		A_inv = A_inv.inverse().eval();
+		update_parameters_at_handle(this->p_rest_inv, A_inv, i);
+	}
+	//get handle positiodsns
+	compute_handle_positions_from_parameters(p_rest, V);
+
+	this->guizmo = viewer->guizmo;
+	init_guizmo_viewer(viewer->igl_v, viewer->guizmo);
+
+
+	recording = false;
+	current_animation_id = -1;
+	this->animation_dir = animation_dir;
+	loaded_anim = false;
+	pause = true;
+//	get_all_json_or_dmat_in_dir(animation_dir, animation_filepaths, animation_filenames);
+//	anim_step = 0;
+//	record_P.resize(p0.rows(), 0);
+}
+
 HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0,  igl::opengl::glfw::Viewer* viewer,igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir)
 {
 	// initialize guizmo to be at first rig parameters

@@ -22,4 +22,4 @@ struct sim_params {
         this->z_prev = z_curr;
         this->z_curr = z;
     }
-} s;
+};

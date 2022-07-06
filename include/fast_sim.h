@@ -127,6 +127,9 @@ public:
 	int num_clusters;
 	Eigen::VectorXi labels;
 
+
+	bool do_inertia;
+
 	//sim parameters
 	double stiffness, incompressibility;
 	double dt;

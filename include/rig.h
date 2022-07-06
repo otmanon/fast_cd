@@ -111,6 +111,8 @@ public:
 
 	int vis_id = 1;
 
+	std::string rig_type;
+
 };
 
 class AffineRig : public Rig
@@ -147,4 +149,5 @@ public:
 	Eigen::MatrixXd A;
 	Eigen::MatrixXf rest_T; //starting affine transformation matrix. 
 	Eigen::MatrixXf rest_T_inv; //starting affine transformation matrix. (inverted)
+
 };

@@ -14,25 +14,43 @@
 #include "get_joint_positions_from_parameters.h"
 #include "get_relative_parameters.h"
 #include "get_skeleton_mesh.h"
-/*
-Given rest pose params and relative params, computes absolute params
-*/
-void get_absolute_parameters(Eigen::VectorXd& p0, Eigen::VectorXd& p_rel, Eigen::VectorXd& p)
+
+
+SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, FastCDViewer* viewer, std::string animation_dir) : pl(pl), pI(pI)
 {
-	int num_b = p0.rows() / 12;
-	Eigen::Matrix4f A0, A_rel, A;
-	p.resizeLike(p0);
-	for (int i = 0; i < num_b; i++)
-	{
-		A0 = matrix4f_from_parameters(p0, i);
-		A_rel = matrix4f_from_parameters(p_rel, i);
-		A = A_rel * A0;
-		update_parameters_at_handle(p, A, i);
-	}
+		handleI = 0;
+	thickness = 1e-2;
+	this->p_rest = p0;
+	int num_b = p_rest.rows() / 12;
 
+	this->p_rel.resizeLike(p_rest);
+	this->p_rest_inv.resizeLike(p_rest);
+	//convert flattened matrix to affine matrix
+	//flattened_parameters_to_Affine3d_list(this->p0, A0);
+
+	//Get edge connectivity  YIKES can't believe I wrote this...How did this work???
+	Eigen::VectorXi I1, I2;
+	igl::colon(0, num_b - 1, I1);
+	I2 = I1.array() + num_b;
+	BE.resize(num_b, 2);
+	BE.col(0) = I1;
+	BE.col(1) = I2;
+
+	reset();
+
+	init_guizmo_viewer(viewer->igl_v, viewer->guizmo);
+
+
+	std::string custom_anim_name = "custom_anim";
+	recording= false;
+	current_animation_id = -1;
+	loaded_anim = false;
+	pause = true;
+
+	//this->animation_dir = animation_dir;
+	//get_all_json_in_dir(animation_dir, animation_filepaths, animation_filenames);
+	//anim_step = 0;
 }
-
-
 
 SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir)
 	: pl(pl), pI(pI)

@@ -20,6 +20,7 @@ HandleRig::HandleRig(std::string filename, double radius)
 	init_null_space();
 
 	init_rig_selection_matrix(radius);
+	this->rig_type = "handle";
 }
 
 HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
@@ -47,7 +48,7 @@ HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
 
 	rig_pinning = "ball";
 	init_rig_selection_matrix(radius);
-
+	this->rig_type = "handle";
 
 }
 
@@ -66,6 +67,8 @@ HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::VectorXd& p, Eigen::MatrixXd& W,
 	////igl::boundary_facets(T, F);
 	//igl::unique(F, bI);
 	//also keep track of exterior slices of jacobian
+
+	this->rig_type = "handle";
 }
 
 /*
@@ -306,6 +309,7 @@ bool HandleRig::read_rig_from_json(std::string filename)
 	igl::list_to_matrix(X_list,X);
 	igl::list_to_matrix(W_list,W);
 	p0 = Eigen::Map<Eigen::VectorXd>(&p0_list[0], p0_list.size());
+
 	return true;
 }
 

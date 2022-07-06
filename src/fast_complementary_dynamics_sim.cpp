@@ -40,7 +40,7 @@
 #include "DenseQuasiNewtonSolver.h"
 #include "QuasiNewtonSolver.h"
 
-FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction, bool do_clustering, int num_modal_features)
+FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction, bool do_clustering, int num_modal_features, bool do_inertia)
 {
 	this->X = X;
 	this->T = T;
@@ -53,6 +53,7 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	this->clusters_file_dir = clusters_file_dir;
 	this->dt = dt;
 	this->num_modal_features = num_modal_features;
+	this->do_inertia = do_inertia;
 	stiffness = ym / (2.0 * (1.0 + pr));
 	incompressibility = ym* pr / ((1.0 + pr) * (1.0 - 2.0 * pr));
 
@@ -124,7 +125,7 @@ Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eig
 	Eigen::VectorXd r, ur, BMy;
 	//have a valid rig
 	BMy = rmp.BTMB *  (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0*p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
-	dm.r = J * p_next;
+//	dm.r = J * p_next;
 	dm.BMy_tilde = BMy - rmp.BTMJ * p_next;
 
 	dm.GMKur = fmp.GMKJ * p_next   - fmp.GMKX;
@@ -179,7 +180,7 @@ Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen:
 	
 	Eigen::VectorXd zero = Eigen::VectorXd::Zero(J.cols());
 
-	bool do_line_search = incompressibility < 1e-8 ? false : true;
+	bool do_line_search =  incompressibility < 1e-8 ? false : true;
 	uc_next = full_newton_solver->solve_with_equality_constraints(uc_curr, energy,  grad_f, zero, do_line_search, to_convergence, max_iters);
 	
 	return uc_next;
@@ -310,7 +311,7 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		//double volume = 0.5 * tr.transpose() * fmp.Vol * tr;//sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
 		double elastic = stiffness * bending + incompressibility * (volume_energy_tet.sum());
 
-		double e = elastic + inertia;
+		double e = elastic + do_inertia * inertia;
 		return e;
 
 	};
@@ -348,7 +349,7 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		//Eigen::VectorXd volume_grad = rmp.BKMTIH +  rmp.BKMTIKB* z + dm.BKMTIKur  - rmp.BKMTIG * R_flat; //sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
 		Eigen::VectorXd volume_grad = rmp.BKMG * gb_flat;
 		Eigen::VectorXd elastic_grad = stiffness * bending_grad +incompressibility * volume_grad;
-		Eigen::VectorXd g = elastic_grad + inertia_grad;
+		Eigen::VectorXd g = elastic_grad + do_inertia * inertia_grad;
 	    
 	//	printf("inertia: %g, arap: % g  volume: %g", inertia_grad.norm(), bending_grad.norm(), volume_grad.norm());
 		return g;
@@ -365,7 +366,7 @@ void FastCDSim::full_qnewton_energy_grad(std::function<double(const Eigen::Vecto
 
 		double bending, volume, inertia;
 		energy(u, dm.u_curr, dm.u_prev, bending, volume, inertia);
-		double e = bending + volume + inertia;
+		double e = bending + volume + do_inertia * inertia;
 		return e;
 	};
 
@@ -399,7 +400,7 @@ void FastCDSim::full_qnewton_energy_grad(std::function<double(const Eigen::Vecto
 	
 		Eigen::VectorXd volume_grad = fmp.KMG * gb_flat;
 		Eigen::VectorXd elastic_grad = stiffness * bending_grad +incompressibility * volume_grad;
-		Eigen::VectorXd g = elastic_grad + inertia_grad;
+		Eigen::VectorXd g = elastic_grad + do_inertia * inertia_grad;
 		return g;
 	};
 }
@@ -546,7 +547,14 @@ void FastCDSim::init_full_system_matrices()
 	fmp.M = igl::repdiag(fmp.M, 3);
 
 	//constructs A matrix, and does preomputation if we will use it directly
-	fmp.A = stiffness * fmp.C + (1.0 / dt) * (1.0 / dt) * fmp.M;
+	if (do_inertia)
+		fmp.A = stiffness * fmp.C + (1.0 / dt) * (1.0 / dt) * fmp.M;
+	else
+	{
+		Eigen::SparseMatrix<double> I(fmp.M.rows(), fmp.M.rows());
+		I.setIdentity();
+		fmp.A = stiffness * fmp.C + 1e-10 * I; // tiny regularization
+	}
 
 
 	complementary_equality_constraint(X, T, J, fmp.Aeq);
@@ -730,7 +738,7 @@ void FastCDSim::energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, 
 	double uMu = u_y.transpose() * Mu_y;
 	//std::cout << uMu << std::endl;
 	//std::cout << 0.5 * (1.0 / (dt * dt));
-	inertia = 0.5 * (1.0 / (dt * dt)) * uMu;
+	inertia = do_inertia * 0.5 * (1.0 / (dt * dt)) * uMu;
 
 	Eigen::VectorXd f_r = fmp.H + fmp.K * u - fmp.G_1.transpose() * R_flat;
 
@@ -753,7 +761,7 @@ void FastCDSim::kinetic_energy_complementary_full(const Eigen::VectorXd& uc, con
 	Eigen::VectorXd u_y = uc - y;
 	Eigen::VectorXd Mu_y = fmp.M * u_y;
 	double uMu = u_y.transpose() * Mu_y;
-	inertia = 0.5 * (1.0 / (dt * dt)) * uMu;
+	inertia =do_inertia *  0.5 * (1.0 / (dt * dt)) * uMu;
 }
 
 void FastCDSim::kinetic_energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev,double& inertia)
@@ -764,7 +772,7 @@ void FastCDSim::kinetic_energy_complementary_reduced(const Eigen::VectorXd& z, c
 	Eigen::VectorXd u_y = uc - y;
 	Eigen::VectorXd Mu_y = fmp.M * u_y;
 	double uMu = u_y.transpose() * Mu_y;
-	inertia = 0.5 * (1.0 / (dt * dt)) * uMu;
+	inertia = do_inertia *0.5 * (1.0 / (dt * dt)) * uMu;
 
 
 }
