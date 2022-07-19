@@ -7,9 +7,9 @@
 #include <Eigen/Sparse>
 #include "sparse_diag.h"
 using namespace Eigen;
-void momentum_leaking_matrix(const MatrixXd& V, const MatrixXi& F, fast_cd::MOMENTUM_LEAK_MATRIX method, SparseMatrix<double>& D )
+void momentum_leaking_matrix(const MatrixXd& V, const MatrixXi& F, fast_cd::MOMENTUM_LEAK_MATRIX method, SparseMatrix<double>& D, double dt )
 {
-	double dt = 1e-6;
+	
 	SparseMatrix<double> C, M;
 	igl::cotmatrix(V, F, C);
 	C *= -1;

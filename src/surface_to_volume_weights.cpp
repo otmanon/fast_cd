@@ -15,6 +15,9 @@ Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::Vect
 	igl::min_quad_with_fixed_data<double> data;
 	igl::min_quad_with_fixed_precompute(C, bI, Aeq, true, data);
 	igl::min_quad_with_fixed_solve(data, B, surfaceW, Beq, W);
+
+	W = W.cwiseMax(0.0);
+	W = W.cwiseMin(1.0);
 	//normalize weight matrix
 	Eigen::VectorXd sums = W.rowwise().sum();
 	W.array().colwise() /= W.rowwise().sum().array();

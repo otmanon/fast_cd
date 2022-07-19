@@ -11,8 +11,10 @@ class HandleRig : public Rig
 	public:
 		HandleRig() {};
 
+
 		HandleRig(std::string filename, double radius = 5e-2);
 
+		HandleRig(std::string filename, Eigen::MatrixXd& W, double radius = 5e-2);
 		/*
 		Build single handle at centroid of mesh
 		*/

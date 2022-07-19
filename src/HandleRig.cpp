@@ -23,6 +23,17 @@ HandleRig::HandleRig(std::string filename, double radius)
 	this->rig_type = "handle";
 }
 
+
+HandleRig::HandleRig(std::string filename, Eigen::MatrixXd& W, double radius)
+{
+	read_rig_from_json(filename);
+	this->W = W;
+	init_rig_jacobian();
+	init_null_space();
+
+	init_rig_selection_matrix(radius);
+	this->rig_type = "handle";
+}
 HandleRig::HandleRig(Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
 {
 	this->X = X;
@@ -294,10 +305,7 @@ bool HandleRig::write_rig_to_json(std::string filename)
 bool HandleRig::read_rig_from_json(std::string filename)
 {
 	namespace fs = std::filesystem;
-
-
 	json j;
-
 	std::ifstream i(filename);
 	i >> j;
 

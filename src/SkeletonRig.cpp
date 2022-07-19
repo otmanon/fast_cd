@@ -230,6 +230,7 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	
 	igl::slice(W_tmp, bI, 1, surface_W);
 	Eigen::MatrixXd volume_W = surface_to_volume_weights(surface_W, bI, X, T);
+	
 
 	Eigen::MatrixXd WT = volume_W.transpose();
 	//finally
@@ -255,6 +256,28 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	//igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/X.dmat", X);
 	//igl::writeDMAT(fs::path(surface_file_name).parent_path().string() + "/T.dmat", T);
 //	igl::writeMSH(fs::path(surface_file_name).parent_path().string() + "coarse_elephant.msh", X, T);
+}
+
+SkeletonRig::SkeletonRig(std::string rig_file_name, Eigen::MatrixXd& W, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius)
+{
+
+	namespace fs = std::filesystem;
+
+	json j;
+	std::ifstream i(rig_file_name);
+	i >> j;
+
+	rig_pinning = j.value("rig_pinning", "ball");  //if htis is ball then we treat them like cylinders
+	std::vector<std::vector<double>> X_list = j["vertices"];
+	Eigen::MatrixXd surface_X;
+	igl::list_to_matrix(X_list, surface_X); // hopefully this works
+	Eigen::MatrixXd surface_W;
+	read_bones_from_json(j, surface_X.rows(), surface_W, this->p0, this->pI, this->lengths);
+	this->rig_type = "skeleton";
+	this->W = W;
+	this->X = X;
+	init_rig_jacobian();
+	init_rig_selection_matrix(radius);
 }
 
 SkeletonRig::SkeletonRig(std::string volume_file_name, double radius)

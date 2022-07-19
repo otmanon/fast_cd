@@ -160,10 +160,13 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
         i += 1;
 
         diff = (z_next - z_prev).norm();
-   //     printf("iter : % i, diff : %g \n", i, diff);
+       // printf("iter : % i, diff : %g \n", i, diff);
         if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
+       //     printf("z");
+         //   std::cout << z_next << std::endl;
+
         }
         else if (!to_convergence && i == max_iters)
         {
@@ -173,7 +176,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
     }
    // printf("Converged after %i iterations, with %g difference \n ", i, diff);
   //  printf("z_next : % g, \n", z_next.norm(), diff);
-
+    
     return z_next;
 }
 

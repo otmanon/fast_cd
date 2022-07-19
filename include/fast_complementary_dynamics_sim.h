@@ -32,7 +32,8 @@ public:
 	clusters_file_dir - std::string - file directory where to find cached labels_<num_labels>_features_<num_features_used_for_labels>.DMAT file, containing a label for each tet denoting which cluster it belongs to (Will recompute if unfindable)
 	modal_features (optional) int - the number of modal features to use in our clustering scheme. We claim that number of features should have diminishing returns.
 	*/
-	FastCDSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, bool do_reduction = true, bool do_clustering = true, int num_modal_features = 10, bool do_inertia = true );
+	FastCDSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir,
+		bool do_reduction = true, bool do_clustering = true, int num_modal_features = 10, bool do_inertia = true, double momentum_leaking_dt=1e-6, std::string metric_type="momentum", double metric_alpha=1.0, double beta=1.0);
 
 	void init_modes(int num_modes);
 	
@@ -74,23 +75,43 @@ public:
 
 	void precompute_solvers();
 
-	void energy(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, double& bending, double& volume, double& inertia);
 
 	void energy(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& bending, double& volume, double& inertia);
 
+	void energy(const Eigen::VectorXd& uc_next, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, const Eigen::VectorXd& ur_next, const Eigen::VectorXd& ur_curr, const Eigen::VectorXd& ur_prev, double& bending, double& volume, double& inertia);
+
+	void energy_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, double& bending, double& volume, double& inertia);
+
+	void energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev,  double&  bending,  double& volume, double& inertia );
+
+	void grad(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev,  Eigen::VectorXd& bending_grad, Eigen::VectorXd& volume_grad, Eigen::VectorXd& inertia_grad);
+
+
+	void grad(const Eigen::VectorXd& uc_next, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, const Eigen::VectorXd& ur_next, const Eigen::VectorXd& ur_curr, const Eigen::VectorXd& ur_prev,
+		Eigen::VectorXd& bending_grad, Eigen::VectorXd& volume_grad, Eigen::VectorXd& inertia_grad);
+
+	void grad_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev,
+	Eigen::VectorXd& bending_grad, Eigen::VectorXd& volume_grad, Eigen::VectorXd& inertia_grad);
+
+	void grad_complementary(const Eigen::VectorXd& uc, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
+			 Eigen::VectorXd& bending_grad, Eigen::VectorXd& volume_grad, Eigen::VectorXd& inertia_grad);
+
+	void grad_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev,
+		Eigen::VectorXd& bending_grad, Eigen::VectorXd& volume_grad, Eigen::VectorXd& inertia_grad);
 
 	void kinetic_energy_complementary_full(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& inertia);
 
 	void kinetic_energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, double& inertia);
 
-	void energy_complementary_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev,  double& inertia, double&  bending,  double& volume);
-
-	void energy_complementary_full(const Eigen::VectorXd& u, const Eigen::VectorXd& u_curr, const Eigen::VectorXd& u_prev, double& bending, double& volume, double& inertia);
 public:
 	//Rig jacobian
 	Eigen::SparseMatrix<double> J;
 
-	
+	double momentum_leaking_dt;
+	std::string metric_type;
+	double metric_alpha;
+
+	double beta;
 
 	struct ConstraintMatrices{
 

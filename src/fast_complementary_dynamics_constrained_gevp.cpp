@@ -9,7 +9,7 @@
 #include <igl/massmatrix.h>
 #include "complementary_equality_constraint.h"
 void fast_complementary_dynamics_constrained_geivp(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T,
-	const Eigen::SparseMatrix<double>& J, Eigen::SparseMatrix<double>& H_exp, Eigen::SparseMatrix<double>& M_exp)
+	const Eigen::SparseMatrix<double>& J, Eigen::SparseMatrix<double>& H_exp, Eigen::SparseMatrix<double>& M_exp, double dt, std::string metric_type, double alpha)
 {
     Eigen::SparseMatrix<double> H, M;
 	//arap hessian
@@ -20,7 +20,7 @@ void fast_complementary_dynamics_constrained_geivp(const Eigen::MatrixXd& X, con
     //augment hessian with complementary constraint jacobians.
     Eigen::SparseMatrix<double> A_eq;
 
-    complementary_equality_constraint(X, T, J, A_eq);
+    complementary_equality_constraint(X, T, J, A_eq, dt, metric_type, alpha);
     augment_with_linear_constraints(H, A_eq, H_exp);
 
 	

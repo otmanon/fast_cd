@@ -18,11 +18,15 @@ class SkeletonRig : public HandleRig
 {
 
 public:
+
+//	SkeletonRig(std::string rig, std::string weights, std::string weights_type, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius = 5e-2);
 	/*
 	Constructor for an input source file with the surface_file format. This specific case is common and needs to be configured/converted
 	to a Volume rig, by diffusing the surface weights. into the mesh.
 	*/
 	SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius=5e-2);
+
+	SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& W, Eigen::MatrixXd& X, Eigen::MatrixXi& T, double radius = 5e-2);
 
 	SkeletonRig(Eigen::MatrixXd& X, Eigen::VectorXd& p0, Eigen::MatrixXd& W, Eigen::VectorXi& pI, Eigen::VectorXd& lengths, double radius = 5e-2);
 

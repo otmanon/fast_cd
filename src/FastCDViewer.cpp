@@ -9,7 +9,7 @@ FastCDViewer::FastCDViewer()
 {
 	igl_v = new igl::opengl::glfw::Viewer();
 
-	while (igl_v->data_list.size() < 1) igl_v->append_mesh();
+	while (igl_v->data_list.size() < 3) igl_v->append_mesh();
 
     igl_v->core().background_color.setOnes();
 	igl_v->core().animation_max_fps = 30;
@@ -138,7 +138,7 @@ void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Ei
 
     igl_v->data_list[cid].point_size = 10;
 
-    igl_v->data_list[fid].show_lines = true;
+    igl_v->data_list[fid].show_lines = false;
     igl_v->data_list[cid].show_faces = true;
     igl_v->data_list[cid].invert_normals = true;
     igl_v->data_list[cid].double_sided = true;
@@ -175,6 +175,7 @@ void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Ei
     Eigen::MatrixXd colormap = get_rainbow_colormap();
     igl_v->data_list[id].set_data(clusters.cast<double>());
     igl_v->data_list[id].set_colormap(colormap);
+    igl_v->data_list[id].show_lines = false;
 }
 
 void FastCDViewer::configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id)
@@ -381,6 +382,9 @@ void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::
     igl_v->data_list[id].set_uv(TC, FTC);
     igl_v->data_list[id].show_texture = true;
     igl_v->data_list[id].set_texture(R, G, B);
+    igl_v->data_list[id].invert_normals = (true);
+    igl_v->data_list[id].double_sided = true;
+    igl_v->data_list[id].face_based = true;
 }
 
 void FastCDViewer::configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F)

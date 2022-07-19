@@ -85,7 +85,7 @@ Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function
         i += 1;
 
         diff = (z_next - z_prev).norm();
-        printf("iter %i , diff %g  \n ", i, diff);
+     //   printf("iter %i , diff %g  \n ", i, diff);
         if (diff < 1e-5) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
