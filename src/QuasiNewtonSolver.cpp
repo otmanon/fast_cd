@@ -30,7 +30,8 @@ void QuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::Sparse
     // ldlt_precomp.compute(Q);
     ldlt_precomp.compute(Q);
   
-
+    Eigen::MatrixXd D = S * S.transpose();
+    llt_proj.compute(D);
     
     if (ldlt_precomp.info() != Success) {
         std::cout << "LDLT factorization of system matrix failed" << std::endl;
@@ -39,7 +40,7 @@ void QuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::Sparse
 }
 
 Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search, bool to_convergence, double max_iters)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search, bool to_convergence, double max_iters, double convergence_threshold)
 {
     Eigen::VectorXd z_prev, z_next;
     Eigen::VectorXd dz, g, ub;
@@ -86,7 +87,7 @@ Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function
 
         diff = (z_next - z_prev).norm();
      //   printf("iter %i , diff %g  \n ", i, diff);
-        if (diff < 1e-5) //assuming unit height, can't really see motions on screen smaller than this value
+        if (diff < convergence_threshold) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
         }
@@ -103,7 +104,7 @@ Eigen::VectorXd QuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function
 }
 
 Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search, bool to_convergence, double max_iters)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search, bool to_convergence, double max_iters, double convergence_threshold)
 {
     assert(S.rows() == bc0.rows() && "Gave linear equality constraint rhs, but don't have a linear equality constraint matrix precomputed. \
                                                     Make sure you called precompute_with_constraints(Q, Qeq) before this");
@@ -152,7 +153,7 @@ Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::
                 e = f(z_next);
               //  printf("line_search_iter : %i, energy0 : %e, energy : %e,  alpha : %e \n", line_search_step, e0, e, alpha);
                 line_search_step += 1;
-            } while (e > e0 + 1e-9 && line_search_step < 100);
+            } while (e > e0 + 1e-9 && line_search_step < 10);
         }else
         {
             z_next += dz;
@@ -164,7 +165,7 @@ Eigen::VectorXd QuasiNewtonSolver::solve_with_equality_constraints(const Eigen::
         diff = (z_next - z_prev).norm();
 
         printf("iter %i , diff %g  \n ", i, diff);
-        if (diff < 1e-5) //assuming unit height, can't really see motions on screen smaller than this value
+        if (diff < convergence_threshold) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
         }

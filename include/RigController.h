@@ -44,6 +44,8 @@ public:
 		return this->p_rel;
 	}
 
+	virtual Eigen::VectorXd query_rel(int step) { return Eigen::VectorXd::Zero(0); };
+
 	virtual Eigen::VectorXd query_rel(double ss, Eigen::RowVector3d& t)
 	{
 		return this->p_rel;

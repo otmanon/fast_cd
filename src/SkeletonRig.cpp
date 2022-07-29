@@ -218,7 +218,7 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	Eigen::VectorXi all, aI, bI, bJ, bV;
 	for (int i = 0; i < sums.rows(); i++)
 	{
-		if (sums(i) > 1e-6)
+		if (sums(i) > 1-1e-1)
 		{
 			sums(i) = 0;
 			bI.conservativeResize(bI.rows() + 1);
@@ -228,11 +228,17 @@ SkeletonRig::SkeletonRig(std::string surface_file_name, Eigen::MatrixXd& X, Eige
 	//Eigen::VectorXd W_tmp
 	//igl::find(W_tmp, bI, bJ, bV);					//find all non-zero entries here, as they will now be treated as BOUNDARY conditions
 	
+	//igl::writeDMAT("../data/scene_data/glob_tree/rigs/skeleton_rig/bI.DMAT",  bI);
+	//igl::writeDMAT("../data/scene_data/glob_tree/rigs/skeleton_rig/W_tmp.DMAT", W_tmp);
 	igl::slice(W_tmp, bI, 1, surface_W);
+
+	//igl::writeDMAT("../data/scene_data/glob_tree/rigs/skeleton_rig/surfaceW.DMAT", surface_W);
 	Eigen::MatrixXd volume_W = surface_to_volume_weights(surface_W, bI, X, T);
 	
-
+	//igl::writeDMAT("../data/scene_data/glob_tree/rigs/skeleton_rig/surfaceW.DMAT", surface_W);
+	//igl::writeDMAT("../data/scene_data/glob_tree/rigs/skeleton_rig/volumeW.DMAT", volume_W);
 	Eigen::MatrixXd WT = volume_W.transpose();
+
 	//finally
 	Eigen::RowVectorXd colSums = volume_W.colwise().sum();
 	Eigen::RowVectorXd rowSums = volume_W.rowwise().sum();

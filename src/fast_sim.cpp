@@ -246,9 +246,13 @@ void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 }
 
 void FastSim::init_system_matrices(){
+	
 	init_full_system_matrices();
+	
 	init_clustering_matrices();
-	init_reduction_matrices();
+	
+	if (do_reduction)
+		init_reduction_matrices();
 } //overrides parent
 
 void FastSim::init_full_system_matrices(){

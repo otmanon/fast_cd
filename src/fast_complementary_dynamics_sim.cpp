@@ -39,10 +39,12 @@
 #include "DenseQuasiNewtonSolver.h"
 #include "QuasiNewtonSolver.h"
 
-FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr,
+#include "per_vertex_rotation.h"
+
+FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, Eigen::MatrixXd& W, double ym, double pr,
 	double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir, 
 	bool do_reduction, bool do_clustering, int num_modal_features, bool do_inertia,
-	double momentum_leaking_dt, std::string metric_type, double metric_alpha, double beta)
+	double momentum_leaking_dt, std::string metric_type, double metric_alpha, double beta, double gamma)
 {
 	this->X = X;
 	this->T = T;
@@ -60,6 +62,8 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	this->metric_type = metric_type;
 	this->metric_alpha = metric_alpha;
 	this->beta = beta;
+	this->gamma = gamma;
+	this->W = W;
 	stiffness = ym / (2.0 * (1.0 + pr));
 	incompressibility = ym* pr / ((1.0 + pr) * (1.0 - 2.0 * pr));
 
@@ -78,7 +82,7 @@ FastCDSim::FastCDSim( Eigen::MatrixXd& X,  Eigen::MatrixXi& T, Eigen::SparseMatr
 	update_compelementary_constraint(J, modes_file_dir, clusters_file_dir);
 }
 
-Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, bool to_convergence, int max_iters)
+Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, bool to_convergence, int max_iters, double convergence_threshold)
 {
 
 	if (!constraints.use_constraints)
@@ -94,29 +98,29 @@ Eigen::VectorXd FastCDSim::reduced_step_with_equality_constriants(const Eigen::V
 
 	Eigen::VectorXd r, ur, BMy;
 	//have a valid rig
-	BMy = rmp.BTMB * (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0 * p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
+	BMy = rmp.BMB * (2.0 * z_curr - z_prev) +  gamma*rmp.BMJ * (2.0 * p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
 //	dm.r = J * p_next;
-	dm.BMy_tilde = BMy - rmp.BTMJ * p_next;
+	dm.BMy_tilde =  gamma* rmp.BMJ * p_next - BMy ;
 
 //	printf("r: %r\n", dm.r.norm());//
 	dm.GMKur = fmp.GMKJ * p_next - fmp.GMKX;
 	dm.BKMKur = rmp.BKMKJ * p_next - rmp.BKMKX;
 
-	dm.BKMTIKur = rmp.BKMTIKJ * p_next - rmp.BKMTIKX;
+//	dm.BKMTIKur = rmp.BKMTIKJ * p_next - rmp.BKMTIKX;
 	dm.GmKur = fmp.GmKJ * p_next - fmp.GmKX;
-	Eigen::VectorXd uc_bc;
+
 	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
 	std::function<double(const Eigen::VectorXd&)> f;
 	reduced_qnewton_energy_grad(f, grad_f);
 	Eigen::VectorXd z_next;
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
-	z_next = constraints.reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc, do_line_search);
+	z_next = constraints.reduced_newton_solver->solve_with_equality_constraints(z_curr, f, grad_f, bc, do_line_search, to_convergence, max_iters, convergence_threshold);
 	return z_next;
 
-}
+}//
 
 
-Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, bool to_convergence, int max_iters)
+Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, bool to_convergence, int max_iters, double convergence_threshold)
 {
 	if (constraints.use_constraints)
 	{
@@ -130,30 +134,31 @@ Eigen::VectorXd FastCDSim::reduced_step(const Eigen::VectorXd& p_next, const Eig
 	}
 	Eigen::VectorXd r, ur, BMy;
 	//have a valid rig
-	BMy = rmp.BTMB *  (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0*p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
-//	dm.r = J * p_next;
-	dm.BMy_tilde = BMy - rmp.BTMJ * p_next ;
+	BMy = rmp.BMB *  (2.0 * z_curr - z_prev) + gamma*rmp.BMJ * (2.0*p_curr - p_prev);            //u_curr and u_prev are total displacements, eg u_prev = uc_prev + ur_prev;
+//	dm.r = J * p_next;g
+	dm.BMy_tilde = gamma* rmp.BMJ * p_next - BMy;
 
-	dm.GMKur = fmp.GMKJ * p_next  -fmp.GMKX;
+//	BMy = rmp.BTMB * (2.0 * z_curr - z_prev);
+//	dm.BMy_tilde =  - BMy;
+	dm.GMKur = fmp.GMKJ * p_next  - fmp.GMKX;
 	dm.BKMKur = rmp.BKMKJ * p_next  - rmp.BKMKX;
 	
-	dm.BKMTIKur = rmp.BKMTIKJ * p_next - rmp.BKMTIKX;
+//	dm.BKMTIKur = rmp.BKMTIKJ * p_next - rmp.BKMTIKX;
 	dm.GmKur = fmp.GmKJ * p_next  - fmp.GmKX;
 
 	Eigen::VectorXd uc_bc;
-
 	std::function<Eigen::VectorXd(const Eigen::VectorXd&)> grad_f;
 	std::function<double(const Eigen::VectorXd&)> f;
 	reduced_qnewton_energy_grad(f, grad_f);
 
 	Eigen::VectorXd z_next;
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
-	z_next = reduced_newton_solver->solve(z_curr, f, grad_f, do_line_search, to_convergence, max_iters);
+	z_next = reduced_newton_solver->solve(z_curr, f, grad_f, do_line_search, to_convergence, max_iters, convergence_threshold);
 
 	return z_next;
 }
 
-Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, bool to_convergence, int max_iters)
+Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, bool to_convergence, int max_iters, double convergence_threshold)
 {
 	if (do_reduction)
 	{
@@ -167,12 +172,9 @@ Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen:
 	//compute dynamic matrix at the start of the timestep
 	dm.r = r;//TODO: delete this once we're done playing around with it... unnecessary
 	//precompute_with_constraints AJ and MJ for more speed
-	My = fmp.M * (2.0 * uc_curr - uc_prev) + fmp.MJ * (2.0 * p_curr - p_prev);
+	My = fmp.M * (2.0 * uc_curr - uc_prev) + gamma*fmp.MJ * (2.0 * p_curr - p_prev);
 
-	dm.My_tilde = My - fmp.M * dm.r;// +2 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
-
-	dm.u_prev = uc_prev + J * p_prev - x;
-	dm.u_curr = uc_curr + J * p_curr - x;
+	dm.My_tilde = gamma * fmp.M * dm.r -  My  ;// +2 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
 
 	dm.GmKur = fmp.GmKJ * p_next - fmp.GmKX;
 //	dm.y_tilde = y - dm.r;// +2.0 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
@@ -187,13 +189,13 @@ Eigen::VectorXd FastCDSim::full_step(const Eigen::VectorXd& p_next, const Eigen:
 	Eigen::VectorXd zero = Eigen::VectorXd::Zero(J.cols());
 
 	bool do_line_search =  incompressibility < 1e-8 ? false : true;
-	uc_next = full_newton_solver->solve_with_equality_constraints(uc_curr, energy,  grad_f, zero, do_line_search, to_convergence, max_iters);
+	uc_next = full_newton_solver->solve_with_equality_constraints(uc_curr, energy,  grad_f, zero, do_line_search, to_convergence, max_iters, convergence_threshold);
 	
 	return uc_next;
 }
 
 Eigen::VectorXd FastCDSim::full_step_with_equality_constraints(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
-	const Eigen::VectorXd& bc, bool to_convergence, int max_iters)
+	const Eigen::VectorXd& bc, bool to_convergence, int max_iters, double convergence_threshold)
 {
 	if (do_reduction)
 	{
@@ -207,13 +209,10 @@ Eigen::VectorXd FastCDSim::full_step_with_equality_constraints(const Eigen::Vect
 	//compute dynamic matrix at the start of the timestep
 	dm.r = r;//TODO: delete this once we're done playing around with it... unnecessary
 	//precompute_with_constraints AJ and MJ for more speed
-	My = fmp.M * (2.0 * uc_curr - uc_prev) + fmp.MJ * (2.0 * p_curr - p_prev);
+	My = fmp.M * (2.0 * uc_curr - uc_prev) + gamma*fmp.MJ * (2.0 * p_curr - p_prev);
+	dm.My_tilde = gamma *fmp.M * dm.r - My;// +2 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
 
-	dm.u_prev = uc_prev + J * p_next - x;
-
-	dm.u_curr = uc_curr + J * p_curr - x;
-
-	dm.My_tilde = My - fmp.M * dm.r;// +2 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
+	
 	dm.GmKur = fmp.GmKJ * p_next - fmp.GmKX;
 	//	dm.y_tilde = y - dm.r;// +2.0 * sm.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
 
@@ -226,7 +225,7 @@ Eigen::VectorXd FastCDSim::full_step_with_equality_constraints(const Eigen::Vect
 	Eigen::VectorXd zero = Eigen::VectorXd::Zero(J.cols());
 	Eigen::VectorXd b = igl::cat(1, zero, bc);
 	bool do_line_search = incompressibility < 1e-8 ? false : true;
-	uc_next = constraints.full_newton_solver->solve_with_equality_constraints(uc_curr, energy, grad_f, b, do_line_search, to_convergence, max_iters);
+	uc_next = constraints.full_newton_solver->solve_with_equality_constraints(uc_curr, energy, grad_f, b, do_line_search, to_convergence, max_iters, convergence_threshold);
 	return uc_next;
 }
 
@@ -255,18 +254,19 @@ void FastCDSim::precompute_solvers()
 {
 	if (!constraints.use_constraints)
 	{
-		reduced_newton_solver->precompute(rmp.BTAB);
-		if (!do_reduction)
+		if (do_reduction)
+			reduced_newton_solver->precompute(rmp.BAB);
+		else
 		{
-				full_newton_solver->precompute_with_equality_constraints(fmp.A, fmp.Aeq);
+			full_newton_solver->precompute_with_equality_constraints(fmp.A, fmp.Aeq);
 		}	
 
 	}
 	if(constraints.use_constraints)
 	{
-
-		constraints.reduced_newton_solver->precompute_with_equality_constraints(rmp.BTAB, constraints.SB);
-		if (!do_reduction)
+		if (do_reduction)
+			constraints.reduced_newton_solver->precompute_with_equality_constraints(rmp.BAB, constraints.SB);
+		else
 		{
 			Eigen::SparseMatrix<double> Heq;
 			igl::cat(1, fmp.Aeq, constraints.S, Heq);
@@ -275,6 +275,7 @@ void FastCDSim::precompute_solvers()
 		}
 	}
 }
+
 
 void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::VectorXd&)>& f, std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f)
 {
@@ -298,7 +299,7 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 
 			//calculate (tr R^T F -I)R
 			double tr = (rot.transpose() * F).diagonal().sum() - 3;
-			tr = tr * tr;
+			//tr = tr * tr;
 			volume_energy_tet(i) = 0.5 * fmp.Vol_c.coeff(i, i) * tr * tr;
 		}
 		const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
@@ -337,8 +338,7 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		for (int i = 0; i < l; i++)
 		{
 			F = (F_stack.block(3 * i, 0, 3, 3));
-			Eigen::Matrix3d F_temp = F;
-			igl::polar_svd3x3(F_temp, rot);
+			igl::polar_svd3x3(F, rot);
 			R.block(3 * i, 0, 3, 3) = rot;// .transpose();//
 
 	
@@ -350,13 +350,13 @@ void FastCDSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Ve
 		const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
 		const Eigen::VectorXd gb_flat = Eigen::Map<const Eigen::VectorXd>(trRT_IR.data(), R.rows() * R.cols());
 		//	Eigen::VectorXd traces = sm.traceMat *  sm.G_exp.transpose() * R_flat;
-		Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (rmp.BMB * z - dm.BMy_tilde);
+		Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (rmp.BMB * z + dm.BMy_tilde);
 		//Eigen::VectorXd bending_grad =  rmp.BKMG * (FV_flat - R_flat);
 		
-		Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB * z  - rmp.BKMG * R_flat + beta*dm.BKMKur;
+		Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB * z - rmp.BKMG * R_flat + beta*dm.BKMKur;
 		//Eigen::VectorXd volume_grad = rmp.BKMTIH +  rmp.BKMTIKB* z + dm.BKMTIKur  - rmp.BKMTIG * R_flat; //sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
 		Eigen::VectorXd volume_grad = rmp.BKMG * gb_flat;
-		Eigen::VectorXd elastic_grad = stiffness * bending_grad +incompressibility * volume_grad;
+		Eigen::VectorXd elastic_grad = stiffness * bending_grad + incompressibility * volume_grad;
 		Eigen::VectorXd g = elastic_grad + do_inertia * inertia_grad;
 	    
 	//	printf("inertia: %g, arap: % g  volume: %g", inertia_grad.norm(), bending_grad.norm(), volume_grad.norm());
@@ -403,14 +403,27 @@ void FastCDSim::full_qnewton_energy_grad(std::function<double(const Eigen::Vecto
 		const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
 		const Eigen::VectorXd gb_flat = Eigen::Map<const Eigen::VectorXd>(trRT_IR.data(), R.rows() * R.cols());
 
-		Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (fmp.M *uc -  dm.My_tilde);
+		Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (fmp.M *uc + dm.My_tilde);
 		//Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (rmp.BMB * z - dm.BMy_tilde);
 		Eigen::VectorXd bending_grad = fmp.KMH + fmp.KMK * (uc + beta*ur) - fmp.KMG * R_flat;
 	//	Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB * z + dm.BKMKur - rmp.BKMG * R_flat;
 
 		Eigen::VectorXd volume_grad = fmp.KMG * gb_flat;
-		Eigen::VectorXd elastic_grad = stiffness * bending_grad +incompressibility * volume_grad;
+		Eigen::VectorXd elastic_grad = stiffness * bending_grad + incompressibility * volume_grad;
 		Eigen::VectorXd g = elastic_grad + do_inertia * inertia_grad;
+
+
+	//const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
+	//const Eigen::VectorXd gb_flat = Eigen::Map<const Eigen::VectorXd>(trRT_IR.data(), R.rows() * R.cols());
+	////	Eigen::VectorXd traces = sm.traceMat *  sm.G_exp.transpose() * R_flat;
+	//Eigen::VectorXd inertia_grad = (1.0 / (dt * dt)) * (rmp.BMB * z + dm.BMy_tilde);
+	////Eigen::VectorXd bending_grad =  rmp.BKMG * (FV_flat - R_flat);
+	//
+	//Eigen::VectorXd bending_grad = rmp.BKMH + rmp.BKMKB * z - rmp.BKMG * R_flat + beta * dm.BKMKur;
+	////Eigen::VectorXd volume_grad = rmp.BKMTIH +  rmp.BKMTIKB* z + dm.BKMTIKur  - rmp.BKMTIG * R_flat; //sm.K.transpose()* sm.FM* sm.traceMat.transpose()* sm.traceMat* (sm.H + sm.K * u - sm.G_exp.transpose() * R_flat); //sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
+	//Eigen::VectorXd volume_grad = rmp.BKMG * gb_flat;
+	//Eigen::VectorXd elastic_grad = stiffness * bending_grad + incompressibility * volume_grad;
+	//Eigen::VectorXd g = elastic_grad + do_inertia * inertia_grad;
 		return g;
 	};
 }
@@ -491,6 +504,7 @@ void FastCDSim::init_modes(int num_modes)
 	}
 	L = L_full.topRows(num_modes);
 	B = B_full.block(0, 0, 3*X.rows(), num_modes);
+	fmp.B_0 = B;
 }
 
 void FastCDSim::init_clusters(int num_clusters, int num_feature_modes)
@@ -549,6 +563,7 @@ void FastCDSim::init_full_system_matrices()
 	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
 	//cotan laplacian
 	igl::cotmatrix(X, T, fmp.C);
+
 	fmp.C = -igl::repdiag(fmp.C, 3);
 
 	//mass matrix
@@ -570,8 +585,6 @@ void FastCDSim::init_full_system_matrices()
 
 	fmp.MJ = fmp.M * J;
 	fmp.MX = fmp.M * Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols());
-
-
 
 	//flattened_deformation_gradient matrices. 
 	deformation_gradient_from_u_prefactorized_matrices(X, T, fmp.H, fmp.K, fmp.Vol_exp);
@@ -607,49 +620,175 @@ void FastCDSim::init_full_system_matrices()
 }
 
 void FastCDSim::init_reduction_matrices()
-{
+ {
 	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols()); //a few of these need rest space positions
 	//general system matrices
 	Eigen::MatrixXd BT = B.transpose();
 	Eigen::SparseMatrix<double> KT = fmp.K.transpose();
-	rmp.BTA = BT * fmp.A;
-	rmp.BTAB = rmp.BTA * B;
-	rmp.BTAJ = rmp.BTA * J;
+	rmp.BA = BT * fmp.A;
+	rmp.BAB = rmp.BA * B;
+	rmp.BAJ = rmp.BA * J;
 
-	rmp.BTM = BT * fmp.M;
-	rmp.BTMB = rmp.BTM * B;
-	rmp.BTMJ = rmp.BTM * J;
+	rmp.BM = BT * fmp.M;
+	rmp.BMB = rmp.BM * B;
+	rmp.BMJ = rmp.BM * J;
 
-	rmp.BTMX = rmp.BTM * x;
+	//rmp.BMX = rmp.BM * x;
 
 	//need these for bending energy
 	rmp.BKMK = BT * fmp.KMK;
 	rmp.BKMKB = rmp.BKMK * B;
-	rmp.BMB = rmp.BTMB; //same thing 
 	rmp.BKMH = BT * fmp.KMH;
 
-	rmp.GMKB = fmp.GMK * B;
+	//rmp.GMKB = fmp.GMK * B;
 	rmp.GmKB = fmp.GmK * B;
 	rmp.BKMG = BT* fmp.KMG;
 
-	rmp.BKMGm = BT* (KT) * (fmp.Vol_exp * fmp.G_m.transpose());
+//	rmp.BKMGm = BT* (KT) * (fmp.Vol_exp * fmp.G_m.transpose());
 	rmp.BKMKJ = rmp.BKMK * J;
 	rmp.BKMKX = rmp.BKMK * x;
 	//dm.BKMKur = rmp.BKMKJ * p_next + rmp.BKMKNX - rmp.BKMKX;
 	//need these for volume preserving energy
 	//Volume energy matrices How do I make thi
-	Eigen::MatrixXd BKMTIK = BT * fmp.KMTIK;
-	rmp.BKMTIH = BT * fmp.KMTIH ;
-	rmp.BKMTIKB = BKMTIK * B;
-	rmp.BKMTIG = BT* fmp.KMTIG;
-	rmp.BKMTIKJ = BKMTIK * J;
-	rmp.BKMTIKX = BKMTIK * x;
-
+//	Eigen::MatrixXd BKMTIK = BT * fmp.KMTIK;
+	//rmp.BKMTIH = BT * fmp.KMTIH ;
+	//rmp.BKMTIKB = BKMTIK * B;
+	//rmp.BKMTIG = BT* fmp.KMTIG;
+	//rmp.BKMTIKJ = BKMTIK * J;
+	//rmp.BKMTIKX = BKMTIK * x;
+	
 
 	rmp.BMJ = B.transpose() * fmp.M * J;
-	rmp.JMB = J.transpose() * fmp.M * B;
+
+	{
+		//Eigen::MatrixXd I = Eigen::MatrixXd::Identity(B.rows(), B.rows());
+		
+		Eigen::SparseMatrix<double> spI; spI.resize(B.rows(), B.rows());
+		spI.setIdentity();
+		
+		Eigen::SparseMatrix<double> MJT, KMKJT, KMGT;
+		MJT = fmp.MJ.transpose();
+		KMKJT = fmp.KMKJ.transpose();
+		KMGT = fmp.KMG.transpose();
+
+		//rot_mat.IRI = LinearRotatedMatrix(I, I, W);
+		rot_mat.B = LinearRotatedMatrix(spI, fmp.B_0, W);
+		rot_mat.GmKB = LinearRotatedMatrix(fmp.GmK, B, W); //for arap/defo gradient
+		rot_mat.BKMH = LinearRotatedMatrix(fmp.KMH.transpose(), B, W);
+		rot_mat.BKMKJ = LinearRotatedMatrix(KMKJT, B, W);
+		rot_mat.BKMKX = LinearRotatedMatrix(fmp.KMKX.transpose(), B, W);
+
+	//	rot_mat.BKMKB = QuadraticRotatedMatrix(BT, B, fmp.KMK,  W); //quadratic term
+		
+	//	rot_mat.BMB = QuadraticRotatedMatrix(BT, B, fmp.M, W); //for inertia, quadratic term
+
+	//	rot_mat.IRIRI = QuadraticRotatedMatrix(I, I, spI, W);
+	
+		rot_mat.BMJ = LinearRotatedMatrix(MJT, B, W); //for inertia
+		rot_mat.BKMG = LinearRotatedMatrix(KMGT, B, W); //for volume grad.
+	}
 
 }
+
+void FastCDSim::update_subspace(const Eigen::VectorXd& p, const Eigen::MatrixXd& W)
+{
+	Eigen::SparseMatrix<double> R;
+	Eigen::MatrixXd R_stack;
+	per_vertex_rotation(p, W, R, R_stack);
+
+	B = R * fmp.B_0;
+
+	Eigen::VectorXd x = Eigen::Map<Eigen::VectorXd>(X.data(), X.rows() * X.cols()); //a few of these need rest space positions
+
+	Eigen::MatrixXd BT = B.transpose();
+	//rmp.BA = BT * fmp.A;
+	//rmp.BAB = rmp.BA * B;
+	//rmp.BAJ = rmp.BA * J;
+
+	rmp.BM = BT * fmp.M;
+	//rmp.BMB = rmp.BM * B;
+	rmp.BMJ = rmp.BM * J;
+
+
+	//need these for bending energy
+	rmp.BKMK = BT * fmp.KMK;
+	//rmp.BKMKB = rmp.BKMK * B;
+	rmp.BKMH = BT * fmp.KMH;
+	rmp.GmKB = fmp.GmK * B;
+	rmp.BKMG = BT * fmp.KMG;
+	rmp.BKMKJ = rmp.BKMK * J;
+	rmp.BKMKX = rmp.BKMK * x;
+
+}
+
+void FastCDSim::update_subspace_fast(const Eigen::VectorXd& p)
+{
+	//All of these matrices require 
+	Eigen::MatrixXd BKMH, BKMKX, GmKB, BKMKJ, BKMKB, BMB, BMJ, BKMG;
+
+
+	//Eigen::SparseMatrix<double> R;
+	//Eigen::MatrixXd R_stack;
+//	per_vertex_rotation(p, W, R, R_stack);
+
+	//Eigen::MatrixXd R_test;
+	//rot_mat.IRI.update(p, R_test);
+	//
+	//Eigen::MatrixXd error = R_test - R;
+	//printf("R test error : %f \n", error.cwiseAbs().sum());
+
+	//B = R * fmp.B_0;
+
+	rot_mat.B.update(p, B);
+	//rmp.BMJ = B.transpose() * fmp.MJ;
+    rot_mat.BMJ.update(p, BMJ); //for inertia
+	//printf("BMJ error norm : %f \n", (BMJ.transpose() - rmp.BMJ).cwiseAbs().sum());
+	rmp.BMJ = BMJ.transpose();
+	
+	//rmp.BKMH = B.transpose() * fmp.KMH;
+	rot_mat.BKMH.update(p, BKMH);
+    //printf("BKMH error norm : %f \n", (BKMH.row(0).transpose() - rmp.BKMH).cwiseAbs().sum());
+	rmp.BKMH = BKMH.row(0).transpose();
+	
+	//rmp.GmKB =  fmp.GmK * B;
+	rot_mat.GmKB.update(p, GmKB);
+	//printf("GmKB error norm : %f \n",(GmKB - rmp.GmKB).cwiseAbs().sum());
+	rmp.GmKB = GmKB;
+	
+	//
+	//rmp.BKMG = B.transpose() * fmp.KMG;
+	rot_mat.BKMG.update(p, BKMG); //for volume grad.
+	//printf("BKMG error norm : %f \n", (BKMG.transpose() - rmp.BKMG).cwiseAbs().sum());
+	rmp.BKMG = BKMG.transpose();
+	//
+	//rmp.BKMKJ = B.transpose() * fmp.KMKJ;
+	rot_mat.BKMKJ.update(p, BKMKJ);
+	//printf("BKMKJ error norm : %f \n", (BKMKJ.transpose() - rmp.BKMKJ).cwiseAbs().sum());
+	rmp.BKMKJ = BKMKJ.transpose();
+	//
+	//rmp.BKMKX = B.transpose() * fmp.KMKX;
+	rot_mat.BKMKX.update(p, BKMKX);
+	//printf("BKMKX error norm : %f \n", (BKMKX.row(0).transpose() - rmp.BKMKX).cwiseAbs().sum());
+	rmp.BKMKX = BKMKX.row(0).transpose();
+
+	//rmp.BKMKB = B.transpose() * fmp.KMK * B;
+	//rot_mat.BKMKB.update(p, BKMKB); //quadratic term
+	//printf("BKMKB error norm : %f \n", (BKMKB.transpose() - rmp.BKMKB).cwiseAbs().sum());
+	//rmp.BKMKB = BKMKB.transpose();
+
+	//rmp.BMB = B.transpose() * fmp.M * B;
+	//rot_mat.BMB.update(p, BMB); //for inertia, quadratic term
+	//printf("BMB error norm : %f \n", (BMB - rmp.BMB).cwiseAbs().sum());
+	//rmp.BMB = BMB.transpose();
+
+//	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(B.rows(), B.rows());
+//	Eigen::SparseMatrix<double> spI; spI.resize(B.rows(), B.rows());
+//	spI.setIdentity();
+//	Eigen::MatrixXd IRIRI = I * R.transpose() * I * R * I; Eigen::MatrixXd IRIRI_test;
+//	rot_mat.IRIRI.update(p, IRIRI_test);
+//	printf("IRIRI error norm : %f  \n", (IRIRI - IRIRI_test).norm());
+}
+
 
 void FastCDSim::init_clustering_matrices()
 {
@@ -695,7 +834,7 @@ void FastCDSim::init_clustering_matrices()
 		fmp.GMH = fmp.G_1* fmp.Vol_exp * fmp.H;
 		fmp.GMK = fmp.G_1 * fmp.Vol_exp * fmp.K;
 		fmp.KMG = fmp.K.transpose() * fmp.Vol_exp * fmp.G_1.transpose();//sm.K.transpose() * sm.FM * (sm.H + sm.K * u - sm.G_exp.transpose() * (R_flat)) ; //every tet in each cluster has the same
-		fmp.KMTIG = fmp.K.transpose() * fmp.Vol_exp * fmp.traceMat.transpose() * fmp.traceMat * fmp.G_1.transpose();
+	//	fmp.KMTIG = fmp.K.transpose() * fmp.Vol_exp * fmp.traceMat.transpose() * fmp.traceMat * fmp.G_1.transpose();
 
 		fmp.GMKJ = fmp.GMK * J;
 		fmp.GMKX = fmp.GMK * x;
@@ -804,7 +943,7 @@ void FastCDSim::energy_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& 
 	Eigen::VectorXd ur_curr = J * p_curr - x;
 	Eigen::VectorXd ur_prev = J * p_prev - x;
 
-	energy(z, z_curr, z_prev, ur_next, ur_curr, ur_prev, bending, volume, inertia);
+	energy(B*z, B*z_curr, B*z_prev, ur_next, ur_curr, ur_prev, bending, volume, inertia);
 }
 
 
@@ -938,8 +1077,8 @@ void FastCDSim::grad_reduced(const Eigen::VectorXd& z, const Eigen::VectorXd& z_
 
 	const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
 	const Eigen::VectorXd gb_flat = Eigen::Map<const Eigen::VectorXd>(trRT_IR.data(), R.rows() * R.cols());
-	Eigen::VectorXd BMy = rmp.BTMB * (2.0 * z_curr - z_prev) + rmp.BTMJ * (2.0 * p_curr - p_prev);  
-	Eigen::VectorXd BMy_tilde = BMy - rmp.BTMJ * p_next;
+	Eigen::VectorXd BMy = rmp.BMB * (2.0 * z_curr - z_prev) + rmp.BMJ * (2.0 * p_curr - p_prev);  
+	Eigen::VectorXd BMy_tilde = BMy - rmp.BMJ * p_next;
 
 	inertia_grad = do_inertia * (1.0 / (dt * dt)) * (rmp.BMB * z - BMy_tilde);
 	bending_grad = stiffness * (rmp.BKMH + rmp.BKMKB * z + beta* dm.BKMKur - rmp.BKMG * R_flat);
@@ -984,7 +1123,7 @@ void FastCDSim::grad_complementary_reduced(const Eigen::VectorXd& z, const Eigen
 
 	const Eigen::VectorXd R_flat = Eigen::Map<const Eigen::VectorXd>(R.data(), R.rows() * R.cols());
 	const Eigen::VectorXd gb_flat = Eigen::Map<const Eigen::VectorXd>(trRT_IR.data(), R.rows() * R.cols());
-	Eigen::VectorXd BMy = rmp.BTMB * (2.0 * z_curr - z_prev) ;
+	Eigen::VectorXd BMy = rmp.BMB * (2.0 * z_curr - z_prev) ;
 	Eigen::VectorXd BMy_tilde = BMy;
 
 	inertia_grad = do_inertia * (1.0 / (dt * dt)) * (rmp.BMB * z - BMy_tilde);

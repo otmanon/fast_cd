@@ -7,6 +7,7 @@ class VectorRecorder
 public:
 	Eigen::MatrixXd P;
 
+	VectorRecorder() {};
 	VectorRecorder(Eigen::VectorXd& p0)
 	{
 		P.resize(p0.rows(), 0);

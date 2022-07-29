@@ -14,7 +14,16 @@
 Rig* get_rig(std::string rig_file, Eigen::MatrixXd& V0, Eigen::MatrixXi& T, double radius)
 {
 	std::string rig_type;
-	RIG_TYPE type = get_rig_type(rig_file, rig_type);
+    RIG_TYPE type;
+    namespace fs = std::filesystem;
+    if (!fs::exists(fs::path(rig_file)))
+    {
+        fs::create_directories(fs::path(rig_file).parent_path());
+        rig_type = "affine";
+        type = RIG_TYPE::AFFINE_RIG;
+    }else
+	    type =get_rig_type(rig_file, rig_type);
+
     std::string rig_file_format;
     Rig* rig;
     switch (type)

@@ -98,7 +98,7 @@ InteractiveCDHook::InteractiveCDHook(std::string file, igl::opengl::glfw::Viewer
     sim = FastSim(V0, T, rig->S,  as.ym, as.pr, as.dt, as.r, as.l, as.pinned_mode_dir, as.pinned_clusters_dir, as.do_reduction, as.do_clustering);
     
   
-    cd_sim = FastCDSim(V0, T, rig->J, as.ym, as.pr, as.dt, as.r, as.l, as.cd_mode_dir, as.cd_clusters_dir, as.do_reduction, as.do_clustering);
+    cd_sim = FastCDSim(V0, T, rig->J, rig->W, as.ym, as.pr, as.dt, as.r, as.l, as.cd_mode_dir, as.cd_clusters_dir, as.do_reduction, as.do_clustering);
 
     as.proj_gpu = false;
     //get all indices in J and B.

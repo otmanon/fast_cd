@@ -54,4 +54,4 @@ struct Screenshotter
         igl::png::writePNG(R, G, B, A, filepath);
     }
 
-}screenshot;
+};

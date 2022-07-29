@@ -6,9 +6,13 @@
 #include <json.hpp>
 #include <Eigen/Core>
 #include <igl/list_to_matrix.h>
+#include <igl/PI.h>
 using namespace nlohmann;
 struct FastCDInit {
 
+
+    std::string json_filepath;
+    json j;
     std::string mesh; //.obj mesh mpath
     std::string rig; //.json rig path for rig file
     std::string anim; //.json or .dmat anim path
@@ -28,7 +32,9 @@ struct FastCDInit {
     double momentum_leaking_dt;
     int num_clustering_features;
     int substeps;
-    bool do_clustering, do_reduction, do_inertia;
+    bool do_clustering, do_reduction, do_inertia, do_cd;
+    double gamma; // when 0, then no rig momentum, when 1, full rig momentum.
+
     double metric_alpha;
     std::string metric_type;
 
@@ -45,6 +51,9 @@ struct FastCDInit {
     bool record_timings;
     bool use_complementary_recordings;
 
+    bool update_basis_naive;
+    bool update_basis_fast;
+
     Eigen::RowVector3d color; //color to draw the mesh in, if the texture isn't found or isn't specified
     
     double rig_thickness;
@@ -56,65 +65,35 @@ struct FastCDInit {
     Eigen::RowVector3d eye_pos;
     Eigen::RowVector3d center;
     double zoom;
+    bool face_based;
 
     bool init_z;
+    bool randomize_init_z;
     std::string init_z_dir;
     int init_z_step;
+    int init_p_step;
+    bool animate_rig;
 
+    bool run_solver_to_convergence;
+    double convergence_threshold;
+    double max_iters;
     /*
     sim /vis_clusters / vos_modes/ vis_weights
     */
-	void init(int argc, char* argv[], std::string init_type)
+	void init(int argc, char* argv[] )
 	{
-        std::string json_filepath = argc > 1 ? argv[1] : "../data/beta_0_equivalents/fish.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
-        if (init_type == "sim")
-            init_sim_from_json(json_filepath);
-        else if (init_type == "vis_clusters")
-            init_cluster_vis_from_json(json_filepath);
-        else if (init_type == "vis_modes")
-            init_mode_vis_from_json(json_filepath);
-        else if (init_type == "vis_weights")
-            init_weight_vis_from_json(json_filepath);
-        if (init_type == "interactive")
-            init_interactive_sim_from_json(json_filepath);
-
-        // save this json file in the results seciton so we know what all the most up to date results are for
-        
-	}
-
-    void read_json_entry_filepath(json& j, std::string json_key, std::string& filepath, bool required, std::string default = "")
-    {
-        namespace fs = std::filesystem;
-        if (required)
-        {
-            if (j.count(json_key) == 0)
-            {
-                printf("%s , did not specify required %s entry in init.json \n", json_key.c_str());
-                exit(0);
-            }
-            filepath = j[json_key];
-        }
-        if (!required)
-        {
-            if (j.count(json_key) == 0)
-            {
-                filepath = default;
-            }
-            else
-            {
-                filepath = j[json_key];
-            }
-        }
-       
-        if (!fs::exists(fs::path(filepath)) && required)
-        {
-            printf("%s , could not find required file specified in init.json \n", filepath.c_str());
-            exit(0);
-        }
-    }
-
-    void init_interactive_sim_from_json(std::string json_filepath)
-    {
+        json_filepath = argc > 1 ? argv[1] : "../data/rotater_test/fine_elephant.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
+      // if (init_type == "sim")
+      //     init_sim_from_json(json_filepath);
+      // else if (init_type == "vis_clusters")
+      //     init_cluster_vis_from_json(json_filepath);
+      // else if (init_type == "vis_modes")
+      //     init_mode_vis_from_json(json_filepath);
+      // else if (init_type == "vis_weights")
+      //     init_weight_vis_from_json(json_filepath);
+      // if (init_type == "interactive")
+      //     init_interactive_sim_from_json(json_filepath);
+        //standard init sim... everything is not required.
         namespace fs = std::filesystem;
         if (!fs::exists(fs::path(json_filepath)))
         {
@@ -123,7 +102,6 @@ struct FastCDInit {
         }
 
         std::ifstream i(json_filepath);
-        json j;
         try
         {
             i >> j;
@@ -132,91 +110,9 @@ struct FastCDInit {
         {
             std::cerr << "init.json parse error at byte " << ex.byte << std::endl;
         }
-        read_json_entry_filepath(j, "mesh", mesh, true);
-        read_json_entry_filepath(j, "rig", rig, true);
-
-        rig_controller = j.value("rig_controller", "handle"); // "handle", "skeletonFK", "skeletonIK"
-
+        read_json_entry_filepath(j, "mesh", mesh, false);
+        read_json_entry_filepath(j, "rig", rig, false);
         read_json_entry_filepath(j, "anim", anim, false);
-        read_json_entry_filepath(j, "display_mesh", display_mesh, false);
-        read_json_entry_filepath(j, "texture", texture, false);
-
-        read_json_entry_filepath(j, "results", results, false, "../results/default_results/"); //where should we store the results... this should be a folder
-
-
-        read_json_entry_filepath(j, "modes_dir", modes_dir, false, fs::path(rig).parent_path().string() + "/cache/modes/default/");
-        read_json_entry_filepath(j, "clusters_dir", cluster_dir, false, fs::path(rig).parent_path().string() + "/cache/clusters/default/");
-
-        do_reduction = j.value("do_reduction", true);
-        do_clustering = j.value("do_clustering", true);
-        do_inertia = j.value("do_inertia", true);
-        num_modes = j.value("num_modes", 100);
-        momentum_leaking_dt = j.value("momentum_leaking_dt", 1e-6);
-        num_clusters = j.value("num_clusters", 100);
-
-        num_clustering_features = j.value("num_clustering_features", 10);
-        ym = j.value("ym", 10);
-        pr = j.value("pr", 0.0);
-        dt = j.value("dt", 1.0 / 60.0);
-        beta = j.value("beta", 1.0);
-        num_substeps = j.value("num_substeps", 1);
-
-        screenshot = j.value("screenshot", false);
-        record_rig = j.value("record_rig", false);
-        record_mesh = j.value("record_mesh", false);
-        record_modal_activations = j.value("record_modal_activations", false);
-        record_energy = j.value("record_energy", false);
-        record_gradient_norm = j.value("record_gradient_norm", false);
-        record_gradient = j.value("record_gradient", false);
-        record_timings = j.value("record_timings", false);
-
-        vis_texture = j.value("vis_texture", false);
-        vis_rig = j.value("vis_rig", false);
-        vis_clusters = j.value("vis_clusters", false);
-        rig_thickness = j.value("rig_thickness", 0.1);
-        std::vector<double> baby_blue_list = { 0.537, 0.81176,  0.9411 };
-        std::vector<double> dull_yellow_list = { 0.925, 0.890, 0.631 };
-        std::vector<double> color_list = j.value("color", baby_blue_list);
-        igl::list_to_matrix(color_list, color);
-
-        color_list = j.value("rig_color", dull_yellow_list);
-        igl::list_to_matrix(color_list, rig_color);
-
-        //zoom
-        init_cam_parameters(j);
-
-        //write current state to json
-
-        if (!fs::exists(fs::path(results)))
-        {
-            fs::create_directories(fs::path(results));
-        }
-        std::ofstream o(results + "init.json");
-        o << std::setw(4) << j << std::endl;
-    }
-
-	void init_sim_from_json(std::string json_filepath)
-	{
-        namespace fs = std::filesystem;
-        if (!fs::exists(fs::path(json_filepath)))
-        {
-            printf("%s , initialization .json file not found \n", json_filepath.c_str());
-            exit(0);
-        }
-
-        std::ifstream i(json_filepath);
-        json j;
-        try
-        {
-            i >> j;
-        }
-        catch (json::parse_error& ex)
-        {
-            std::cerr << "init.json parse error at byte " << ex.byte << std::endl;
-        }
-        read_json_entry_filepath(j, "mesh", mesh, true);
-        read_json_entry_filepath(j, "rig", rig, true);
-        read_json_entry_filepath(j, "anim", anim, true);
 
         read_json_entry_filepath(j, "display_mesh", display_mesh, false);
         read_json_entry_filepath(j, "texture", texture, false);
@@ -227,18 +123,25 @@ struct FastCDInit {
         read_json_entry_filepath(j, "results", results, false, "../results/default_results/"); //where should we store the results... this should be a folder
 
         read_json_entry_filepath(j, "modes_dir", modes_dir, false, fs::path(rig).parent_path().string() + "/cache/modes/default/");
-        read_json_entry_filepath(j, "clusters_dir", cluster_dir, false, fs::path(rig).parent_path().string() +"/cache/clusters/default/");
+        read_json_entry_filepath(j, "clusters_dir", cluster_dir, false, fs::path(rig).parent_path().string() + "/cache/clusters/default/");
 
-        do_reduction = j.value("do_reduction", true) ;
+        do_reduction = j.value("do_reduction", true);
         do_clustering = j.value("do_clustering", true);
+        do_cd = j.value("do_cd", true);
         do_inertia = j.value("do_inertia", true);
         num_modes = j.value("num_modes", 100);
         num_clusters = j.value("num_clusters", 100);
+        gamma = j.value("gamma", 1.0);
 
         beta = j.value("beta", 1.0);
-        init_z = j.value("init_z", true);
+        init_z = j.value("init_z", false);
         init_z_dir = j.value("init_z_dir", "");
         init_z_step = j.value("init_z_step", 0);
+        init_p_step = j.value("init_p_step", 0);
+        animate_rig = j.value("animate_rig", true);
+
+        randomize_init_z = j.value("randomize_init_z", false);
+        randomize_init_z = (randomize_init_z && !init_z); //only allow randomize if init_z unspecified
 
         num_clustering_features = j.value("num_clustering_features", 10);
         ym = j.value("ym", 0.1);
@@ -248,9 +151,14 @@ struct FastCDInit {
         metric_type = j.value("metric_type", "momentum");
         metric_alpha = j.value("metric_alpha", 1.0);
 
+        update_basis_naive = j.value("update_basis_naive", false);
+        update_basis_fast = j.value("update_basis_fast", false);
 
         num_substeps = j.value("num_substeps", 1);
-      
+
+        run_solver_to_convergence = j.value("run_solver_to_convergence", true);
+        convergence_threshold = j.value("convergence_threshold", 1e-6);
+        max_iters = j.value("max_iters", 100);
 
         screenshot = j.value("screenshot", false);
         record_rig = j.value("record_rig", false);
@@ -284,6 +192,37 @@ struct FastCDInit {
         }
         std::ofstream o(results + "init.json");
         o << std::setw(4) << j << std::endl;
+	}
+
+    void read_json_entry_filepath(json& j, std::string json_key, std::string& filepath, bool required, std::string default = "", bool confirm_exists=false)
+    {
+        namespace fs = std::filesystem;
+        if (required)
+        {
+            if (j.count(json_key) == 0)
+            {
+                std::string key = json_key;
+                printf("%s , did not specify required entry in init.json\n", key.c_str());
+                exit(0);
+            }
+            filepath = j[json_key];
+        }
+        if (!required)
+        {
+            if (j.count(json_key) == 0)
+            {
+                filepath = default;
+            }
+            else
+            {
+                filepath = j[json_key];
+            }
+        }        
+        if (!fs::exists(fs::path(filepath)) && confirm_exists)
+        {
+            printf("%s , could not find required file specified in init.json \n", filepath.c_str());
+            exit(0);
+        }
     }
 
     void init_cluster_vis_from_json(std::string json_filepath)
@@ -451,5 +390,89 @@ struct FastCDInit {
         std::vector<double> center0 = { 0, 0, 0 };
         std::vector<double> center_list = j.value("center", center0);
         igl::list_to_matrix(center_list, center);
+
+        face_based = j.value("face_based", true);
+    }
+};
+
+
+struct InitSim : public FastCDInit {
+
+    //uses default init and overrides necessary
+    void init(int argc, char* argv[] )
+    {
+        FastCDInit::init(argc, argv );
+        read_json_entry_filepath(j, "mesh", mesh, true, "", true);
+        read_json_entry_filepath(j, "rig", rig, true, "", true);
+        read_json_entry_filepath(j, "anim", anim, true, "", true);
+    }
+};
+
+struct InitInteractiveSim : public FastCDInit {
+
+    //uses default init and overrides necessary
+    void init(int argc, char* argv[])
+    {
+        FastCDInit::init(argc, argv);
+        read_json_entry_filepath(j, "mesh", mesh, true, "", true);
+        read_json_entry_filepath(j, "rig", rig, true, "", true);
+    }
+};
+
+struct InitBuildRig : public FastCDInit 
+{
+    std::string output_rig;
+
+
+    int desired_num_bones;
+    void init(int argc, char* argv[])
+    {
+        FastCDInit::init(argc, argv);
+        read_json_entry_filepath(j, "mesh", mesh, true, "", true);
+ 
+        read_json_entry_filepath(j, "output_rig", output_rig, true, "", false);
+
+        desired_num_bones = j.value("desired_num_bones", 10);
+    }
+};
+
+struct InitSimScriptedRig : public FastCDInit
+{
+    std::string scripted_rig_controller;
+
+    double rad_per_frame;
+    Eigen::Vector3d rot_axis;
+    int max_step;
+    void init(int argc, char* argv[])
+    {
+        
+        FastCDInit::init(argc, argv);
+        
+        scripted_rig_controller = j.value("scripted_rig_controller", "rotater");
+
+        read_json_entry_filepath(j, "mesh", mesh, true, "", true);
+        read_json_entry_filepath(j, "rig", rig, true, "", false);
+        max_step = j.value("max_step", 360);
+
+        ///For rotater
+        double deg_per_frame = j.value("deg_per_frame", 1.0);
+        rad_per_frame = deg_per_frame * igl::PI / 180.0;
+        std::vector<double> axis_default = { 0, 0, 1 };
+        std::vector<double> axis_list = j.value("rot_axis", axis_default);
+        igl::list_to_matrix(axis_list, rot_axis);
+    }
+};
+
+struct InitSimRotaterController : public  InitSimScriptedRig
+{
+    std::string scripted_rig_controller;
+
+    double rad_per_frame;
+    Eigen::Vector3d rot_axis;
+    void init(int argc, char* argv[])
+    {
+        InitSimScriptedRig::init(argc, argv);
+
+
     }
 };

@@ -31,7 +31,8 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
     this->S = S;
 
 
-
+    Eigen::MatrixXd D = S * S.transpose();
+    llt_proj.compute(D);
    // FullPivLU<MatrixXd> lu_decomp2(A);
    // std::cout << "rank of A : " << lu_decomp2.rank() << std::endl;
    // std::cout << "number of row of A : " << A.rows() << std::endl;
@@ -84,10 +85,15 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
     Eigen::MatrixXd I(Q.rows(), Q.rows());
     I.setIdentity(); // only in bottom rows
     //I.topLeftCorner(A.rows(), A.rows()) = Eigen::MatrixXd::Zero(A.rows(), A.rows());
-    FullPivLU<MatrixXd> lu(-Q);
-    Q -= 1e-10* I;
+    FullPivLU<MatrixXd> lu(Q);
+    //Q -= 1e-10* I;
     printf("rank of Q %i : ", lu.rank());
     ldlt_precomp.compute(Q);
+  //  lu_precomp.compute(Q);
+    if (ldlt_precomp.info() != Success) {
+         std::cout << "LDLT factorization of system matrix failed" << std::endl;
+         exit(0);//
+     }
    // lu_precomp.compute(Q);
   //  int rank = lu_precomp.rank();
   //  ones = Eigen::VectorXd::Ones(Q.rows());
@@ -102,14 +108,11 @@ void DenseQuasiNewtonSolver::precompute_with_equality_constraints(const Eigen::M
   //  std::cout << "rank of Q : " << lu_precomp.rank() << std::endl;
   //  std::cout << "number of row of Q : " << Q.rows() << std::endl;
     //llt_precomp.compute(A);
-  // if (ldlt_precomp.info() != Success) {
-  //     std::cout << "LDLT factorization of system matrix failed" << std::endl;
-  //     exit(0);//
-  // }
+
 }
 
 Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search, bool to_convergence, double  max_iters)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, bool do_line_search, bool to_convergence, double  max_iters, double convergence_threshold)
 {
     Eigen::VectorXd z_prev, z_next;
     Eigen::VectorXd dz, g, ub;
@@ -160,8 +163,8 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
         i += 1;
 
         diff = (z_next - z_prev).norm();
-       // printf("iter : % i, diff : %g \n", i, diff);
-        if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
+        printf("iter : %i, diff : %g \n", i, diff);
+        if (diff < convergence_threshold) //assuming unit height, can't really see motions on screen smaller than this value
         {
             converged = true;
        //     printf("z");
@@ -181,7 +184,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve(const Eigen::VectorXd& z, std::fun
 }
 
 Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Eigen::VectorXd& z, std::function<double(const Eigen::VectorXd&)>& f,
-    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search, bool to_convergence, double max_iters)
+    std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f, const Eigen::VectorXd& bc0, bool do_line_search, bool to_convergence, double max_iters, double convergence_threshold)
 {
    
     assert(S.rows() == bc0.rows() && "Gave linear equality constraint rhs, but don't have a linear equality constraint matrix precomputed. \
@@ -199,7 +202,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     //project to constraint space first (this helps with convergence of high stiffness)
   //  z_next = -z + S.transpose() * (llt_proj.solve(bc0 + S * z));
     z_next = z + S.transpose() * (llt_proj.solve(bc0 - S * z));
-
+  //  z_next = S.transpose() * (llt_proj.solve(bc0));
     Eigen::VectorXd z_test = S * z;
     double e0 = 1;
     double e = e0 + 1;
@@ -209,7 +212,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     while (!converged)
     {
         e0 = e;
-        z_next = z_next + S.transpose() * (llt_proj.solve(bc0 - S * z_next));
+      // z_next = z_next + S.transpose() * (llt_proj.solve(bc0 - S * z_next));//
     
         z_prev = z_next;
         g = grad_f(z_next);
@@ -217,6 +220,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
      
         rhs.topRows(g.rows()) = -g;             //leave rhs dealing with constraints = 0 always
         rhs.bottomRows(S.rows()).setZero();
+     //   rhs.bottomRows(S.rows()) = S * z_prev - bc0;
         const Eigen::VectorXd dir = ldlt_precomp.solve(rhs);
         dz = dir.topRows(z_next.rows());
 
@@ -247,7 +251,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
         i += 1;
   
         diff = (z_next - z_prev).norm();
-        if (diff < 1e-6) //assuming unit height, can't really see motions on screen smaller than this value
+        if (diff < convergence_threshold) //assuming unit height, can't really see motions on screen smaller than this value
         {
                 converged = true;
         }
@@ -259,6 +263,7 @@ Eigen::VectorXd DenseQuasiNewtonSolver::solve_with_equality_constraints(const Ei
     }
 
     printf("Converged after %i iterations, with %g difference \n ", i, diff);
+   //z_next = z_next + S.transpose() * (llt_proj.solve(bc0 - S * z_next));
     z_test = S * z_next;
 
     printf("constraint_satisfaction: %g \n", z_test.norm());

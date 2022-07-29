@@ -8,17 +8,16 @@ class MeshRecorder
 {
 public:
 	std::vector<Eigen::MatrixXd> V;
-	std::vector<Eigen::MatrixXi> T, F;
-
+	std::vector<Eigen::MatrixXi>  F;
+	char name[8] = "";
 	MeshRecorder()
 	{
 		
 	}
 
-	void record_frame(Eigen::MatrixXd& V, Eigen::MatrixXi& T, Eigen::MatrixXi& F)
+	void record_frame(Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 	{
 		this->V.push_back(V);
-		this->T.push_back(T);
 		this->F.push_back(F);
 	}
 
@@ -30,8 +29,8 @@ public:
 		{
 			fs::create_directories(fs::path(dir));
 		}
-		char name[8] = "";
-		for (int i = 0; i < this->V.size()-1; i++)
+		
+		for (int i = 0; i < this->V.size(); i++)
 		{
 			sprintf(name, "%04i.png", i);
 			std::string filepath = dir + "/" + name + ".obj";

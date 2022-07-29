@@ -6,6 +6,8 @@
 #include "CDNewtonSolver.h"
 #include "FastCDNewtonSolver.h"
 #include "fast_sim.h"
+#include "linear_rotated_matrix.h"
+#include "quadratic_rotated_matrix.h"
 /// <summary>
 /// This class implements our core fast Complementary dynamics algorithm. It sets up the reduced and clustered physical system
 /// and allows us to query a sample next step complementary displacement, taking reduced parameters as input.
@@ -32,8 +34,10 @@ public:
 	clusters_file_dir - std::string - file directory where to find cached labels_<num_labels>_features_<num_features_used_for_labels>.DMAT file, containing a label for each tet denoting which cluster it belongs to (Will recompute if unfindable)
 	modal_features (optional) int - the number of modal features to use in our clustering scheme. We claim that number of features should have diminishing returns.
 	*/
-	FastCDSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir,
-		bool do_reduction = true, bool do_clustering = true, int num_modal_features = 10, bool do_inertia = true, double momentum_leaking_dt=1e-6, std::string metric_type="momentum", double metric_alpha=1.0, double beta=1.0);
+	FastCDSim(Eigen::MatrixXd& X, Eigen::MatrixXi& T, Eigen::SparseMatrix<double>& J, Eigen::MatrixXd& W, 
+		double ym, double pr, double dt, int num_modes, int num_clusters, std::string modes_file_dir, std::string clusters_file_dir,
+		bool do_reduction = true, bool do_clustering = true, int num_modal_features = 10, bool do_inertia = true,
+		double momentum_leaking_dt=1e-6, std::string metric_type="momentum", double metric_alpha=1.0, double beta=1.0, double gamma=1.0);
 
 	void init_modes(int num_modes);
 	
@@ -42,9 +46,13 @@ public:
 	void init_full_system_matrices();
 	
 	void init_reduction_matrices();
+	
+	//rotate subspace according to rig based rotation
+	void update_subspace(const Eigen::VectorXd& p, const Eigen::MatrixXd& W);
 
+	void update_subspace_fast(const Eigen::VectorXd& p);
+	
 	void init_clustering_matrices();
-
 
 	void full_qnewton_energy_grad(std::function<double(const Eigen::VectorXd&)>& f, std::function<Eigen::VectorXd(const Eigen::VectorXd&)>& grad_f);
 
@@ -60,15 +68,15 @@ public:
 
 	
 
-	Eigen::VectorXd reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, bool to_convergence = true, int max_iters=10);
+	Eigen::VectorXd reduced_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, bool to_convergence = true, int max_iters=10, double convergence_threshold = 1e-6);
 
-	Eigen::VectorXd reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, bool to_convergence = true, int max_iters=10);
+	Eigen::VectorXd reduced_step_with_equality_constriants(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& z_curr, const Eigen::VectorXd& z_prev, const Eigen::VectorXd& bc, bool to_convergence = true, int max_iters=10, double convergence_threshold=1e-6);
 
 
-	Eigen::VectorXd full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, bool to_convergence = true, int max_iters=10);
+	Eigen::VectorXd full_step(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev, bool to_convergence = true, int max_iters=10, double convergence_threshold = 1e-6);
 
 	Eigen::VectorXd full_step_with_equality_constraints(const Eigen::VectorXd& p_next, const Eigen::VectorXd& p_curr, const Eigen::VectorXd& p_prev, const Eigen::VectorXd& uc_curr, const Eigen::VectorXd& uc_prev,
-		const Eigen::VectorXd& bc, bool to_convergence = true, int max_iters=10);
+		const Eigen::VectorXd& bc, bool to_convergence = true, int max_iters=10, double convergence_threshold = 1e-6);
 
 	void update_compelementary_constraint(const Eigen::SparseMatrix<double>& J, std::string new_modes_dir, std::string new_clusters_dir);
 
@@ -106,13 +114,13 @@ public:
 public:
 	//Rig jacobian
 	Eigen::SparseMatrix<double> J;
-
+	Eigen::MatrixXd W;
 	double momentum_leaking_dt;
 	std::string metric_type;
 	double metric_alpha;
 
 	double beta;
-
+	double gamma;
 	struct ConstraintMatrices{
 
 		//Sparse equality matrix for positional constraints
@@ -182,36 +190,51 @@ public:
 		Eigen::SparseMatrix<double> KMTIG;
 		Eigen::SparseMatrix<double> JMJ;
 
-	
+		Eigen::MatrixXd B_0;
 	}fmp;
 
 	struct ReducedSimPrecomputedMatrices
 	{
 		//reduced order matrices
-		Eigen::MatrixXd BTAB, BTA, BTAJ, BTMB, BTM, BTMJ;
-		Eigen::VectorXd BTMX;//use this incase of BTMJ in the event of a null rig
+		Eigen::MatrixXd BAB, BA, BAJ, BMB, BM, BMJ;
+		//Eigen::VectorXd BMX;//use this incase of BTMJ in the event of a null rig
 
 		//Bending energy matrices
 		//same as above but for reduced space simulation
-		Eigen::MatrixXd GMKB, KB;
+		Eigen::MatrixXd  KB; ///GMKB;
 		Eigen::MatrixXd GmKB;
-		Eigen::MatrixXd BMB;
-		Eigen::MatrixXd BKMK, BKMKB, BKMG, BKMGm;
+		Eigen::MatrixXd BKMK, BKMKB, BKMG;
 		Eigen::VectorXd BKMH;
 
 		Eigen::MatrixXd BKMKJ;
 		Eigen::VectorXd BKMKNX, BKMKX;
 
 		//Volume energy matrices
-		Eigen::MatrixXd  BKMTIKB, BKMTIG, BKMTIKJ;
-		Eigen::VectorXd BKMTIH, BKMTIKX, BKMTIKNX;
+		//Eigen::MatrixXd  BKMTIKB, BKMTIG, BKMTIKJ;
+		//Eigen::VectorXd BKMTIH, BKMTIKX, BKMTIKNX;
 
-		Eigen::MatrixXd BMJ;
-		Eigen::MatrixXd JMB;
+		//Eigen::MatrixXd JMB;
+
 
 	}rmp;
 	
-	
+	struct rotated_matrices
+	{
+		LinearRotatedMatrix GmKB; //for arap/defo gradient
+		LinearRotatedMatrix BKMH;
+		LinearRotatedMatrix BKMKJ;
+		LinearRotatedMatrix BKMKX;
+		LinearRotatedMatrix B;
+		LinearRotatedMatrix IRI;
+
+		QuadraticRotatedMatrix BKMKB; //quadratic term
+
+		QuadraticRotatedMatrix  BMB; //for inertia, quadratic term
+		QuadraticRotatedMatrix IRIRI;
+
+		LinearRotatedMatrix BMJ; //for inertia
+		LinearRotatedMatrix BKMG; //for volume grad.
+	}rot_mat;
 
 	struct dynamic_matrices
 	{
