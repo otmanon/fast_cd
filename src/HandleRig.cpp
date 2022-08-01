@@ -266,13 +266,21 @@ void HandleRig::get_rig_motion(Eigen::VectorXd& p, Eigen::VectorXd& ur)
 
 bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi& T)
 {
-	Eigen::MatrixXi F;
+	Eigen::MatrixXi F, surfaceF, surfaceF_test;
 	igl::boundary_facets( T, F);
 
 	Eigen::VectorXi bI, IA, IC;
-	igl::unique(F, bI); // , IA, IC);
+	igl::unique(F, bI , IA, IC);
 	
-
+	surfaceF.resizeLike(F);
+	for (int i = 0; i < F.rows(); i++)
+	{
+		for (int j = 0; j < F.cols(); j++)
+		{
+			surfaceF(i, j) = IC(F(i, j));
+		}
+	}
+	//igl::slice(F, IC, surfaceF_test);
 	Eigen::MatrixXd surfaceW, surfaceX;
 	igl::slice(W, bI, 1, surfaceW);
 	igl::slice(X, bI, 1, surfaceX);
@@ -284,9 +292,9 @@ bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi&
 	std::vector<std::vector<double>> X_list, W_list;
 	std::vector<std::vector<int>> F_list;
 	std::vector<double> p0_list;
-	igl::matrix_to_list(X, X_list);
+	igl::matrix_to_list(surfaceX, X_list);
 	igl::matrix_to_list(surfaceW, W_list);
-	igl::matrix_to_list(F, F_list);
+	igl::matrix_to_list(surfaceF, F_list);
 	p0_list = std::vector<double>(p0.data(), p0.data() + p0.rows());
 
 	j["rig_type"] = "handle_rig";
