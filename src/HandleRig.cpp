@@ -269,12 +269,13 @@ bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi&
 	Eigen::MatrixXi F;
 	igl::boundary_facets( T, F);
 
-	Eigen::VectorXi bI;
-	igl::unique(F, bI);
+	Eigen::VectorXi bI, IA, IC;
+	igl::unique(F, bI); // , IA, IC);
+	
 
 	Eigen::MatrixXd surfaceW, surfaceX;
-	igl::slice(W, bI, 2, surfaceW);
-	igl::slice(X, bI, 2, surfaceX);
+	igl::slice(W, bI, 1, surfaceW);
+	igl::slice(X, bI, 1, surfaceX);
 
 	//write rig to json
 	std::ofstream o(filename);
@@ -283,7 +284,7 @@ bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi&
 	std::vector<std::vector<double>> X_list, W_list;
 	std::vector<std::vector<int>> F_list;
 	std::vector<double> p0_list;
-	igl::matrix_to_list(surfaceX, X_list);
+	igl::matrix_to_list(X, X_list);
 	igl::matrix_to_list(surfaceW, W_list);
 	igl::matrix_to_list(F, F_list);
 	p0_list = std::vector<double>(p0.data(), p0.data() + p0.rows());
