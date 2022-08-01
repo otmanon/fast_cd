@@ -13,6 +13,7 @@
 #include <igl/colon.h>
 #include <igl/list_to_matrix.h>
 #include <igl/matrix_to_list.h>
+#include <igl/boundary_facets.h>
 HandleRig::HandleRig(std::string filename, double radius)
 {
 	read_rig_from_json(filename);
@@ -263,6 +264,40 @@ void HandleRig::get_rig_motion(Eigen::VectorXd& p, Eigen::VectorXd& ur)
 }
 
 
+bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi& T)
+{
+	Eigen::MatrixXi F;
+	igl::boundary_facets( T, F);
+
+	Eigen::VectorXi bI;
+	igl::unique(F, bI);
+
+	Eigen::MatrixXd surfaceW, surfaceX;
+	igl::slice(W, bI, 2, surfaceW);
+	igl::slice(X, bI, 2, surfaceX);
+
+	//write rig to json
+	std::ofstream o(filename);
+	json j;
+
+	std::vector<std::vector<double>> X_list, W_list;
+	std::vector<std::vector<int>> F_list;
+	std::vector<double> p0_list;
+	igl::matrix_to_list(surfaceX, X_list);
+	igl::matrix_to_list(surfaceW, W_list);
+	igl::matrix_to_list(F, F_list);
+	p0_list = std::vector<double>(p0.data(), p0.data() + p0.rows());
+
+	j["rig_type"] = "handle_rig";
+	//save mesh positions
+	j["X"] = X_list;
+	j["W"] = W_list;
+	j["F"] = F_list;
+	j["p0"] = p0_list;
+
+	o << std::setw(4) << j << std::endl;
+
+}
 
 bool HandleRig::write_rig_to_json(std::string filename)
 {

@@ -14,7 +14,7 @@ void farthest_point_sampling(const Eigen::MatrixXd& V, const Eigen::MatrixXi& T,
 	double max_d = D.maxCoeff(&ind);
 	I(0) = ind; //initialize first point with highest point... why not!
 
-	for (int i = 0; i < num_samples; i++)
+	for (int i = 0; i < num_samples -1; i++)
 	{
 		igl::heat_geodesics_solve(data, I, D);
 

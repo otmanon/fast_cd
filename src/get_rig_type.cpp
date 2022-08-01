@@ -12,7 +12,7 @@ RIG_TYPE get_rig_type(std::string rig_path, std::string& rig_type)
 
     std::ifstream i(rig_path);
     json j;
-    i >> j;
+    i >> j;// TODO: check if this exists or not. If it doesn't don't try to open it and assume an affine rig
     rig_type = j.value("rig_type", "affine_rig");
 
     if (rig_type == "lbs_rig")

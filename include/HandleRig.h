@@ -37,6 +37,8 @@ class HandleRig : public Rig
 		virtual bool write_rig_to_json(std::string filename);		//stores rest state rig parameters, as well as geometry (X and T), and weight indices (W) to a JSON file. 
 		
 		virtual bool read_rig_from_json(std::string filename);
+
+		virtual bool write_surface_rig_to_json(std::string filename, Eigen::MatrixXi& T);
 	public:
 
 		std::string rig_pinning;
