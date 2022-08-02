@@ -14,6 +14,7 @@
 #include <igl/list_to_matrix.h>
 #include <igl/matrix_to_list.h>
 #include <igl/boundary_facets.h>
+#include <igl/slice_into.h>
 HandleRig::HandleRig(std::string filename, double radius)
 {
 	read_rig_from_json(filename);
@@ -272,13 +273,20 @@ bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi&
 	Eigen::VectorXi bI, IA, IC;
 	igl::unique(F, bI , IA, IC);
 	
+	Eigen::VectorXi ind_v;      //contains the opposite info of ext_ind, given a full volumetric vertex list TV, finds surface Verts FV
+	Eigen::VectorXi a;
+	igl::colon(0, bI.rows() - 1, a);
+	ind_v.resize(X.rows(), 1);
+	ind_v.setConstant(-1);
+	igl::slice_into(a, bI, ind_v);
+
+
 	surfaceF.resizeLike(F);
 	for (int i = 0; i < F.rows(); i++)
 	{
-		for (int j = 0; j < F.cols(); j++)
-		{
-			surfaceF(i, j) = IC(F(i, j));
-		}
+		surfaceF(i, 0) = ind_v(F(i, 0));
+		surfaceF(i, 1) = ind_v(F(i, 1));
+		surfaceF(i, 2) = ind_v(F(i, 2));
 	}
 	//igl::slice(F, IC, surfaceF_test);
 	Eigen::MatrixXd surfaceW, surfaceX;

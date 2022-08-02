@@ -126,15 +126,26 @@ public:
 		igl_v->data_list[id].show_lines = true;
 	}
 
-	void set_data(Eigen::VectorXd D, int i)
+	void set_data(Eigen::VectorXd &D, int i)
 	{
 		igl_v->data_list[i].set_data(D);
 	}
 
-	void set_data(Eigen::VectorXd D, double min, double max, int i)
+	void set_data(Eigen::VectorXd& D,  igl::ColorMapType cmap, int i)
+	{
+		igl_v->data_list[i].set_data(D, cmap);
+	}
+
+	void set_data(Eigen::VectorXd& D, double min, double max, int num_steps, igl::ColorMapType cmap, int i)
+	{
+		igl_v->data_list[i].set_data(D, min, max, cmap, num_steps );
+	}
+
+	void set_data(Eigen::VectorXd& D, double min, double max, int i)
 	{
 		igl_v->data_list[i].set_data(D, min, max);
 	}
+
 	void set_points(Eigen::MatrixXd& points, Eigen::RowVector3d& z, int id)
 	{
 		igl_v->data_list[id].set_points(points, z);

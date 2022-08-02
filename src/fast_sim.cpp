@@ -178,11 +178,11 @@ void FastSim::init_modes(int num_modes){
 		Eigen::MatrixXd modes;
 #ifdef FAST_CD_USE_MATLAB
 //#error "should not get here"
-		compute_modes_matlab(H, M, num_modes+6, modes, L_full);
+		compute_modes_matlab(H, M, num_modes, modes, L_full);
 #else
 		compute_modes_spectra(H, M, num_modes, modes, L_full);
 #endif
-		B_full = modes.block(0, 6, 3*X.rows(), num_modes); //not the affine ones
+		B_full = modes.block(0, 0, 3*X.rows(), num_modes); //not the affine ones
 
 		if (!fs::exists(fs::path(B_file_path).parent_path()))
 		{
@@ -217,7 +217,9 @@ void FastSim::init_clusters(int num_clusters, int num_feature_modes)
 			double t_start = igl::get_seconds();
 			Eigen::MatrixXd C;
 			#ifdef FAST_CD_USE_MATLAB
-						compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
+						Eigen::MatrixXd B_tmp = B_full.block(0, 6, B_full.rows(), B_full.cols() - 6);
+						Eigen::VectorXd L_tmp = L_full.middleRows(6, B_full.cols() - 6);
+						compute_clusters_igl(T, B_tmp, L_full, num_clusters, num_feature_modes, labels, C);
 			#else
 						compute_clusters_igl(T, B_full, L_full, num_clusters, num_feature_modes, labels, C);
 			#endif
@@ -299,7 +301,7 @@ void FastSim::init_reduction_matrices()
 	rmp.BKMG = B.transpose() * (fmp.KMG);
 	rmp.GmKB = fmp.GmK * B;
 
-	rmp.SB = J * B;
+	rmp.SB = J.transpose() * B;
 
 }
 
@@ -519,6 +521,7 @@ void FastSim::reduced_qnewton_energy_grad(std::function<double(const Eigen::Vect
 
 void FastSim::precompute_solvers() 
 {
+	Eigen::MatrixXd SBT = rmp.SB.transpose();
 	reduced_newton_solver->precompute_with_equality_constraints(rmp.BAB, rmp.SB);
 	//reduced_newton_solver->precompute_with_constraints(rmp.BTAB, constraint_prefactorization.SB);
 	if (!do_reduction)

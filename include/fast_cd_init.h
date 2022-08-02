@@ -80,9 +80,9 @@ struct FastCDInit {
     /*
     sim /vis_clusters / vos_modes/ vis_weights
     */
-	void init(int argc, char* argv[] )
+	void init(int argc, char* argv[] )//
 	{
-        json_filepath = argc > 1 ? argv[1] : "../data/stingray/sting_ray_no_tail_arms.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
+        json_filepath = argc > 1 ? argv[1] : "../data/cluster_visualisation/charizard_null_rig.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
       // if (init_type == "sim")
       //     init_sim_from_json(json_filepath);
       // else if (init_type == "vis_clusters")
@@ -132,6 +132,7 @@ struct FastCDInit {
         num_modes = j.value("num_modes", 100);
         num_clusters = j.value("num_clusters", 100);
         gamma = j.value("gamma", 1.0);
+
 
         beta = j.value("beta", 1.0);
         init_z = j.value("init_z", false);
@@ -342,5 +343,55 @@ struct InitSimRotaterController : public  InitSimScriptedRig
         InitSimScriptedRig::init(argc, argv);
 
 
+    }
+};
+
+struct InitModeVis : public FastCDInit
+{
+    std::string colormap;
+    int num_ambient_occlusion_rays;
+
+    bool do_ambient_occlusion;
+    int period;
+    double mode_scale;
+
+    int num_cmap_steps;
+    double min_cmap;
+    double max_cmap;
+    std::string mode_type;
+    void init(int argc, char* argv[])
+    {
+        FastCDInit::init(argc, argv);
+        read_json_entry_filepath(j, "mesh", mesh, true, "", true);
+        read_json_entry_filepath(j, "rig", rig, true, "", false);
+
+         period = j.value("period", 100);
+        mode_scale = j.value("mode_scale", 1.0);
+
+        colormap = j.value("colormap", "parula");
+        num_ambient_occlusion_rays = j.value("num_ambient_occlusion_rays", 100);
+        do_ambient_occlusion = j.value("do_ambient_occlusion", false);
+
+        mode_type = j.value("mode_type", "complementary");
+
+        num_cmap_steps = j.value("num_cmap_steps", 21);
+        min_cmap = j.value("min_cmap",0.0);
+        max_cmap = j.value("max_cmap", 1.0);
+    }
+};
+
+
+
+struct InitClustersVis : public FastCDInit
+{
+  
+    std::string clusters_type;
+    void init(int argc, char* argv[])
+    {
+        FastCDInit::init(argc, argv);
+        read_json_entry_filepath(j, "mesh", mesh, true, "", true);
+        read_json_entry_filepath(j, "rig", rig, true, "", false);
+
+        clusters_type = j.value("mode_type", "complementary");
     }
 };
