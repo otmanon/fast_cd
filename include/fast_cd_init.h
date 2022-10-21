@@ -82,8 +82,8 @@ struct FastCDInit {
     */
 	void init(int argc, char* argv[] )//
 	{
-        json_filepath = argc > 1 ? argv[1] : "../data/cluster_visualisation/charizard_null_rig.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
-      // if (init_type == "sim")
+    json_filepath = argc > 1 ? argv[1] : "../data/cluster_visualisation/charizard_null_rig.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
+    // if (init_type == "sim")
       //     init_sim_from_json(json_filepath);
       // else if (init_type == "vis_clusters")
       //     init_cluster_vis_from_json(json_filepath);

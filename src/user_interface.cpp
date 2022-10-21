@@ -326,7 +326,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
 {
   
     this->viewer = &v;
-    fcd_viewer = FastCDViewer(&v);
+    fcd_viewer = fast_cd_viewer(&v);
 
     if (viewer->data_list.size() == 1)
         this->viewer->append_mesh();
@@ -376,7 +376,7 @@ void InteractiveCDHook::init_viewer(igl::opengl::glfw::Viewer& v)
             //  set_viewer_clusters(*viewer, V_ext, F_ext, labels_faces, v_state.coarse_vis_id, v_state.fine_vis_id);
             fcd_viewer.clear_all();
             fcd_viewer.set_mesh(V_ext, F_ext, 0);
-            fcd_viewer.invert_normals(0);
+            fcd_viewer.invert_normals( !fcd_viewer.igl_v->data(0).invert_normals, 0);
             fcd_viewer.set_double_sided(true, 0);
      
             Eigen::VectorXd c, c_faces;

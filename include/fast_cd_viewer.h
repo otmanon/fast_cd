@@ -2,15 +2,15 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
-class FastCDViewer
+class fast_cd_viewer
 {
 public:
-	FastCDViewer();
+	fast_cd_viewer();
 
-	FastCDViewer(igl::opengl::glfw::Viewer* viewer);
+	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer);
 
 	//attach guizmo too
-	FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
+	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
 	void launch();
 
 
@@ -107,9 +107,9 @@ public:
 	{
 		igl_v->data_list[id].double_sided = ds;
 	}
-	void invert_normals(int id)
+	void invert_normals(bool invert_normals, int id)
 	{
-		igl_v->data_list[id].invert_normals = !igl_v->data_list[id].invert_normals;
+		igl_v->data_list[id].invert_normals = invert_normals;
 	}
 
 	void set_points(Eigen::MatrixXd& points, int id)
@@ -221,6 +221,8 @@ public:
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo
 	igl::opengl::glfw::imgui::ImGuiPlugin* imgui_plugin;
+
+	igl::opengl::glfw::imgui::ImGuiMenu* imgui_menu;
 	std::function<bool()> callback;
 	int fid, cid; //indices in the viewer.data_list array corresponding to the fine mesh, and the coarse mesh
 };

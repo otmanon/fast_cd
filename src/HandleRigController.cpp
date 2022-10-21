@@ -15,7 +15,7 @@
 
 
 
-HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0, FastCDViewer* viewer, std::string animation_dir)
+HandleRigMouseController::HandleRigMouseController(Eigen::VectorXd& p0, fast_cd_viewer* viewer, std::string animation_dir)
 {
 	// initialize guizmo to be at first rig parameters
 	handleI = 0;
