@@ -1,12 +1,15 @@
 #pragma once
+#include <augment_with_linear_constraints.h>
+
+#include <iostream>
+
 #include <Eigen/Sparse>
 #include <Eigen/Core>
 
-#include <iostream>
 #include <igl/get_seconds.h>
 #include <igl/matlab/matlabinterface.h>
-
-
+#include <igl/cat.h>
+#include <igl/blkdiag.h>
 using namespace Eigen;
 
 void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const int num_modes,
@@ -44,5 +47,12 @@ void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double
 void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const SparseMatrix<double>& J, const int num_modes, 
 	MatrixXd& B, VectorXd& V)
 {
-   
+    Eigen::SparseMatrix<double> Q, MZ;
+    augment_with_linear_constraints(H, J, Q);
+
+    Eigen::SparseMatrix<double> Z = Eigen::SparseMatrix<double>(J.rows(), J.rows());
+    igl::blkdiag({ M, Z }, MZ);
+
+    displacement_modes(Q, MZ, num_modes, B, V);
+
 }
