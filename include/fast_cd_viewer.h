@@ -18,14 +18,7 @@ public:
 
 	void set_pre_draw_callback(std::function<void()>& callback);
 
-	void set_key_pressed_callback(std::function<void(unsigned int, int)>& callback_key_pressed)
-	{
-		igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
-		{
-			callback_key_pressed(key, modifier);
-			return false;
-		};
-	}
+	void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
 
 	void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = [&](igl::opengl::glfw::Viewer& v,  int button, int modifier)->bool
@@ -216,7 +209,19 @@ public:
 
 	//void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
+	/*
+	GUIZMO controls
+	*/
+	void init_guizmo(bool visible, Eigen::Matrix4f A0, std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION = ImGuizmo::TRANSLATE);
 
+	void set_guizmo_operation(ImGuizmo::OPERATION op)
+	{
+		guizmo->operation = op;
+	};
+	ImGuizmo::OPERATION get_guizmo_operation()
+	{
+		return guizmo->operation;
+	}
 public:
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo

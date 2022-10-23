@@ -12,7 +12,7 @@ fast_cd_viewer::fast_cd_viewer()
 	//while (igl_v->data_list.size() < 3) igl_v->append_mesh();
 
     igl_v->core().background_color.setOnes();
-	igl_v->core().animation_max_fps = 30;
+	igl_v->core().animation_max_fps = 120;
 	igl_v->core().is_animating = true;
 
   
@@ -23,16 +23,19 @@ fast_cd_viewer::fast_cd_viewer()
 
     imgui_plugin = new igl::opengl::glfw::imgui::ImGuiPlugin();
     guizmo = new igl::opengl::glfw::imgui::ImGuizmoWidget();
-    imgui_menu = new igl::opengl::glfw::imgui::ImGuiMenu();
+ //   imgui_menu = new igl::opengl::glfw::imgui::ImGuiMenu();
 
 
     igl_v->plugins.push_back(imgui_plugin);
     // push back menu here
 
     imgui_plugin->widgets.push_back(guizmo);
-    imgui_plugin->widgets.push_back(imgui_menu);
+  //  imgui_plugin->widgets.push_back(imgui_menu);
     guizmo->visible = false;
+  //  imgui_menu->draw_custom_window = ()[]
 }
+
+
 
 bool fast_cd_viewer::default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id)
 {
@@ -100,6 +103,17 @@ fast_cd_viewer::fast_cd_viewer(igl::opengl::glfw::Viewer* igl_v, igl::opengl::gl
 }
 
 
+void fast_cd_viewer::init_guizmo(bool visible, Eigen::Matrix4f A0,  std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION op)
+{
+    guizmo->operation = op;
+    guizmo->visible = visible;
+    guizmo->T = A0;
+    guizmo->callback = callback;
+
+}
+
+
+
 fast_cd_viewer::fast_cd_viewer(igl::opengl::glfw::Viewer* igl_v)
 {
     this->igl_v = igl_v;
@@ -118,9 +132,9 @@ fast_cd_viewer::fast_cd_viewer(igl::opengl::glfw::Viewer* igl_v)
 }
 void fast_cd_viewer::launch()
 {
-	launch_viewer_custom_shader(*igl_v, true, false, "fast CD app", 1920, 1080);
+    igl_v->launch(true, false, "fast cd app", 1920, 1080);
+	//launch_viewer_custom_shader(*igl_v, true, false, "fast CD app", 1920, 1080);
 }
-
 
 
 void fast_cd_viewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters)
@@ -499,7 +513,6 @@ void fast_cd_viewer::render_reduced_gpu_proj(Eigen::VectorXd& z, Eigen::VectorXd
 
 }
 
-void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
 void fast_cd_viewer::set_pre_draw_callback(std::function<void()>& callback)
 {
@@ -508,4 +521,12 @@ void fast_cd_viewer::set_pre_draw_callback(std::function<void()>& callback)
 		callback();
 		return false;
 	};
+}
+
+void fast_cd_viewer::set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed)
+{
+    igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
+    {
+        return callback_key_pressed(key, modifier);
+    };
 }
