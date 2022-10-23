@@ -17,18 +17,15 @@ public:
 	/// <param name="V"> 3nxl right hand matrix</param>
 	/// <param name="W"> rig weights</param>
 	LinearRotatedMatrix(const Eigen::MatrixXd& U, const Eigen::MatrixXd& V, const Eigen::MatrixXd& W);
-	LinearRotatedMatrix::LinearRotatedMatrix(const Eigen::SparseMatrix<double>& U, const Eigen::MatrixXd& V, const Eigen::MatrixXd& W);
+	LinearRotatedMatrix(const Eigen::SparseMatrix<double>& U, const Eigen::MatrixXd& V, const Eigen::MatrixXd& W);
 
-	LinearRotatedMatrix::LinearRotatedMatrix(const Eigen::MatrixXd& U, const Eigen::SparseMatrix<double>& V, const Eigen::MatrixXd& W);
+	LinearRotatedMatrix(const Eigen::MatrixXd& U, const Eigen::SparseMatrix<double>& V, const Eigen::MatrixXd& W);
 
-	LinearRotatedMatrix::LinearRotatedMatrix(const Eigen::SparseMatrix<double>& U, const Eigen::SparseMatrix<double>& V, const Eigen::MatrixXd& W);
+	LinearRotatedMatrix(const Eigen::SparseMatrix<double>& U, const Eigen::SparseMatrix<double>& V, const Eigen::MatrixXd& W);
 	LinearRotatedMatrix() {};
 
 	void update(const Eigen::VectorXd& p, Eigen::MatrixXd& D);
 
-		
 public:
-	
-
 	std::vector<std::vector<std::vector<Eigen::MatrixXd>>> UEV; // list of 9 matrices per each bone such that UEV_uvb p_uvb = U * T * V
 };

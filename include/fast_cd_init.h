@@ -82,8 +82,8 @@ struct FastCDInit {
     */
 	void init(int argc, char* argv[] )//
 	{
-    json_filepath = argc > 1 ? argv[1] : "../data/cluster_visualisation/charizard_null_rig.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
-    // if (init_type == "sim")
+        json_filepath = argc > 1 ? argv[1] : "../data/cluster_visualisation/charizard_null_rig.json"; ////"../data/prism_metric_tests/twisting_elastic_metric.json";
+      // if (init_type == "sim")
       //     init_sim_from_json(json_filepath);
       // else if (init_type == "vis_clusters")
       //     init_cluster_vis_from_json(json_filepath);
@@ -195,7 +195,7 @@ struct FastCDInit {
         o << std::setw(4) << j << std::endl;
 	}
 
-    void read_json_entry_filepath(json& j, std::string json_key, std::string& filepath, bool required, std::string default = "", bool confirm_exists=false)
+    void read_json_entry_filepath(json& j, std::string json_key, std::string& filepath, bool required, std::string default_path = "", bool confirm_exists=false)
     {
         namespace fs = std::filesystem;
         if (required)
@@ -212,7 +212,7 @@ struct FastCDInit {
         {
             if (j.count(json_key) == 0)
             {
-                filepath = default;
+                filepath = default_path;
             }
             else
             {

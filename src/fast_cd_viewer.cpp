@@ -116,12 +116,14 @@ fast_cd_viewer::fast_cd_viewer(igl::opengl::glfw::Viewer* igl_v)
     imgui_plugin->widgets.push_back(guizmo);
 
 }
+
 void fast_cd_viewer::launch()
 {
-	launch_viewer_custom_shader(*igl_v, true, false, "fast CD app", 1920, 1080);
+    // std::cout << "reach here" << std::endl;
+	// launch_viewer_custom_shader(*igl_v, true, false, "fast CD app", 1920, 1080);
+
+    igl_v->launch(true, false, "fast cd app", 1920, 1080);
 }
-
-
 
 void fast_cd_viewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters)
 {
