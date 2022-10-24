@@ -20,18 +20,10 @@ public:
 
 	fast_cd_sim_params params;
 
-	local_global_solver solver;
+	//local_global_solver solver;
 
 	fast_cd_static_precomp sp;
 
-
-
-	void init(fast_cd_sim_params params, local_global_solver solver, fast_cd_static_precomp sp)
-	{
-		this->params = params;
-		this->solver = solver;
-		this->sp = sp;
-	}
 
 
 	void step(Eigen::VectorXd& z, Eigen::VectorXd& p, fast_cd_sim_state state, Eigen::VectorXd& f_ext, Eigen::VectorXd& bc)
@@ -83,15 +75,7 @@ struct fast_cd_sim_params
 
 };
 
-struct local_global_solver_params
-{
 
-};
-
-struct local_global_solver
-{
-	local_global_solver_params params;
-};
 
 
 struct fast_cd_static_precomp

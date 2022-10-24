@@ -17,7 +17,7 @@ void lbs_jacobian(MatrixXd& V, MatrixXd& W, SparseMatrix<double>& J)
 {
 
 	assert(V.rows() == W.rows() && "Weights should have same number of rows as W!");
-	assert( V.cols() == 3, && "Can only handle 3D case for now");
+	assert( V.cols() == 3 && "Can only handle 3D case for now");
 	int n = V.rows();
 	int dim = V.cols();
 	int b = W.cols();
@@ -37,6 +37,7 @@ void lbs_jacobian(MatrixXd& V, MatrixXd& W, SparseMatrix<double>& J)
 	Eigen::MatrixXd Jd = igl::repdiag(J_compact, dim); 
 
 	J = Jd.sparseView(); // TODO: have a separate method for more quickly building the sparse matrix J
+
 
 
 }
