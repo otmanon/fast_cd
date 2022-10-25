@@ -29,7 +29,7 @@ struct cd_arap_local_global_solver
 	cd_arap_local_global_solver_params p;
 	VectorXd z;
 
-
+	min_quad_with_fixed_data<double> data;
 	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt_solver;
 
 	cd_arap_local_global_solver() {};
@@ -40,7 +40,7 @@ struct cd_arap_local_global_solver
 		SparseMatrix<double> H;
 		augment_with_linear_constraints(A, Aeq, H);
 		ldlt_solver.compute(H);
-		//min_quad_with_fixed_precompute(A, bI, Aeq, true, data);
+		min_quad_with_fixed_precompute(A, bI, Aeq, true, data);
 	}
 
 	VectorXd solve(VectorXd& z, cd_sim_params& params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
@@ -65,7 +65,7 @@ struct cd_arap_local_global_solver
 		Matrix3d F, rot;
 		for (int i = 0; i < nt; i++)
 		{
-			F = F_stack.block(3 * i, 0, 3, 3);
+			F = F_stack.block(3 * i, 0, 3, 3).transpose();
 			igl::polar_svd3x3(F, rot);
 			R.block(3 * i, 0, 3, 3) = rot;
 		}
@@ -85,7 +85,7 @@ struct cd_arap_local_global_solver
 		Eigen::VectorXd rhs = -igl::cat(1, g, dp.bc);
 		VectorXd z_next = ldlt_solver.solve(rhs);
 		
-		//min_quad_with_fixed_solve(data, g, VectorXd(), dp.bc, z_next);
+		min_quad_with_fixed_solve(data, g, VectorXd(), dp.bc, z_next);
 		//arap = dpre.Lur + spre.Lx - spre.MK' * r;
 		return z_next.topRows(params.X.rows()*3);
 	}
