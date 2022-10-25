@@ -1,4 +1,4 @@
-#ifdef FAST_CD_USE_MATLAB
+
 #include "compute_clusters_matlab.h"
 #include <iostream>
 #include <cassert>
@@ -85,4 +85,3 @@ void compute_clusters_matlab_initguess(const Eigen::MatrixXi& T, const Eigen::Ma
     igl::matlab::mlgetmatrix(&engine, "S", S_mat);
 }
 
-#endif

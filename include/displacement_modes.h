@@ -53,6 +53,8 @@ void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double
     Eigen::SparseMatrix<double> Z = Eigen::SparseMatrix<double>(J.rows(), J.rows());
     igl::blkdiag({ M, Z }, MZ);
 
-    displacement_modes(Q, MZ, num_modes, B, V);
+    Eigen::MatrixXd B2;
+    displacement_modes(Q, MZ, num_modes, B2, V);
 
+    B = B2.block(0, 0, H.rows(), B2.cols());
 }
