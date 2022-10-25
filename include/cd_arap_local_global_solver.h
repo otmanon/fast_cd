@@ -40,7 +40,7 @@ struct cd_arap_local_global_solver
 		SparseMatrix<double> H;
 		augment_with_linear_constraints(A, Aeq, H);
 		ldlt_solver.compute(H);
-		min_quad_with_fixed_precompute(A, bI, Aeq, true, data);
+		min_quad_with_fixed_precompute(A, bI, Aeq, false, data);
 	}
 
 	VectorXd solve(VectorXd& z, cd_sim_params& params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
@@ -56,19 +56,31 @@ struct cd_arap_local_global_solver
 
 	VectorXd local_step(VectorXd& z, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
 	{
-		VectorXd f = sp.VK * z + dp.VKur + sp.VKx;
+		VectorXd f = sp.K * z + dp.Kur + sp.Kx;
+
+		VectorXd f2 = sp.VK * z + dp.VKur + sp.VKx;
 		int nt = f.rows() / 9;
 		MatrixXd F_stack = Map<MatrixXd>(f.data(), nt * 3, 3);
+		MatrixXd F2_stack = Map<MatrixXd>(f2.data(), nt*3, 3);
 		//	cout << F_stack << endl;
 		MatrixXd R = MatrixXd::Zero(F_stack.rows(), F_stack.cols());
-
-		Matrix3d F, rot;
+		MatrixXd R2 = R;
+		
+		Matrix3d F, F2, rot, rot2;
 		for (int i = 0; i < nt; i++)
 		{
-			F = F_stack.block(3 * i, 0, 3, 3).transpose();
+			F =  F_stack.block(3 * i, 0, 3, 3);// *sp.tet_vols(i);
+			F2 = 1e-5*F_stack.block(3 * i, 0, 3, 3);
+			
+			//printf("F - F2 = %g \n", (F - F2).norm());
+
 			igl::polar_svd3x3(F, rot);
+			igl::polar_svd3x3(F2, rot2);
 			R.block(3 * i, 0, 3, 3) = rot;
+			R2.block(3 * i, 0, 3, 3) = rot2;
 		}
+		printf("norm(R - R2) = %g \n", (R- R2).norm());
+		//std::cout << "R - R2= " <<  R - R2 << std::endl;
 		VectorXd r = Map<const VectorXd>(R.data(), R.rows() * R.cols());
 		return r;
 	}
@@ -76,7 +88,7 @@ struct cd_arap_local_global_solver
 	VectorXd global_step(VectorXd& z, cd_sim_params& params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp, VectorXd& r)
 	{
 		VectorXd inertia_grad = -dp.My;
-
+		Eigen::VectorXd rot_f = -sp.VK.transpose() * r;
 		VectorXd arap_grad = dp.Cur + sp.Cx - sp.VK.transpose() * r;
 
 		VectorXd g = params.invh2 * params.do_inertia * inertia_grad + arap_grad + dp.f_ext;
@@ -85,7 +97,7 @@ struct cd_arap_local_global_solver
 		Eigen::VectorXd rhs = -igl::cat(1, g, dp.bc);
 		VectorXd z_next = ldlt_solver.solve(rhs);
 		
-		min_quad_with_fixed_solve(data, g, VectorXd(), dp.bc, z_next);
+		//min_quad_with_fixed_solve(data, g, VectorXd(), dp.bc, z_next);
 		//arap = dpre.Lur + spre.Lx - spre.MK' * r;
 		return z_next.topRows(params.X.rows()*3);
 	}

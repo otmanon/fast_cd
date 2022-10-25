@@ -5,6 +5,7 @@
 
 #include <igl/massmatrix.h>
 #include <igl/repdiag.h>
+#include <igl/volume.h>
 #include <igl/diag.h>
 #include <Eigen/Sparse>
 #include <Eigen/Core>
@@ -46,6 +47,8 @@ struct cd_arap_static_precomp
 	VectorXd Cx;
 
 
+	VectorXd tet_vols;
+
 	cd_arap_static_precomp() {};
 	cd_arap_static_precomp(cd_sim_params& p)
 	{
@@ -55,12 +58,13 @@ struct cd_arap_static_precomp
 		Eigen::VectorXd m = M.diagonal();
 		VectorXd Inull;
 		deformation_gradient_from_u_prefactorized_matrices(p.X, p.T, Inull, K, V);
-
 		Eigen::VectorXd v = V.diagonal();
+
+		igl::volume(p.X, p.T, tet_vols);
 
 		SparseMatrix<double> Mu;
 		igl::diag(p.mu, Mu);
-		Mu = igl::repdiag(Mu, 3);
+		Mu = igl::repdiag(Mu, 9);
 
 		C = K.transpose() * Mu * V * K;
 		CJ = C * p.J;
@@ -96,7 +100,7 @@ struct cd_arap_dynamic_precomp
 	VectorXd Cur;
 
 	VectorXd VKur;
-
+	VectorXd Kur;
 	//boundary conditions
 	VectorXd bc;
 
@@ -118,8 +122,8 @@ struct cd_arap_dynamic_precomp
 
 		Cur = sp.CJ * p - sp.Cx;
 		Mur = sp.MJ * p - sp.Mx;
-		Eigen::VectorXd VKJp = sp.VKJ * p;
 		VKur = sp.VKJ * p - sp.VKx;
+		Kur = sp.KJ * p - sp.Kx;
 
 		VectorXd Mp_hist = (sp.MJ * p_hist);
 		Eigen::VectorXd rig_momentum_terms = Mp_hist - sp.MJ * p;

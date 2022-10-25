@@ -43,8 +43,8 @@ struct cd_sim_params
 	{
 		this->X = X;
 		this->T = T;
-		this->mu = mu * VectorXd::Ones(T.rows() * 3);
-		this->lambda = VectorXd::Zero(T.rows() * 3);
+		this->mu = mu * VectorXd::Ones(T.rows());
+		this->lambda = VectorXd::Zero(T.rows());
 		this->h = h;
 		this->invh2 = 1.0 / (h * h);
 		this->do_inertia = do_inertia;
