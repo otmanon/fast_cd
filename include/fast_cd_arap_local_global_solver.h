@@ -32,7 +32,7 @@ struct fast_cd_arap_local_global_solver
 
 	VectorXd local_step(VectorXd& z, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp)
 	{
-		VectorXd f = sp.GmVKB * z + dp.GmVKur + sp.GmVKx;
+		VectorXd f = sp.GmKB * z + dp.GmKur + sp.GmKx;
 		int nt = f.rows() / 9;
 		MatrixXd F_stack = Map<MatrixXd>(f.data(), nt * 3, 3);
 		//	cout << F_stack << endl;

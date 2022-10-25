@@ -2,6 +2,7 @@
 #include "cd_arap_precomp.h"
 #include "fast_cd_sim_params.h"
 #include "grouping_matrix_from_clusters.h"
+#include "interweaving_matrix.h"
 #include <igl/sum.h>
 struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 {
@@ -21,9 +22,9 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	MatrixXd KB;
 
 	//mass, stiffness weighed reduced  gradient operator
-	MatrixXd GmVKB;
-	SparseMatrix<double> GmVKJ;
-	VectorXd GmVKx;
+	MatrixXd GmKB;
+	SparseMatrix<double> GmKJ;
+	VectorXd GmKx;
 	
 	MatrixXd G1VKB;
 
@@ -45,9 +46,9 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		KB = K * p.B;
 		
 		//going from per cluster rotations to forces
-		GmVKB = VK * p.B;
-		GmVKJ = VKJ;
-		GmVKx = VKx;
+		GmKB = K * p.B;
+		GmKJ = KJ;
+		GmKx = Kx;
 
 		//going from displacements to per-cluster deformation gradients.
 		G1VKB =  VK * p.B;
@@ -84,10 +85,10 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 			G_m = cluster_mass.asDiagonal() * G_m;
 
 			//one is mass weighed, used to average per tet quantities to per cluster ones
-			GmVKB = G_m * GmVKB;
-			GmVKJ = G_m * VKJ;
-			GmVKx = G_m * VKx;
-			//this one is an indicator, used to map per cluster quantitie sto each
+			GmKB = G_m * GmKB;
+			GmKJ = G_m * KJ;
+			GmKx = G_m * Kx;
+			//this one is an indicator, used to map per cluster quantities to each
 			G1VKB = G_1 * G1VKB;
 		}
 	}	
@@ -102,7 +103,7 @@ struct fast_cd_arap_dynamic_precomp : cd_arap_dynamic_precomp
 	VectorXd BMur;
 	VectorXd BCur;
 
-	VectorXd GmVKur;
+	VectorXd GmKur;
 
 	void precomp(VectorXd& z, VectorXd& p,
 		cd_sim_state& st, VectorXd& f_ext,
@@ -119,7 +120,7 @@ struct fast_cd_arap_dynamic_precomp : cd_arap_dynamic_precomp
 		BCur = sp.BCJ * p - sp.BCx;
 		BMur = sp.BMJ * p - sp.BMx;
 		Eigen::VectorXd VKJp = sp.VKJ * p;
-		GmVKur = sp.GmVKJ * p - sp.GmVKx;
+		GmKur = sp.GmKJ * p - sp.GmKx;
 
 		VectorXd BMp_hist = (sp.BMJ * p_hist);
 		Eigen::VectorXd rig_momentum_terms = BMp_hist - sp.BMJ * p;
