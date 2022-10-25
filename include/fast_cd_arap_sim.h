@@ -1,90 +1,37 @@
 #pragma once
-#include <Eigen/Core>
-#include <Eigen/Sparse>
+#include "cd_arap_sim.h"
+#include "fast_cd_sim_params.h"
+#include "fast_cd_arap_precomp.h"
+#include "fast_cd_arap_local_global_solver.h"
 
-struct fast_cd_arap_sim 
+struct fast_cd_arap_sim : cd_arap_sim
 {
-
 public:
 
-	//Geometry
-	Eigen::MatrixXd V;
-	//Tets
-	Eigen::MatrixXi T;
+	fast_cd_sim_params* params;
 
-	//Subspace
-	Eigen::MatrixXd B;
+	fast_cd_arap_local_global_solver* sol;
 
-	//labels
-	Eigen::VectorXi labels;
+	fast_cd_arap_static_precomp* sp;
 
-	fast_cd_sim_params params;
+	fast_cd_arap_dynamic_precomp* dp;
 
-	//local_global_solver solver;
-
-	fast_cd_static_precomp sp;
-
-
-
-	void step(Eigen::VectorXd& z, Eigen::VectorXd& p, fast_cd_sim_state state, Eigen::VectorXd& f_ext, Eigen::VectorXd& bc)
+	fast_cd_arap_sim(fast_cd_sim_params* params, fast_cd_arap_local_global_solver* solver, fast_cd_arap_dynamic_precomp* dp, fast_cd_arap_static_precomp* sp)
 	{
-		/*fast_cd_arap_dynamic_precomp dp;
-		dp.precomp(z, p, state, f_ext, bc);
-
-		z = solver.solve(z, dpre, spre);*/
+		this->params = params;
+		this->sol = solver;
+		this->sp = sp;
+		this->dp = dp;
 	}
 
-};
-
-struct fast_cd_sim_state 
-{
-	Eigen::VectorXd z_curr, z_prev, p_curr, p_prev;
-
-	void init(Eigen::VectorXd& z_curr, Eigen::VectorXd& z_prev, Eigen::VectorXd& p_curr, Eigen::VectorXd& p_prev)
+	Eigen::VectorXd step(VectorXd& z, VectorXd& p, cd_sim_state state, VectorXd& f_ext, VectorXd& bc)
 	{
-		this->z_curr = z_curr;
-		this->z_prev = z_prev;
-		this->p_curr = p_curr;
-		this->p_prev = p_prev;
+		////needs to be updated every timestep
+		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
+		
+		dp->precomp(z, p, state, f_ext, bc, *sp);
+		z = sol->solve(z, *params, *dp, *sp);
+		return z;
 	}
-
-	void update(Eigen::VectorXd& z_next, Eigen::VectorXd& p_next)
-	{
-		this->z_prev = z_curr;
-		this->z_curr = z_next;
-		this->p_prev = p_curr;
-		this->p_curr = p_next;
-	}
-};
-
-struct fast_cd_sim_params
-{
-	//timestep
-	double h;
-	//youngs modulus (one per each tet)
-	Eigen::VectorXd ym;
-	//poisson's ratio
-	Eigen::VectorXd pr;
-
-
-	double invh2;
-
-	int num_modes;
-	int num_clusters;
-	
-
-};
-
-
-
-
-struct fast_cd_static_precomp
-{
-
-};
-
-
-struct fast_cd_arap_dynamic_precomp
-{
-
 };

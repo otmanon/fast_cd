@@ -193,6 +193,17 @@ public:
 
 	void configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F);
 
+
+	void set_data_colormap(Eigen::VectorXd& d, Eigen::MatrixXd& cmap, int id)
+	{
+		igl_v->data_list[id].set_data(d);
+		igl_v->data_list[id].set_colormap(cmap);
+	}
+
+
+
+
+
 	/*
 	Renders mesh  full space mesh V.
 	*/

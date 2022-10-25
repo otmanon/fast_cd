@@ -166,6 +166,7 @@ void fast_cd_viewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, 
     igl_v->data_list[cid].set_colormap(colormap);
 }
 
+
 void fast_cd_viewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id)
 {
  
