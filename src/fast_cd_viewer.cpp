@@ -1,38 +1,43 @@
-#include "FastCDViewer.h"
+#include "fast_cd_viewer.h"
 #include "launch_viewer_custom_shader.h"
 #include "rainbow_cmap.h"
 
 #include <igl/LinSpaced.h>
 #include <igl/opengl/gl.h>
 #include <igl/png/readPNG.h>
-FastCDViewer::FastCDViewer()
+fast_cd_viewer::fast_cd_viewer()
 {
 	igl_v = new igl::opengl::glfw::Viewer();
 
-	while (igl_v->data_list.size() < 3) igl_v->append_mesh();
+	//while (igl_v->data_list.size() < 3) igl_v->append_mesh();
 
     igl_v->core().background_color.setOnes();
-	igl_v->core().animation_max_fps = 30;
+	igl_v->core().animation_max_fps = 120;
 	igl_v->core().is_animating = true;
 
-    fid = 1;
-    cid = 0;
-
+  
     igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers)->bool
     {
         return this->default_key_pressed_callback(viewer, unicode_key, modifiers, 0);
     };
 
-    guizmo = new igl::opengl::glfw::imgui::ImGuizmoWidget();
     imgui_plugin = new igl::opengl::glfw::imgui::ImGuiPlugin();
+    guizmo = new igl::opengl::glfw::imgui::ImGuizmoWidget();
+ //   imgui_menu = new igl::opengl::glfw::imgui::ImGuiMenu();
+
+
     igl_v->plugins.push_back(imgui_plugin);
     // push back menu here
+
     imgui_plugin->widgets.push_back(guizmo);
+  //  imgui_plugin->widgets.push_back(imgui_menu);
     guizmo->visible = false;
-   // igl_v->data_list[2].is_visible = true;
+  //  imgui_menu->draw_custom_window = ()[]
 }
 
-bool FastCDViewer::default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id)
+
+
+bool fast_cd_viewer::default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id)
 {
     
     switch(unicode_key)
@@ -86,7 +91,7 @@ bool FastCDViewer::default_key_pressed_callback(igl::opengl::glfw::Viewer& viewe
   
 }
 
-FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
+fast_cd_viewer::fast_cd_viewer(igl::opengl::glfw::Viewer* igl_v, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo)
 {
     this->igl_v = igl_v;
     while (igl_v->data_list.size() < 3) igl_v->append_mesh();
@@ -98,7 +103,18 @@ FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v, igl::opengl::glfw::
 }
 
 
-FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v)
+void fast_cd_viewer::init_guizmo(bool visible, Eigen::Matrix4f A0,  std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION op)
+{
+    guizmo->operation = op;
+    guizmo->visible = visible;
+    guizmo->T = A0;
+    guizmo->callback = callback;
+
+}
+
+
+
+fast_cd_viewer::fast_cd_viewer(igl::opengl::glfw::Viewer* igl_v)
 {
     this->igl_v = igl_v;
 	while (igl_v->data_list.size() < 3) igl_v->append_mesh();
@@ -114,14 +130,16 @@ FastCDViewer::FastCDViewer(igl::opengl::glfw::Viewer* igl_v)
     imgui_plugin->widgets.push_back(guizmo);
 
 }
-void FastCDViewer::launch()
+
+void fast_cd_viewer::launch()
 {
-	launch_viewer_custom_shader(*igl_v, true, false, "fast CD app", 1920, 1080);
+    // std::cout << "reach here" << std::endl;
+	// launch_viewer_custom_shader(*igl_v, true, false, "fast CD app", 1920, 1080);
+
+    igl_v->launch(true, false, "fast cd app", 1920, 1080);
 }
 
-
-
-void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters)
+void fast_cd_viewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters)
 {
     igl_v->data_list[fid].clear();
     igl_v->data_list[cid].clear();
@@ -150,7 +168,8 @@ void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Ei
     igl_v->data_list[cid].set_colormap(colormap);
 }
 
-void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id)
+
+void fast_cd_viewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id)
 {
  
     igl_v->data_list[id].clear();
@@ -178,7 +197,7 @@ void FastCDViewer::configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Ei
     igl_v->data_list[id].show_lines = false;
 }
 
-void FastCDViewer::configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id)
+void fast_cd_viewer::configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id)
 {
     igl_v->data_list[id].clear();
     igl_v->data_list[id].double_sided = true;
@@ -193,7 +212,7 @@ void FastCDViewer::configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixX
 }
 
 
-void FastCDViewer::configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& color, int id)
+void fast_cd_viewer::configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& color, int id)
 {
     igl_v->data_list[id].clear();
     igl_v->data_list[id].double_sided = true;
@@ -207,7 +226,7 @@ void FastCDViewer::configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, 
 }
 
 
-void FastCDViewer::configure_deformation_texture( Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W)
+void fast_cd_viewer::configure_deformation_texture( Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W)
 {
     using namespace Eigen;
     using namespace std;
@@ -312,7 +331,7 @@ void FastCDViewer::configure_deformation_texture( Eigen::MatrixXd& V, Eigen::Mat
 
 }
 
-void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
+void fast_cd_viewer::configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
     Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine)
 {
 
@@ -357,7 +376,7 @@ void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::
 
 }
 
-void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V, Eigen::MatrixXi& F,
+void fast_cd_viewer::configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V, Eigen::MatrixXi& F,
     Eigen::MatrixXd& TC, Eigen::MatrixXi& FTC, int id)
 {
     if (igl_v->data_list.size() <= id)
@@ -387,7 +406,7 @@ void FastCDViewer::configure_color_texture(std::string texture_filepath, Eigen::
     igl_v->data_list[id].face_based = true;
 }
 
-void FastCDViewer::configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F)
+void fast_cd_viewer::configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F)
 {
 
     igl_v->data_list[fid].clear();
@@ -424,7 +443,7 @@ void FastCDViewer::configure_matcap(std::string matcap_file, Eigen::MatrixXd& V,
 }
 
 
-void FastCDViewer::render_full(Eigen::MatrixXd& V, int id)
+void fast_cd_viewer::render_full(Eigen::MatrixXd& V, int id)
 {
     GLuint prog_id = igl_v->data_list[cid].meshgl.shader_mesh;
     glUseProgram(prog_id);
@@ -437,7 +456,7 @@ void FastCDViewer::render_full(Eigen::MatrixXd& V, int id)
 
 }
 
-void FastCDViewer::render_reduced_cpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int id)
+void fast_cd_viewer::render_reduced_cpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int id)
 {
     GLuint prog_id = igl_v->data_list[cid].meshgl.shader_mesh;
     glUseProgram(prog_id);
@@ -452,7 +471,7 @@ void FastCDViewer::render_reduced_cpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& 
 }
 
 
-void FastCDViewer::render_reduced_gpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& p, int n, int cid)
+void fast_cd_viewer::render_reduced_gpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& p, int n, int cid)
 {
     //TODO ensure that the igl_v is configured for texture
       //TODO: assert that igl_v is already configured for reduced step... otherwise need to resend texture
@@ -497,13 +516,20 @@ void FastCDViewer::render_reduced_gpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& 
 
 }
 
-void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
-void FastCDViewer::set_pre_draw_callback(std::function<void()>& callback)
+void fast_cd_viewer::set_pre_draw_callback(std::function<void()>& callback)
 {
 	igl_v->callback_pre_draw = [&](igl::opengl::glfw::Viewer&)->bool
 	{
 		callback();
 		return false;
 	};
+}
+
+void fast_cd_viewer::set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed)
+{
+    igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
+    {
+        return callback_key_pressed(key, modifier);
+    };
 }

@@ -2,15 +2,15 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
-class FastCDViewer
+class fast_cd_viewer
 {
 public:
-	FastCDViewer();
+	fast_cd_viewer();
 
-	FastCDViewer(igl::opengl::glfw::Viewer* viewer);
+	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer);
 
 	//attach guizmo too
-	FastCDViewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
+	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
 	void launch();
 
 
@@ -18,14 +18,7 @@ public:
 
 	void set_pre_draw_callback(std::function<void()>& callback);
 
-	void set_key_pressed_callback(std::function<void(unsigned int, int)>& callback_key_pressed)
-	{
-		igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
-		{
-			callback_key_pressed(key, modifier);
-			return false;
-		};
-	}
+	void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
 
 	void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = [&](igl::opengl::glfw::Viewer& v,  int button, int modifier)->bool
@@ -107,9 +100,9 @@ public:
 	{
 		igl_v->data_list[id].double_sided = ds;
 	}
-	void invert_normals(int id)
+	void invert_normals(bool invert_normals, int id)
 	{
-		igl_v->data_list[id].invert_normals = !igl_v->data_list[id].invert_normals;
+		igl_v->data_list[id].invert_normals = invert_normals;
 	}
 
 	void set_points(Eigen::MatrixXd& points, int id)
@@ -200,6 +193,17 @@ public:
 
 	void configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F);
 
+
+	void set_data_colormap(Eigen::VectorXd& d, Eigen::MatrixXd& cmap, int id)
+	{
+		igl_v->data_list[id].set_data(d);
+		igl_v->data_list[id].set_colormap(cmap);
+	}
+
+
+
+
+
 	/*
 	Renders mesh  full space mesh V.
 	*/
@@ -216,11 +220,25 @@ public:
 
 	//void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
+	/*
+	GUIZMO controls
+	*/
+	void init_guizmo(bool visible, Eigen::Matrix4f A0, std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION = ImGuizmo::TRANSLATE);
 
+	void set_guizmo_operation(ImGuizmo::OPERATION op)
+	{
+		guizmo->operation = op;
+	};
+	ImGuizmo::OPERATION get_guizmo_operation()
+	{
+		return guizmo->operation;
+	}
 public:
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo
 	igl::opengl::glfw::imgui::ImGuiPlugin* imgui_plugin;
+
+	igl::opengl::glfw::imgui::ImGuiMenu* imgui_menu;
 	std::function<bool()> callback;
 	int fid, cid; //indices in the viewer.data_list array corresponding to the fine mesh, and the coarse mesh
 };

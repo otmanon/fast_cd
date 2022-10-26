@@ -2,7 +2,6 @@
 #include "interweaving_matrix.h"
 #include "constant_term_rotation_matrix.h"
 
-
 LinearRotatedMatrix::LinearRotatedMatrix(const Eigen::MatrixXd& U, const Eigen::MatrixXd& V, const Eigen::MatrixXd& W)
 {
 	int num_b = W.cols();

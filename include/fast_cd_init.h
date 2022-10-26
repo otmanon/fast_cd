@@ -195,7 +195,7 @@ struct FastCDInit {
         o << std::setw(4) << j << std::endl;
 	}
 
-    void read_json_entry_filepath(json& j, std::string json_key, std::string& filepath, bool required, std::string default = "", bool confirm_exists=false)
+    void read_json_entry_filepath(json& j, std::string json_key, std::string& filepath, bool required, std::string default_path = "", bool confirm_exists=false)
     {
         namespace fs = std::filesystem;
         if (required)
@@ -212,7 +212,7 @@ struct FastCDInit {
         {
             if (j.count(json_key) == 0)
             {
-                filepath = default;
+                filepath = default_path;
             }
             else
             {

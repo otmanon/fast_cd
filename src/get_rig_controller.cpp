@@ -1,6 +1,6 @@
 #include "get_rig_controller.h"
 #include "RotatingRigController.h"
-RigController * get_rig_controller(std::string rig_controller_str, Rig* rig, FastCDViewer* v)
+RigController * get_rig_controller(std::string rig_controller_str, Rig* rig, fast_cd_viewer* v)
 {
 	if (rig_controller_str == "handle")
 	{

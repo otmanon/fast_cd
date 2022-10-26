@@ -16,7 +16,7 @@
 #include "get_skeleton_mesh.h"
 
 
-SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, FastCDViewer* viewer, std::string animation_dir) : pl(pl), pI(pI)
+SkeletonRigFKMouseController::SkeletonRigFKMouseController(Eigen::VectorXd& p0, Eigen::VectorXi& pI, Eigen::VectorXd& pl, fast_cd_viewer* viewer, std::string animation_dir) : pl(pl), pI(pI)
 {
 		handleI = 0;
 	thickness = 1e-2;

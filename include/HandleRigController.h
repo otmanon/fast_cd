@@ -3,7 +3,7 @@
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
 #include <igl/opengl/glfw/imgui/ImGuiPlugin.h>
 #include "RigController.h"
-#include "FastCDViewer.h"
+#include "fast_cd_viewer.h"
 /*
 Class that takes into account general handle rig parameters p0. This is a 12xh vector, containing 12 entries for each handle.
 This class links the handle rig to a way of interacting with it using mouth controls. This involes a few things: it draws on the viewer
@@ -15,7 +15,7 @@ public:
 	HandleRigMouseController() {};
 
 
-	HandleRigMouseController(Eigen::VectorXd& p0, FastCDViewer* viewer, std::string animation_dir = "");
+	HandleRigMouseController(Eigen::VectorXd& p0, fast_cd_viewer* viewer, std::string animation_dir = "");
 
 	HandleRigMouseController(Eigen::VectorXd& p0,  igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo, std::string animation_dir="");
 	/*

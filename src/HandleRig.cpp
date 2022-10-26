@@ -313,7 +313,7 @@ bool HandleRig::write_surface_rig_to_json(std::string filename, Eigen::MatrixXi&
 	j["p0"] = p0_list;
 
 	o << std::setw(4) << j << std::endl;
-
+	return false;
 }
 
 bool HandleRig::write_rig_to_json(std::string filename)
