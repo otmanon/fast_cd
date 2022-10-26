@@ -3,6 +3,10 @@
 #include "fast_cd_sim_params.h"
 #include "grouping_matrix_from_clusters.h"
 #include "interweaving_matrix.h"
+#include "read_fast_cd_sim_static_precompute.h"
+#include <filesystem>
+#include <igl/readDMAT.h>
+#include <igl/writeDMAT.h>
 #include <igl/sum.h>
 struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 {
@@ -18,12 +22,11 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	//reduced equality constraint
 	MatrixXd AeqB;
 
-	//reduced gradient operator
-	MatrixXd KB;
+	
 
 	//mass, stiffness weighed reduced  gradient operator
 	MatrixXd GmKB;
-	SparseMatrix<double> GmKJ;
+	MatrixXd GmKJ;
 	VectorXd GmKx;
 	
 	MatrixXd G1VKB;
@@ -36,22 +39,29 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	VectorXd BCx;
 	
 	fast_cd_arap_static_precomp() {};
+
+
 	fast_cd_arap_static_precomp(fast_cd_sim_params& p) : cd_arap_static_precomp(p)
+	{
+		init(p);
+	}	
+
+
+	
+	void init(fast_cd_sim_params& p)
 	{
 		BCB = p.B.transpose() * C * p.B;
 		BMB = p.B.transpose() * M * p.B;
 		BAB = p.B.transpose() * A * p.B;
 		AeqB = p.Aeq * p.B;
 
-		KB = K * p.B;
-		
 		//going from per cluster rotations to forces
 		GmKB = K * p.B;
 		GmKJ = KJ;
 		GmKx = Kx;
 
 		//going from displacements to per-cluster deformation gradients.
-		G1VKB =  VK * p.B;
+		G1VKB = VK * p.B;
 
 		BMJ = p.B.transpose() * MJ;
 		BMx = p.B.transpose() * Mx;
@@ -64,7 +74,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		{
 			Eigen::SparseMatrix<double> G, G_tmp, S_cols, S_rows, G_1, G_m;
 			grouping_matrix_from_clusters(p.labels, G);
-			
+
 
 			G_tmp = igl::repdiag(G, 3);
 			interweaving_matrix(G.cols(), 3, S_cols);
@@ -91,8 +101,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 			//this one is an indicator, used to map per cluster quantities to each
 			G1VKB = G_1 * G1VKB;
 		}
-	}	
-
+	}
 };
 
 struct fast_cd_arap_dynamic_precomp : cd_arap_dynamic_precomp

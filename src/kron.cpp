@@ -1,6 +1,6 @@
 #include "kron.h"
 
-void kron(Eigen::MatrixXd& A, Eigen::MatrixXd& B, Eigen::MatrixXd& C)
+void kron(const Eigen::MatrixXd& A, const Eigen::MatrixXd& B, Eigen::MatrixXd& C)
 {
 	int na = A.rows();
 	int ma = A.cols();

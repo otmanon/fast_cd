@@ -12,4 +12,4 @@
 /// <param name="C"></param>
 
 using namespace Eigen;
-void kron(MatrixXd& A, MatrixXd& B, MatrixXd& C);
+void kron(const MatrixXd& A, const MatrixXd& B, MatrixXd& C);

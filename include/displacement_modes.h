@@ -10,6 +10,7 @@
 #include <igl/matlab/matlabinterface.h>
 #include <igl/cat.h>
 #include <igl/blkdiag.h>
+#include <igl/repdiag.h>
 using namespace Eigen;
 
 void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const int num_modes,
@@ -50,8 +51,9 @@ void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double
     Eigen::SparseMatrix<double> Q, MZ;
     augment_with_linear_constraints(H, J, Q);
 
+    SparseMatrix<double> M2 = igl::repdiag(M, 3);
     Eigen::SparseMatrix<double> Z = Eigen::SparseMatrix<double>(J.rows(), J.rows());
-    igl::blkdiag({ M, Z }, MZ);
+    igl::blkdiag({ M2, Z }, MZ);
 
     Eigen::MatrixXd B2;
     displacement_modes(Q, MZ, num_modes, B2, V);

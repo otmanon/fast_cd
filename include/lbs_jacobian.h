@@ -11,4 +11,4 @@
 /// <param name="W"></param>
 
 using namespace Eigen;
-void lbs_jacobian(MatrixXd& V, MatrixXd& W, SparseMatrix<double>& J);
+void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, SparseMatrix<double>& J);
