@@ -7,11 +7,13 @@
 
 #include <assert.h>
 
-/// <summary>
+/// 
 /// Builds linear blend skinning jacobian matrix. J = kron( I3, [V 1] kron 1_w'  cdot kron kron 1_4' cdot
-/// </summary>
-/// <param name="V"></param>
-/// <param name="W"></param>
+/// Inputs
+/// V -> n x 3 geometry, positions at rest state
+/// W -> n x b bones weights
+/// J -> 3n x 12b linear blend skinning jacobian
+///
 using namespace Eigen;
 void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, SparseMatrix<double>& J)
 {

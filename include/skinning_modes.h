@@ -2,6 +2,8 @@
 
 #include "lbs_product_isolate_W.h"
 #include "lbs_jacobian.h"
+#include "redundant_indices_JV.h"
+
 #include <Eigen/Sparse>
 #include <Eigen/Core>
 
@@ -10,7 +12,6 @@
 #include <igl/colon.h>
 #include <igl/cat.h>
 #include <igl/massmatrix.h>
-
 using namespace Eigen;
 using namespace igl;
 
@@ -23,7 +24,7 @@ W -> n x w secnodary bone weights
 L -> w x 1 secondary bone frequencies
 
 */
-void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const SparseMatrix<double>& M, const SparseMatrix<double> & Aeq, int num_modes, MatrixXd& W, VectorXd& L)
+void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const SparseMatrix<double>& M, const SparseMatrix<double>& Aeq, int num_modes, MatrixXd& B_lbs , MatrixXd& W, VectorXd& L)
 {
 	SparseMatrix<double> S, Sx, Sy, Sz, Z, Q, M2;
 	S.resize(H.rows() / 3, H.rows() / 3);
@@ -38,9 +39,13 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
 	
 
 	MatrixXd Weq1;
- //   lbs_product_isolate_W(V, Aeq.toDense(), Weq1); //confirm that this works somehow
+    lbs_product_isolate_W(V, Aeq.toDense(), Weq1); //confirm that this works somehow
 
-
+    int dim = V.cols();
+    VectorXi I;
+    redundant_indices_JV(Aeq.rows() / (dim * (dim + 1)), V.cols(), I);
+    MatrixXi Im = MatrixXi(I.rows(), 1);
+    Im = I;
     SparseMatrix<double> Weq = Weq1.sparseView();
 
     Engine* engine;
@@ -48,9 +53,10 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
     matlab::mlsetmatrix(&engine, "A", Q);
     matlab::mlsetmatrix(&engine, "B", M);
     matlab::mlsetmatrix(&engine, "Aeq", Weq);
+    matlab::mlsetmatrix(&engine, "redI", Im);
     //remove redundant rows fiiirst
-    matlab::mleval(&engine, "[~, p] = rref(Aeq')");
-    matlab::mleval(&engine, "Aeq = Aeq(p, :)");
+ //   matlab::mleval(&engine, "[~, p] = rref(Aeq')");
+    matlab::mleval(&engine, "Aeq = Aeq(redI,  :)");
 
 
     matlab::mlsetscalar(&engine, "r", num_modes);
@@ -71,9 +77,10 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
     printf("Total matlab::eigs decomposition time: %g... \n", t);
     L = S_mat.diagonal(); // Eigen::Map<Eigen::VectorXd>(S_mat.data(), S_mat.rows(), 1);
 
-    SparseMatrix<double> B_test;
     W = W2.topRows(V.rows());
-  //  lbs_jacobian(V, W, B_test);
+    SparseMatrix<double> B_test;
+    lbs_jacobian(V, W, B_test);
+    B_lbs = B_test.toDense();
     //Eigen::MatrixXd err = Aeq * B_test;
     //std::cout << "error " << err <<  std::endl;
    // assert((Aeq * B_test).norm() < 1e-6);

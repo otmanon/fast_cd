@@ -27,9 +27,10 @@ num_modes -> int, number of modes to search for/compute. If cache have less mode
 Output
 B -> either 3n x num_modes for displacement modes, or n x num_modes/12 for skinning modes
 L -> either num_modes vector or num_modes/12 vector of eigenvalues
+Ws -> if we picked skinning subspace, returns Ws
 */
 void get_cached_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double>& J, std::string mode_type, 
-    std::string modes_dir, bool cache, int num_modes, MatrixXd& B, VectorXd& L)
+    std::string modes_dir, bool cache, int num_modes, MatrixXd& B, VectorXd& L, MatrixXd& Ws)
 {
     namespace fs = std::filesystem;
     B.resize(0, 0);
@@ -51,7 +52,7 @@ void get_cached_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double
     if (!found)
     {
         std::cout << "recomputing " << num_modes << " modes from scratch ..." << std::endl;
-        get_modes(V, T, W, J, mode_type, num_modes, B, L);
+        get_modes(V, T, W, J, mode_type, num_modes, B, L, Ws);
       
         std::cout << "saving modes in " << dir <<  "..." << std::endl;
 

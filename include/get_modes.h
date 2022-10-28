@@ -24,9 +24,10 @@ num_modes -> int, number of modes to search for/compute. If cache have less mode
 Output
 B -> either 3n x num_modes for displacement modes, or n x num_modes/12 for skinning modes
 L -> either num_modes vector or num_modes/12 vector of eigenvalues
+Ws -> If we picked the skinning subspace, returns the weights here. otherwise leaves it empty
 */
 void get_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double>& J, std::string mode_type,
- int num_modes, MatrixXd& B, VectorXd& L)
+ int num_modes, MatrixXd& B, VectorXd& L, MatrixXd& Ws)
 {
 	SparseMatrix<double> M, M2;
 	massmatrix(V, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
@@ -40,7 +41,7 @@ void get_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double>& J, s
 	}
 	else if (mode_type == "skinning")
 	{
-		skinning_modes( V, H, M, J.transpose() * M2, num_modes, B, L);	
+		skinning_modes( V, H, M, J.transpose() * M2, num_modes, B, Ws,  L);	
 	}
 	else{
 		std::cout << "mode type " << mode_type << " is not yet supported" << std::endl;
