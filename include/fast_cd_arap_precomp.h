@@ -128,7 +128,6 @@ struct fast_cd_arap_dynamic_precomp : cd_arap_dynamic_precomp
 
 		BCur = sp.BCJ * p - sp.BCx;
 		BMur = sp.BMJ * p - sp.BMx;
-		Eigen::VectorXd VKJp = sp.VKJ * p;
 		GmKur = sp.GmKJ * p - sp.GmKx;
 
 		VectorXd BMp_hist = (sp.BMJ * p_hist);

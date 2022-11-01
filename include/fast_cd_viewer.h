@@ -2,10 +2,23 @@
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
+#include <igl/png/readPNG.h>
+using namespace std;
+using namespace Eigen;
 class fast_cd_viewer
 {
 public:
 	fast_cd_viewer();
+
+	void set_menu_callback(std::function<void()>& menu_callback)
+	{
+
+		imgui_menu->callback_draw_viewer_menu = [&]()
+		{
+			menu_callback();
+		};
+	
+	};
 
 	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer);
 
@@ -172,9 +185,18 @@ public:
 	{
 		igl_v->data_list[id].show_lines = show_lines;
 	}
+
+	bool get_show_lines(int id)
+	{
+		return igl_v->data_list[id].show_lines;
+	}
 	void set_show_faces(bool show_faces, int id)
 	{
 		igl_v->data_list[id].show_faces = show_faces;
+	}
+	bool get_show_faces(int id)
+	{
+		return igl_v->data_list[id].show_faces;
 	}
 	void configure_clusters( Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters);
 
@@ -201,7 +223,16 @@ public:
 	}
 
 
-
+	void set_texture(string& tex_png, MatrixXd& TC, MatrixXi& FTC, int id)
+	{
+		Eigen::Matrix<unsigned char, -1, -1> R, G, B, A;
+		bool read = igl::png::readPNG(tex_png, R, G, B, A);
+		igl_v->data_list[id].set_colors(Eigen::RowVector3d(1, 1, 1));
+		igl_v->data_list[id].set_uv(TC, FTC);
+		igl_v->data_list[id].show_texture = true;
+		igl_v->data_list[id].set_texture(R, G, B);
+		
+	}
 
 
 	/*

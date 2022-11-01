@@ -1,6 +1,7 @@
 #ifdef IGL_STATIC_LIBRARY
 #include <igl/repdiag.cpp>
 template void igl::repdiag<double>(Eigen::Matrix<double, -1, -1, 0, -1, -1> const&, int, Eigen::Matrix<double, -1, -1, 0, -1, -1>&);
+template  Eigen::Matrix<double, -1, -1, 0, -1, -1>  igl::repdiag< Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::Matrix<double, -1, -1, 0, -1, -1> const&, int);
 #include <igl/average_onto_faces.cpp>
 template void igl::average_onto_faces<Eigen::Matrix<int, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::MatrixBase<Eigen::Matrix<int, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&);
 #include <igl/slice_into.cpp>
@@ -15,11 +16,27 @@ template int igl::unproject_in_mesh<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Ei
 
 #include <igl/procrustes.cpp>
 template void  igl::procrustes< Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, double, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, bool, bool, double&, Eigen::PlainObjectBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> >&, Eigen::PlainObjectBase< Eigen::Matrix<double, -1, 1, 0, -1, 1> >&);
+template void  igl::procrustes< Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, double, Eigen::Matrix<double, 3, 3, 0, 3, 3>, Eigen::Matrix<double, 3, 1, 0, 3, 1> >(Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, bool, bool, double&, Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 3, 0, 3, 3> >&, Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 1, 0, 3, 1> >&);
+template void  igl::procrustes< Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, double, Eigen::Matrix<double, 3, 3, 0, 3, 3>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, bool, bool, double&, Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 3, 0, 3, 3> >&, Eigen::PlainObjectBase< Eigen::Matrix<double, -1, 1, 0, -1, 1> >&);
+
+#include <igl/polar_svd.cpp>
+template void  igl::polar_svd< Eigen::Matrix<double, -1, -1, 0, -1, -1>,  Eigen::Matrix<double, 3, 3, 0, 3, 3>,  Eigen::Matrix<double, -1, -1, 0, -1, -1> >( Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&,  Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 3, 0, 3, 3> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> >&);
+template void  igl::polar_svd< Eigen::Matrix<double, -1, -1, 0, -1, -1>,  Eigen::Matrix<double, 3, 3, 0, 3, 3>,  Eigen::Matrix<double, -1, -1, 0, -1, -1>,  Eigen::Matrix<double, -1, -1, 0, -1, -1>,  Eigen::Matrix<double, -1, 1, 0, -1, 1>,  Eigen::Matrix<double, -1, -1, 0, -1, -1> >( Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&,  Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 3, 0, 3, 3> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, -1, 1, 0, -1, 1> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> >&);
 #include <igl/polar_dec.cpp>
 template void igl::polar_dec<Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1>, Eigen::Matrix<double, -1, -1, 0, -1, -1> >(Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> >&);
+
 
 #include <igl/tet_tet_adjacency.cpp>
 
 #include <igl/list_to_matrix.cpp>
 template bool igl::list_to_matrix<double, Eigen::Matrix<double, 1, 3, 1, 1, 3> >(std::vector<double, std::allocator<double> > const&, Eigen::PlainObjectBase< Eigen::Matrix<double, 1, 3, 1, 1, 3> >&);
-#endif
+
+#include <igl/diag.cpp>
+template void  igl::diag<double, Eigen::Block< Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, 1> >(Eigen::MatrixBase< Eigen::Block< Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, 1> > const&, Eigen::SparseMatrix<double, 0, int>&);
+
+//#include <igl/procrustes.cpp>
+//template void  igl::procrustes< Eigen::Matrix<double, -1, -1, 0, -1, -1>,  Eigen::Matrix<double, -1, -1, 0, -1, -1>, double,  Eigen::Matrix<double, 3, 3, 0, 3, 3>,  Eigen::Matrix<double, 3, 1, 0, 3, 1> >( Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&,  Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, bool, bool, double&,  Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 3, 0, 3, 3> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 1, 0, 3, 1> >&);
+
+//#include <igl/repdiag.cpp>
+//template  Eigen::Matrix<double, -1, -1, 0, -1, -1>  igl::repdiag< Eigen::Matrix<double, -1, -1, 0, -1, -1> >( Eigen::Matrix<double, -1, -1, 0, -1, -1> const&, int);
+#endif;

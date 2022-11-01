@@ -32,8 +32,14 @@ fast_cd_viewer::fast_cd_viewer()
     imgui_plugin->widgets.push_back(guizmo);
   //  imgui_plugin->widgets.push_back(imgui_menu);
     guizmo->visible = false;
+
+    imgui_menu = new igl::opengl::glfw::imgui::ImGuiMenu();
+    imgui_plugin->widgets.push_back(imgui_menu);
+    imgui_menu->callback_draw_viewer_menu = [&]()
+    {    };
   //  imgui_menu->draw_custom_window = ()[]
 }
+
 
 
 

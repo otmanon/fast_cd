@@ -10,7 +10,7 @@ void compute_handle_positions_from_parameters(Eigen::VectorXd& p, Eigen::MatrixX
 	{
 		for (int j = 0; j < 3; j++)
 		{
-			V(i, j) = p(12 * i + j * 4 + 3);
+			V(i, j) = p(4* i +  num_p * j + 4);
 		}
 	}
 }

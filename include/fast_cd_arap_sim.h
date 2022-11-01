@@ -16,7 +16,8 @@ public:
 
 	fast_cd_arap_dynamic_precomp* dp;
 
-	fast_cd_arap_sim(fast_cd_sim_params* params, fast_cd_arap_local_global_solver* solver, fast_cd_arap_dynamic_precomp* dp, fast_cd_arap_static_precomp* sp)
+	fast_cd_arap_sim() {};
+	fast_cd_arap_sim(fast_cd_sim_params* params, fast_cd_arap_local_global_solver* solver, fast_cd_arap_dynamic_precomp* dp, fast_cd_arap_static_precomp* sp) : cd_arap_sim()
 	{
 		this->params = params;
 		this->sol = solver;

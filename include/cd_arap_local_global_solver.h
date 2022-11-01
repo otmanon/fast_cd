@@ -2,8 +2,10 @@
 #include "cd_sim_params.h"
 #include "cd_arap_precomp.h"
 #include "augment_with_linear_constraints.h"
+
 #include <Eigen/Sparse>
 #include <Eigen/Core>
+#include <igl/cat.h>
 #include <igl/min_quad_with_fixed.h>
 #include <igl/polar_svd3x3.h>
 using namespace Eigen;
