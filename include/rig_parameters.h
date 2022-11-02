@@ -130,6 +130,35 @@ void set_rig_parameters(MatrixXd& P0, MatrixXd& T)
 }
 
 /*
+Sets rig parameters  corresponding to bone BI to the affine transform T
+*/
+void set_rig_parameters(MatrixXd& P0, MatrixXd& T, int BI)
+{
+	assert(P0.cols() == 3 && "expecting stacked (4 #bones) x 3 P0");
+	assert((P0.rows() % 4) == 0 && "expecting stacked (4 #bones) x 3 P0");
+	assert((T.rows() == 4 && T.cols() == 3) || (T.rows() == 3 && T.cols() == 4) && "expecting T to be 4 x 3 matrix or a 3x 4 matrix");
+	assert(BI < (P0.rows()  / 4) && "Bone index is higher than the number of bones given!");
+	if (T.rows() == 3 && T.cols() == 4)
+	{
+		T = T.transpose().eval();
+	}
+	int i = BI * 4;
+	P0.block(i, 0, 4, 3) = T;
+}
+/*
+Sets flattened parameters  corresponding to bone BI to the affine transform T
+*/
+void set_rig_parameters(VectorXd& p0, MatrixXd& T, int BI)
+{
+	assert((p0.rows() % (12)) == 0 && "flattened rig parameters in 3D mush have p0.rows() be a multiple of 12");
+	int num_b = p0.rows() / 12;
+	int dim = 3;
+	MatrixXd P0 = Map<MatrixXd>(p0.data(), num_b * (dim + 1), dim);
+	set_rig_parameters(P0, T, BI);
+	p0 = Map<VectorXd>(P0.data(), (dim * (dim + 1)) * num_b);
+}
+
+/*
 Sets all rig parameters to the T affine matrix on flattened input/outpout.
 Assumes columnb order flattening convenction
 */

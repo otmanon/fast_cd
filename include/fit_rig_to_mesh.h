@@ -7,7 +7,7 @@
 #include <igl/slice.h>
 #include <igl/procrustes.h>
 #include <igl/point_mesh_squared_distance.h>
-
+#include <igl/colon.h>
 #include <Eigen/Core>
 using namespace Eigen;
 /*

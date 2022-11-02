@@ -40,7 +40,11 @@ void get_cached_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double
     if (cache)
     {
         std::cout << "looking for cached modes in " << dir << std::endl;
+
         found = igl::readDMAT(dir + "B.DMAT", B) && igl::readDMAT(dir + "L.DMAT", L);
+        if (mode_type == "skinning")
+            found = found && igl::readDMAT(dir + "W.DMAT", Ws);
+    
         if (B.cols() < num_modes || L.rows() < num_modes)
         {
             found = false;
@@ -59,6 +63,7 @@ void get_cached_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double
             if (!fs::exists(fs::path(dir)))
                 fs::create_directories(fs::path(dir));
             igl::writeDMAT(dir + "B.DMAT", B); igl::writeDMAT(dir + "L.DMAT", L);
+            igl::writeDMAT(dir + "W.DMAT", Ws);
       
     }
 }
