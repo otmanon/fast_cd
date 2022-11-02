@@ -1,8 +1,5 @@
 #include "get_skeleton_mesh.h"
-
-#include "matrix4f_from_parameters.h"
-
-
+#include "rig_parameters.h"
 /*
 From absolute world rig parameters p, build your skeleton mesh.
 */
@@ -52,11 +49,13 @@ void get_skeleton_mesh(float thickness, Eigen::VectorXd& p, Eigen::VectorXd& bl,
 
 			const double len = bl[b];
 			Eigen::MatrixXd BVk(BV.rows(), 3);
-			Eigen::Matrix4d A = matrix4f_from_parameters(p, b).cast<double>();
+			Eigen::Matrix4d A = Eigen::Matrix4d::Identity();
+			A.block(0, 0, 3, 4) = get_bone_transform(p, b);
 			for (int v = 0; v < BV.rows(); v++)
 			{
 				const Eigen::Vector4d p =
-					(A * Eigen::Vector4d(len * BV(v, 0), BV(v, 1), BV(v, 2), 1));
+					(A * Eigen::Vector4d( -BV(v, 1), BV(v, 0), BV(v, 2), 1));
+				//	(A * Eigen::Vector4d( BV(v, 0), BV(v, 1), BV(v, 2), 1)); NOTE THAT WE HAD TO FLIP THESE TWO BECAUSE BLENDER ASSUMES BONE IS ALONG Y, AXIS, but WE ASSUME IT's ALONG X
 				BVk.row(v) = p.topRows(3).transpose();
 			}
 			renderV.block(k * BV.rows(), 0, BV.rows(), 3) = BVk;
@@ -65,4 +64,15 @@ void get_skeleton_mesh(float thickness, Eigen::VectorXd& p, Eigen::VectorXd& bl,
 			k++;
 		}
 	}
+}
+
+/*
+Wrapper that takes in relative rig parameters p and rest world rig parameters p0
+*/
+void get_skeleton_mesh(float thickness, Eigen::VectorXd& p, Eigen::VectorXd& p0, Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC)
+{
+	VectorXd p_glob;
+	rel_to_world_rig_parameters(p, p0, p_glob);
+
+	get_skeleton_mesh(thickness, p_glob, bl, renderV, renderF, renderC);
 }

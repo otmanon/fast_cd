@@ -59,6 +59,17 @@ public:
 		igl_v->core().lighting_factor = f;
 	}
 
+	void add_mesh( int& id)
+	{
+		igl_v->append_mesh();
+		id = igl_v->data_list.size() - 1;
+	}
+	void add_mesh(MatrixXd& V, MatrixXi& F, int& id)
+	{
+		igl_v->append_mesh();
+		id = igl_v->data_list.size() - 1;
+		igl_v->data_list[id].set_mesh(V, F);
+	}
 
 	void clear_all()
 	{
