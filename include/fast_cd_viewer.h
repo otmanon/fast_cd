@@ -246,6 +246,15 @@ public:
 	}
 
 
+	void set_visible(bool is_visible, int id)
+	{
+		igl_v->data_list[id].is_visible = is_visible;
+	}
+
+	bool get_visible(int id)
+	{
+		return igl_v->data_list[id].is_visible;
+	}
 	/*
 	Renders mesh  full space mesh V.
 	*/
