@@ -7,7 +7,7 @@ using namespace std; using namespace Eigen;
 /*
 From cache_dir, reads all matrices and vectors required for the reduced static precomputation of sp
 */
-bool write_fast_cd_sim_static_precomputation(string& cache_dir, MatrixXd& B, VectorXd& L, VectorXi& l,
+bool write_fast_cd_sim_static_precomputation(string& cache_dir,  const MatrixXd& B,  const VectorXd& L, const  VectorXi& l,
 	MatrixXd& BCB, MatrixXd& BMB, MatrixXd& BAB, MatrixXd& AeqB, MatrixXd& GmKB, MatrixXd& GmKJ,
 	VectorXd& GmKx, MatrixXd& G1VKB, MatrixXd& BMJ, VectorXd& BMx, MatrixXd& BCJ, VectorXd& BCx)
 {

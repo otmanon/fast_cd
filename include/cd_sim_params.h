@@ -6,6 +6,9 @@
 #include <Eigen/Core>
 
 using namespace Eigen;
+using EigenDStride = Stride<Eigen::Dynamic, Eigen::Dynamic>;
+template <typename MatrixType>
+using EigenDRef = Ref<MatrixType, 0, EigenDStride>;
 struct cd_sim_params
 {
 	//geometry
@@ -37,8 +40,8 @@ struct cd_sim_params
 	SparseMatrix<double> Q;
 
 	cd_sim_params() {};
-	cd_sim_params(MatrixXd& X, MatrixXi& T,
-		SparseMatrix<double>& J, double mu, double lambda, double h,
+	cd_sim_params(const MatrixXd& X, const MatrixXi& T,
+		const SparseMatrix<double>& J, double mu, double lambda, double h,
 		bool do_inertia)
 	{
 		this->X = X;

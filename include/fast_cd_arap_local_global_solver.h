@@ -19,18 +19,18 @@ struct fast_cd_arap_local_global_solver
 		llt_solver.compute(H);
 	}
 
-	VectorXd solve(VectorXd& z, fast_cd_sim_params& params, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp)
+	VectorXd solve(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
 	{
-		Eigen::VectorXd z_next;
+		Eigen::VectorXd z_next = z;
 		for (int i = 0; i < p.max_iters; i++)
 		{
-			VectorXd r = local_step(z, dp, sp);
-			z = global_step(z, params, dp, sp, r);
+			VectorXd r = local_step(z_next, dp, sp);
+			z_next = global_step(z_next, params, dp, sp, r);
 		}
-		return z;
+		return z_next;
 	};
 
-	VectorXd local_step(VectorXd& z, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp)
+	VectorXd local_step(const VectorXd& z, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
 	{
 		VectorXd f = sp.GmKB * z + dp.GmKur + sp.GmKx;
 		int nt = f.rows() / 9;
@@ -49,7 +49,7 @@ struct fast_cd_arap_local_global_solver
 		return r;
 	}
 
-	VectorXd global_step(VectorXd& z, fast_cd_sim_params& params, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp, VectorXd& r)
+	VectorXd global_step(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
 	{
 		VectorXd inertia_grad = -dp.BMy;
 
