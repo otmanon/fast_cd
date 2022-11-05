@@ -114,9 +114,9 @@ struct fast_cd_arap_dynamic_precomp : cd_arap_dynamic_precomp
 
 	VectorXd GmKur;
 
-	void precomp(VectorXd& z, VectorXd& p,
-		cd_sim_state& st, VectorXd& f_ext,
-		VectorXd& bc, fast_cd_arap_static_precomp& sp)
+	void precomp(const VectorXd& z, const VectorXd& p,
+		const cd_sim_state& st, const VectorXd& f_ext,
+		const VectorXd& bc, const fast_cd_arap_static_precomp& sp)
 	{
 		assert(f_ext.rows() == z.rows() && "Force needs to have same number of rows as D.O.Fs");
 		assert(bc.cols() == 1 && "Need to have at least one column (even if no rows)");

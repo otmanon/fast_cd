@@ -26,7 +26,7 @@ B -> either 3n x num_modes for displacement modes, or n x num_modes/12 for skinn
 L -> either num_modes vector or num_modes/12 vector of eigenvalues
 Ws -> If we picked the skinning subspace, returns the weights here. otherwise leaves it empty
 */
-void get_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double>& J, std::string mode_type,
+void get_modes(const MatrixXd& V, const MatrixXi& T,const  MatrixXd& W, const SparseMatrix<double>& J, std::string mode_type,
  int num_modes, MatrixXd& B, VectorXd& L, MatrixXd& Ws)
 {
 	assert(J.rows() == V.rows() * V.cols() && "Rig Jacobian must have as many rows as there are full space degrees of freedom 3#V");

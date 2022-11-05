@@ -54,7 +54,8 @@ void get_skeleton_mesh(float thickness, Eigen::VectorXd& p, Eigen::VectorXd& bl,
 			for (int v = 0; v < BV.rows(); v++)
 			{
 				const Eigen::Vector4d p =
-					(A * Eigen::Vector4d( -BV(v, 1), len* BV(v, 0), BV(v, 2), 1));
+					(A * Eigen::Vector4d( -BV(v, 1), len*BV(v, 0), BV(v, 2), 1));
+
 				//	(A * Eigen::Vector4d( BV(v, 0), BV(v, 1), BV(v, 2), 1)); NOTE THAT WE HAD TO FLIP THESE TWO BECAUSE BLENDER ASSUMES BONE IS ALONG Y, AXIS, but WE ASSUME IT's ALONG X
 				BVk.row(v) = p.topRows(3).transpose();
 			}

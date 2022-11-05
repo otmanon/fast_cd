@@ -12,4 +12,4 @@
 /// <param name="h"></param>   desired height, default=1
 /// <param name="c"></param>  desired center of mass, default=[0 0 0]
 /// <returns></returns>
-Eigen::MatrixXd scale_and_center_geometry(Eigen::MatrixXd& V, const  double h, const Eigen::RowVector3d c , double& so, Eigen::RowVector3d& to);
+Eigen::MatrixXd scale_and_center_geometry(const Eigen::MatrixXd& V, const  double h, const Eigen::RowVector3d c , double& so, Eigen::RowVector3d& to);

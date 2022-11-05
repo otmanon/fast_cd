@@ -64,7 +64,7 @@ public:
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
 	}
-	void add_mesh(MatrixXd& V, MatrixXi& F, int& id)
+	void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
@@ -78,7 +78,7 @@ public:
 			igl_v->data_list[i].clear();
 		}
 	}
-	void set_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, int id)
+	void set_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int id)
 	{
 		igl_v->data_list[id].set_mesh(V, F);
 	}
@@ -88,16 +88,16 @@ public:
 		igl_v->core().camera_zoom = zoom;
 	}
 
-	void set_camera_eye(Eigen::RowVector3d& p)
+	void set_camera_eye(const Eigen::RowVector3d& p)
 	{
 		igl_v->core().camera_eye = p.cast<float>();
 	}
 
-	void set_camera_center(Eigen::RowVector3d& c)
+	void set_camera_center(const Eigen::RowVector3d& c)
 	{
 		igl_v->core().camera_center = c.cast<float>();
 	}
-	void set_vertices(Eigen::MatrixXd& V, int id)
+	void set_vertices(const Eigen::MatrixXd& V, int id)
 	{
 		igl_v->data_list[id].set_vertices(V);
 	}
@@ -111,11 +111,11 @@ public:
 		igl_v->data_list[id].clear();
 	}
 
-	void set_color(Eigen::RowVector3d & d, int id)
+	void set_color(const Eigen::RowVector3d & d, int id)
 	{
 		igl_v->data_list[id].set_colors(d);
 	}
-	void set_color(Eigen::MatrixXd& d, int id)
+	void set_color(const Eigen::MatrixXd& d, int id)
 	{
 		igl_v->data_list[id].set_colors(d);
 	}
@@ -129,13 +129,13 @@ public:
 		igl_v->data_list[id].invert_normals = invert_normals;
 	}
 
-	void set_points(Eigen::MatrixXd& points, int id)
+	void set_points(const Eigen::MatrixXd& points, int id)
 	{
 		Eigen::RowVector3d z(0, 0, 0);
 		igl_v->data_list[id].set_points(points, z);
 	}
 
-	void configure_wireframe_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, int id)
+	void configure_wireframe_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int id)
 	{
 		igl_v->data_list[id].clear();
 		igl_v->data_list[id].set_mesh(V, F);
@@ -143,47 +143,47 @@ public:
 		igl_v->data_list[id].show_lines = true;
 	}
 
-	void set_data(Eigen::VectorXd &D, int i)
+	void set_data(const Eigen::VectorXd &D, int i)
 	{
 		igl_v->data_list[i].set_data(D);
 	}
 
-	void set_data(Eigen::VectorXd& D,  igl::ColorMapType cmap, int i)
+	void set_data(const Eigen::VectorXd& D,  igl::ColorMapType cmap, int i)
 	{
 		igl_v->data_list[i].set_data(D, cmap);
 	}
 
-	void set_data(Eigen::VectorXd& D, double min, double max, int num_steps, igl::ColorMapType cmap, int i)
+	void set_data(const Eigen::VectorXd& D, double min, double max, int num_steps, igl::ColorMapType cmap, int i)
 	{
 		igl_v->data_list[i].set_data(D, min, max, cmap, num_steps );
 	}
 
-	void set_data(Eigen::VectorXd& D, double min, double max, int i)
+	void set_data(const Eigen::VectorXd& D, double min, double max, int i)
 	{
 		igl_v->data_list[i].set_data(D, min, max);
 	}
 
-	void set_points(Eigen::MatrixXd& points, Eigen::RowVector3d& z, int id)
+	void set_points(const Eigen::MatrixXd& points,const  Eigen::RowVector3d& z, int id)
 	{
 		igl_v->data_list[id].set_points(points, z);
 	}
 
-	void set_points(Eigen::MatrixXd& points, Eigen::MatrixXd& color, int id)
+	void set_points(const Eigen::MatrixXd& points,const  Eigen::MatrixXd& color, int id)
 	{
 		igl_v->data_list[id].set_points(points, color);
 	}
 
-	void set_lines(Eigen::MatrixXd& V, Eigen::MatrixXi& E, Eigen::MatrixXd& color, int id)
+	void set_lines(const Eigen::MatrixXd& V,const  Eigen::MatrixXi& E,const  Eigen::MatrixXd& color, int id)
 	{
 		igl_v->data_list[id].set_edges(V, E, color);
 	}
 
-	void set_lines(Eigen::MatrixXd& V, Eigen::MatrixXi& E, Eigen::RowVector3d& z, int id)
+	void set_lines(Eigen::MatrixXd& V,const  Eigen::MatrixXi& E,const  Eigen::RowVector3d& z, int id)
 	{
 		igl_v->data_list[id].set_edges(V, E, z);
 	}
 
-	void set_lines(Eigen::MatrixXd& V, Eigen::MatrixXi& E, int id)
+	void set_lines(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E, int id)
 	{
 		Eigen::RowVector3d z(0, 0, 0);
 		igl_v->data_list[id].set_edges(V, E, z);
@@ -209,32 +209,16 @@ public:
 	{
 		return igl_v->data_list[id].show_faces;
 	}
-	void configure_clusters( Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters);
+	
 
-	void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id);
-
-	void configure_deformation_texture( Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W);
-
-	void configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id);
-	void configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& color, int id); 
-
-	void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V, Eigen::MatrixXi& F,
-		Eigen::MatrixXd& TC, Eigen::MatrixXi& FTC, int id = 0);
-
-	void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
-		Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine);
-
-	void configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F);
-
-
-	void set_data_colormap(Eigen::VectorXd& d, Eigen::MatrixXd& cmap, int id)
+	void set_data_colormap(const Eigen::VectorXd& d, const Eigen::MatrixXd& cmap, int id)
 	{
 		igl_v->data_list[id].set_data(d);
 		igl_v->data_list[id].set_colormap(cmap);
 	}
 
 
-	void set_texture(string& tex_png, MatrixXd& TC, MatrixXi& FTC, int id)
+	void set_texture(const string& tex_png,const  MatrixXd& TC,const  MatrixXi& FTC, int id)
 	{
 		Eigen::Matrix<unsigned char, -1, -1> R, G, B, A;
 		bool read = igl::png::readPNG(tex_png, R, G, B, A);
@@ -245,6 +229,24 @@ public:
 		
 	}
 
+	//////////////////////// legacy stuff
+
+	void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters) {};
+
+	void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id){};
+
+	void configure_deformation_texture(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W){};
+
+	void configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id){};
+	void configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& color, int id){};
+
+	void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V, Eigen::MatrixXi& F,
+		Eigen::MatrixXd& TC, Eigen::MatrixXi& FTC, int id = 0){};
+
+	void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
+		Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine){};
+
+	void configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F){};
 
 	void set_visible(bool is_visible, int id)
 	{
@@ -258,23 +260,23 @@ public:
 	/*
 	Renders mesh  full space mesh V.
 	*/
-	void render_full(Eigen::MatrixXd& V, int id);
+	void render_full(const Eigen::MatrixXd& V, int id);
 
 
 	/*
 	Renders mesh with reduced deformation z, and rig parameters p.
 	Must do a projection step Bz + Jp to get the final V. Does this step on the CPU
 	*/
-	void render_reduced_cpu_proj(Eigen::VectorXd& z, Eigen::VectorXd & p, Eigen::MatrixXd& B, Eigen::SparseMatrix<double>& J, int id);
+	void render_reduced_cpu_proj(const Eigen::VectorXd& z, const Eigen::VectorXd & p, const Eigen::MatrixXd& B, const Eigen::SparseMatrix<double>& J, int id);
 
-	void render_reduced_gpu_proj(Eigen::VectorXd& z, Eigen::VectorXd& p, int n, int id);
+	void render_reduced_gpu_proj(const Eigen::VectorXd& z,const  Eigen::VectorXd& p, int n, int id);
 
 	//void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
 	/*
 	GUIZMO controls
 	*/
-	void init_guizmo(bool visible, Eigen::Matrix4f A0, std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION = ImGuizmo::TRANSLATE);
+	void init_guizmo(bool visible, const Eigen::Matrix4f& A0, std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION op = ImGuizmo::TRANSLATE);
 
 	void set_guizmo_operation(ImGuizmo::OPERATION op)
 	{
@@ -283,6 +285,16 @@ public:
 	ImGuizmo::OPERATION get_guizmo_operation()
 	{
 		return guizmo->operation;
+	}
+
+	void set_visible(bool visible, int id)
+	{
+		this->igl_v->data_list[id].set_visible(visible);
+	}
+
+	bool get_visible(int id)
+	{
+		return this->igl_v->data_list[id].is_visible;
 	}
 public:
 	igl::opengl::glfw::Viewer* igl_v;
