@@ -63,7 +63,7 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
     matlab::mleval(&engine, "tic");
     matlab::mleval(&engine, "A = [A Aeq'; Aeq zeros(size(Aeq, 1))];");
     matlab::mleval(&engine, "M = blkdiag(B, zeros(size(Aeq, 1)))");
-    matlab::mleval(&engine, "[EV, S] = eigs(A, M, r,'sm')");
+    matlab::mleval(&engine, "[EV, S] = eigs(A + speye(size(A))*1e-8, M, r,'sm')");
     matlab::mleval(&engine, "EV = real(EV)");
     matlab::mleval(&engine, "S = real(S)");
     matlab::mleval(&engine, "time = toc");

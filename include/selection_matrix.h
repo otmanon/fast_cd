@@ -5,6 +5,9 @@
 #include <Eigen/Core>
 
 using namespace Eigen;
+/*
+Creats a selection matrix S, that selects out rows bI of an nx1 vector
+*/
 void selection_matrix(VectorXi& bI, int n, SparseMatrix<double>& S)
 {
 	S.resize(bI.rows(), n);

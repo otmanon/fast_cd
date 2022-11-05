@@ -8,6 +8,7 @@ struct fast_cd_arap_local_global_solver
 	cd_arap_local_global_solver_params p;
 	VectorXd z;
 	LLT<MatrixXd> llt_solver;
+	LDLT<MatrixXd> ldlt_solver;
 
 	fast_cd_arap_local_global_solver() {};
 	fast_cd_arap_local_global_solver(MatrixXd& A, MatrixXd& Aeq, cd_arap_local_global_solver_params& p)
@@ -16,7 +17,10 @@ struct fast_cd_arap_local_global_solver
 		VectorXi bI;
 		MatrixXd H;
 		augment_with_linear_constraints(A, Aeq, H);
-		llt_solver.compute(H);
+		if (Aeq.rows() > 0)
+			ldlt_solver.compute(H);
+		else
+			llt_solver.compute(H);
 	}
 
 	VectorXd solve(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
@@ -58,8 +62,12 @@ struct fast_cd_arap_local_global_solver
 		VectorXd g = params.invh2 * params.do_inertia * inertia_grad + arap_grad + dp.f_ext;
 		VectorXd Y;
 
-		Eigen::VectorXd rhs = -igl::cat(1, g, dp.bc);
-		VectorXd z_next = llt_solver.solve(rhs);
+		Eigen::VectorXd rhs = igl::cat(1, (- g).eval(), dp.bc);
+		VectorXd z_next;
+		if (dp.bc.rows() > 0)
+			z_next = ldlt_solver.solve(rhs);
+		else
+			z_next = llt_solver.solve(rhs);
 		//min_quad_with_fixed_solve(data, g, VectorXd(), dp.bc, z_next);
 		//min_quad_with_fixed<double>(sp.BAB, g, VectorXi(), VectorXd(), sp.AeqB, dp.bc);
 		//arap = dpre.Lur + spre.Lx - spre.MK' * r;
