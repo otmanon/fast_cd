@@ -29,6 +29,7 @@ Ws -> If we picked the skinning subspace, returns the weights here. otherwise le
 void get_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double>& J, std::string mode_type,
  int num_modes, MatrixXd& B, VectorXd& L, MatrixXd& Ws)
 {
+	assert(J.rows() == V.rows() * V.cols() && "Rig Jacobian must have as many rows as there are full space degrees of freedom 3#V");
 	SparseMatrix<double> M, M2;
 	massmatrix(V, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
 	M2 = igl::repdiag(M, 3);

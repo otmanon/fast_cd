@@ -28,7 +28,7 @@ public:
 	Eigen::VectorXd step(VectorXd& z, VectorXd& p, cd_sim_state state, VectorXd& f_ext, VectorXd& bc)
 	{
 		////needs to be updated every timestep
-		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(sp->AeqB.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
 		
 		dp->precomp(z, p, state, f_ext, bc, *sp);
