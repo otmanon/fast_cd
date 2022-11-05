@@ -277,6 +277,16 @@ public:
 	{
 		return guizmo->operation;
 	}
+
+	void set_visible(bool visible, int id)
+	{
+		this->igl_v->data_list[id].set_visible(visible);
+	}
+
+	bool get_visible(int id)
+	{
+		return this->igl_v->data_list[id].is_visible;
+	}
 public:
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo
