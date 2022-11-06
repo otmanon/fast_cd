@@ -61,10 +61,10 @@ public:
 	Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 		////needs to be updated every timestep
-		assert(sp->AeqB.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(sp.AeqB.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
-		assert(f_ext.rows() == sp->BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
-		assert(z_ext.rows() == sp->BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
+		assert(f_ext.rows() == sp.BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
+		assert(z.rows() == sp.BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
 		VectorXd z_next = z;
 		dp.precomp(z, p, state, f_ext, bc, sp);
 		z_next = sol.solve(z_next, params, dp, sp);
@@ -82,10 +82,10 @@ public:
 		const VectorXd& p_curr, const VectorXd& p_prev, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 		////needs to be updated every timestep
-		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(params.Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
-		assert(f_ext.rows() == sp->BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
-		assert(z_ext.rows() == sp->BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
+		assert(f_ext.rows() == sp.BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
+		assert(z.rows() == sp.BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
 		VectorXd z_next = z;
 		cd_sim_state state(z_curr, z_prev, p_curr, p_prev);
 		dp.precomp(z, p, state, f_ext, bc, sp);

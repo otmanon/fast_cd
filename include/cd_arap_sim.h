@@ -44,4 +44,29 @@ public:
 		z = sol->solve(z, *params, *dp, *sp);
 		return z;
 	}
+
+	// no rig
+	Eigen::VectorXd step(VectorXd& z, cd_sim_state state, VectorXd& f_ext, VectorXd& bc)
+	{
+		//needs to be updated every timestep
+		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
+
+		dp->precomp(z, state, f_ext, bc, *sp);
+		z = sol->solve(z, *params, *dp, *sp);
+		return z;
+	}
+
+	/*
+	Updates the equality constraint matrix to be C, where C slices out known rows of the full space system 
+	*/
+	void set_equality_constraint(SparseMatrix<double>& C)
+	{
+		this->params->Aeq = C;
+
+		sp = new cd_arap_static_precomp(*this->params);
+		cd_arap_local_global_solver_params old_params = sol->p;
+
+		sol = new cd_arap_local_global_solver(this->sp->A, this->params->Aeq, old_params);
+	}
 };

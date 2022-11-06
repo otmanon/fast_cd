@@ -42,6 +42,17 @@ struct cd_sim_params
 	cd_sim_params() {};
 	cd_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const SparseMatrix<double>& J, double mu, double lambda, double h,
+		bool do_inertia) : cd_sim_params(X, T, mu, lambda, h, do_inertia)
+	{
+
+		this->J = J;
+		Eigen::SparseMatrix<double> M;
+		massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+		M = igl::repdiag(M, 3);
+		this->Aeq = J.transpose().eval() * M; // no D-matrix here!
+	}
+
+	cd_sim_params(const MatrixXd& X, const MatrixXi& T, double mu, double lambda, double h,
 		bool do_inertia)
 	{
 		this->X = X;
@@ -54,13 +65,6 @@ struct cd_sim_params
 
 		Q.resize(X.rows() * 3, X.rows() * 3);
 		Q.setZero();
-
-		this->J = J;
-
-		Eigen::SparseMatrix<double> M;
-		massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
-		M = igl::repdiag(M, 3);
-		this->Aeq = J.transpose().eval() * M; // no D-matrix here!
 	}
 
 };

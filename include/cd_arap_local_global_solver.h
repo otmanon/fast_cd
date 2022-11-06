@@ -72,15 +72,12 @@ struct cd_arap_local_global_solver
 	VectorXd local_step(const VectorXd& z, const cd_arap_dynamic_precomp& dp, const cd_arap_static_precomp& sp)
 	{
 		VectorXd f = sp.K * z + dp.Kur + sp.Kx;
-
-		VectorXd f2 = sp.VK * z + dp.VKur + sp.VKx;
 		int nt = f.rows() / 9;
 		MatrixXd F_stack = Map<MatrixXd>(f.data(), nt * 3, 3);
-		MatrixXd F2_stack = Map<MatrixXd>(f2.data(), nt*3, 3);
 		MatrixXd R = MatrixXd::Zero(F_stack.rows(), F_stack.cols());
-		MatrixXd R2 = R;
+	
 		
-		Matrix3d F, F2, rot, rot2;
+		Matrix3d F, rot;
 		for (int i = 0; i < nt; i++)
 		{
 			F =  F_stack.block(3 * i, 0, 3, 3);// *sp.tet_vols(i);

@@ -67,7 +67,13 @@ struct cd_arap_static_precomp
 		Mu = igl::repdiag(Mu, 9);
 
 		C = K.transpose() * Mu * V * K;
-		CJ = C * p.J;
+		if (p.J.rows() > 0)
+			CJ = C * p.J;
+		else
+		{
+			CJ  = SparseMatrix<double>(C.rows(), 0);
+			CJ.setZero();
+		}
 		Cx = C * x;
 
 		/*SparseMatrix<double> C_test;
@@ -76,16 +82,31 @@ struct cd_arap_static_precomp
 		cout << "Cotan Laplacian Check " << (C + C_test).cwiseAbs().sum() << endl;*/
 
 		SparseMatrix<double> I = SparseMatrix<double>(C.rows(), C.cols());
+		I.setIdentity();
 		A = (p.do_inertia * p.invh2 * M + C + p.Q + (!p.do_inertia) * 1e-9 * I);
 
-		KJ = K * p.J;
+
+		if (p.J.rows() > 0)
+			KJ = K * p.J;
+		else
+		{
+			KJ = SparseMatrix<double>(K.rows(), 0);
+			KJ.setZero();
+		}
 		Kx = K * x;
 
 		VK = V * Mu * K;
 		VKJ = V * Mu * KJ;
+
 		VKx = V * Mu * Kx;
 
-		MJ = M * p.J;
+		if (p.J.rows() > 0)
+			MJ = M * p.J;
+		else
+		{
+			MJ = SparseMatrix<double>(M.rows(), 0);
+			MJ.setZero();
+		}
 		Mx = M * x;
 
 	}
@@ -128,6 +149,28 @@ struct cd_arap_dynamic_precomp
 		VectorXd Mp_hist = (sp.MJ * p_hist);
 		Eigen::VectorXd rig_momentum_terms = Mp_hist - sp.MJ * p;
 		My = sp.M * z_hist + rig_momentum_terms;
+
+	}
+
+	//no rig params
+	void precomp(VectorXd& z,
+		cd_sim_state& st, VectorXd& f_ext,
+		VectorXd& bc, cd_arap_static_precomp& sp)
+	{
+		assert(f_ext.rows() == z.rows() && "Force needs to have same number of rows as D.O.Fs");
+		assert(bc.cols() == 1 && "Need to have at least one column (even if no rows)");
+
+		this->f_ext = f_ext;
+		this->bc = bc;
+
+		VectorXd z_hist = 2.0 * st.z_curr - st.z_prev;
+
+		Cur = VectorXd::Zero(z.rows());
+		Mur = VectorXd::Zero(z.rows());
+		VKur = VectorXd::Zero(sp.V.rows());
+		Kur = VectorXd::Zero(sp.V.rows());
+
+		My = sp.M * z_hist;// -sp.Mx;
 
 	}
 
