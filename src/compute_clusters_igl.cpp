@@ -24,3 +24,26 @@ void compute_clusters_igl(const Eigen::MatrixXi& T, const Eigen::MatrixXd& B, co
 
     igl::split_components(labels_global, A, labels);
 }
+
+
+
+void compute_clusters_weight_space(const Eigen::MatrixXi& T, const Eigen::MatrixXd& W, const Eigen::VectorXd& L, const int num_clusters, const int num_feature_modes, Eigen::VectorXi& labels, Eigen::MatrixXd& C)
+{
+    int c, k;
+    Eigen::MatrixXd B_tmps;
+    c = num_feature_modes < W.cols() ? num_feature_modes : W.cols();
+    Eigen::RowVectorXd L_tmp = L.topRows(c).transpose();
+    Eigen::MatrixXd W_tmp = W.block(0, 0, W.rows(), num_feature_modes);
+    W_tmp.array().rowwise() /= L_tmp.row(0).array();
+    W_tmp.array().rowwise() /= L_tmp.row(0).array();
+    //optionally normalize by S
+    Eigen::MatrixXd B_faces;
+    igl::average_onto_faces(T, W_tmp, B_faces);
+    Eigen::VectorXi labels_global;
+    igl::kmeans(B_faces, num_clusters, C, labels_global);
+
+    Eigen::SparseMatrix<bool, 0, int> A;
+    tet_adjacency_matrix_vert_share(T, A);
+
+    igl::split_components(labels_global, A, labels);
+}
