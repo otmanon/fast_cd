@@ -25,11 +25,25 @@ struct fast_cd_arap_local_global_solver
 
 	VectorXd solve(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
 	{
-		Eigen::VectorXd z_next = z;
-		for (int i = 0; i < p.max_iters; i++)
+		Eigen::VectorXd z_next = z, z_prev = z;
+		if (p.to_convergence)
 		{
-			VectorXd r = local_step(z_next, dp, sp);
-			z_next = global_step(z_next, params, dp, sp, r);
+			double res;
+			do
+			{
+				z_prev = z_next;
+				VectorXd r = local_step(z_next, dp, sp);
+				z_next = global_step(z_next, params, dp, sp, r);
+				res = (z_next - z_prev).norm();
+			} while (res > p.threshold);
+		}
+		else
+		{
+			for (int i = 0; i < p.max_iters; i++)
+			{
+				VectorXd r = local_step(z_next, dp, sp);
+				z_next = global_step(z_next, params, dp, sp, r);
+			}
 		}
 		return z_next;
 	};

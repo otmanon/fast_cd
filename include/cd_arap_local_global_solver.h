@@ -42,21 +42,34 @@ struct cd_arap_local_global_solver
 		SparseMatrix<double> H;
 		augment_with_linear_constraints(A, Aeq, H);
 		ldlt_solver.compute(H);
-		min_quad_with_fixed_precompute(A, bI, Aeq, false, data);
 	}
 
-	VectorXd solve(VectorXd& z, cd_sim_params& params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
+	VectorXd solve(const VectorXd& z, const cd_sim_params& params, const cd_arap_dynamic_precomp& dp, const cd_arap_static_precomp& sp)
 	{
-		Eigen::VectorXd z_next;
-		for (int i = 0; i < p.max_iters; i++)
+		Eigen::VectorXd z_next = z, z_prev = z;
+		if (p.to_convergence)
 		{
-			VectorXd r = local_step(z, dp, sp);
-			z = global_step(z, params, dp, sp, r);
+			double res;
+			do
+			{
+				z_prev = z_next;
+				VectorXd r = local_step(z_next, dp, sp);
+				z_next = global_step(z_next, params, dp, sp, r);
+				res = (z_next - z_prev).norm();
+			} while (res > p.threshold);
 		}
-		return z;
+		else
+		{
+			for (int i = 0; i < p.max_iters; i++)
+			{
+				VectorXd r = local_step(z_next, dp, sp);
+				z_next = global_step(z_next, params, dp, sp, r);
+			}
+		}
+		return z_next;
 	};
 
-	VectorXd local_step(VectorXd& z, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
+	VectorXd local_step(const VectorXd& z, const cd_arap_dynamic_precomp& dp, const cd_arap_static_precomp& sp)
 	{
 		VectorXd f = sp.K * z + dp.Kur + sp.Kx;
 
@@ -79,7 +92,7 @@ struct cd_arap_local_global_solver
 		return r;
 	}
 
-	VectorXd global_step(VectorXd& z, cd_sim_params& params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp, VectorXd& r)
+	VectorXd global_step(const VectorXd& z,const  cd_sim_params& params, const cd_arap_dynamic_precomp& dp, const cd_arap_static_precomp& sp, VectorXd& r)
 	{
 		VectorXd inertia_grad = -dp.My;
 		VectorXd arap_grad = dp.Cur + sp.Cx - sp.VK.transpose() * r;

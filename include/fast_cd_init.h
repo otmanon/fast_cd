@@ -42,6 +42,7 @@ struct FastCDInit {
     std::string cluster_dir; // directory for the cluster cache.
 
     bool screenshot; //whether or not to take screenshots. If so saves them in <results_dir>/screenshots/
+    bool screenshot_rig;
     bool record_rig;
     bool record_mesh;
     bool record_modal_activations;
@@ -162,6 +163,7 @@ struct FastCDInit {
         max_iters = j.value("max_iters", 100);
 
         screenshot = j.value("screenshot", false);
+        screenshot_rig = j.value("screenshot_rig", false);
         record_rig = j.value("record_rig", false);
         record_mesh = j.value("record_mesh", false);
         record_modal_activations = j.value("record_modal_activations", false);

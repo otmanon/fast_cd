@@ -56,6 +56,7 @@ bool did_cache_change(string cache_json, string current_json)
     match = (cache_j["num_clustering_features"] == current_j["num_clustering_features"]) && match;
     match = (cache_j["do_inertia"] == current_j["do_inertia"]) && match;
     match = (cache_j["dt"] == current_j["dt"]) && match;
+    match = (cache_j["num_substeps"] == current_j["num_substeps"]) && match;
     match = (cache_j["do_reduction"] == current_j["do_reduction"]) && match;
     match = (cache_j["mesh"] == current_j["mesh"]) && match;
     match = (cache_j["weight"] == current_j["weight"]) && match;
