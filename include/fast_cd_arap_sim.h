@@ -33,7 +33,7 @@ public:
 			sp.AeqB, sp.GmKB, sp.GmKJ, sp.GmKx, sp.G1VKB, sp.BMJ, sp.BMx, sp.BCJ, sp.BCx);
 
 		if (!well_read)
-			printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir);
+			printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir.c_str());
 
 		params = fast_cd_sim_params();
 		params.B = B;
