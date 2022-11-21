@@ -102,6 +102,30 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 			G1VKB = G_1 * G1VKB;
 		}
 	}
+
+	bool read_from_cache(string& precomp_cache_dir)
+	{
+		MatrixXd B; VectorXd L; VectorXi l;
+
+		bool t = true;
+		
+		t = igl::readDMAT(precomp_cache_dir + "/BCB.DMAT", BCB) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/BMB.DMAT", BMB) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/BAB.DMAT", BAB) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/AeqB.DMAT", AeqB) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/GmKB.DMAT", GmKB) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/GmKJ.DMAT", GmKJ) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/GmKx.DMAT", GmKx) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/G1VKB.DMAT", G1VKB) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/BMJ.DMAT", BMJ) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/BMx.DMAT", BMx) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/BCJ.DMAT", BCJ) && t;
+		t = igl::readDMAT(precomp_cache_dir + "/BCx.DMAT", BCx) && t;
+	
+		if (!t)
+			printf(" precomp cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n");
+		return t;
+	}
 };
 
 struct fast_cd_arap_dynamic_precomp : cd_arap_dynamic_precomp

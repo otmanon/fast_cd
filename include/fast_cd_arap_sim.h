@@ -43,6 +43,22 @@ public:
 		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
 	}
 
+
+	fast_cd_arap_sim(std::string& precomp_cache_dir, std::string& modes_cache_dir, std::string& clusters_cache_dir,
+		cd_arap_local_global_solver_params& solver_params)
+	{
+		namespace fs = std::filesystem;
+
+		params = fast_cd_sim_params();
+		params.read_from_cache(modes_cache_dir, clusters_cache_dir);
+
+		sp = fast_cd_arap_static_precomp();
+		sp.read_from_cache(precomp_cache_dir);
+
+		dp = fast_cd_arap_dynamic_precomp();
+		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
+	}
+
 	fast_cd_arap_sim(fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params) {
 		sp =  fast_cd_arap_static_precomp(sim_params);
 		dp =  fast_cd_arap_dynamic_precomp();

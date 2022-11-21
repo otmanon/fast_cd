@@ -35,7 +35,10 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
 	Sy = cat(1, Z, cat(1, S, Z));
 	Sz = cat(1, Z, cat(1, Z, S));
 
-	Q = Sx.transpose() * H * Sx + Sy.transpose() * H * Sy + Sz.transpose() * H * Sz;
+    SparseMatrix<double> Id(H.rows(), H.cols());
+    Id.setIdentity();
+    SparseMatrix<double> K = H +  1e-8 * Id;
+	Q = Sx.transpose() * K  * Sx + Sy.transpose() * K  * Sy + Sz.transpose() *  K * Sz;
 	
 
 	MatrixXd Weq1;
@@ -57,8 +60,6 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
     //remove redundant rows fiiirst
  //   matlab::mleval(&engine, "[~, p] = rref(Aeq')");
     matlab::mleval(&engine, "Aeq = Aeq(redI,  :)");
-
-
     matlab::mlsetscalar(&engine, "r", num_modes);
     matlab::mleval(&engine, "tic");
     matlab::mleval(&engine, "A = [A Aeq'; Aeq zeros(size(Aeq, 1))];");
@@ -76,7 +77,6 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
     t = igl::matlab::mlgetscalar(&engine, "time");
     printf("Total matlab::eigs decomposition time: %g... \n", t);
     L = S_mat.diagonal(); // Eigen::Map<Eigen::VectorXd>(S_mat.data(), S_mat.rows(), 1);
-
     W = W2.topRows(V.rows());
     SparseMatrix<double> B_test;
     lbs_jacobian(V, W, B_test);
