@@ -220,14 +220,14 @@ void get_translations_from_rig_parameters(VectorXd& p, MatrixXd& T)
 }
 
 
-void world_to_rel_rig_parameters(VectorXd& p_w, VectorXd& p0, VectorXd& p_rel)
+void world_to_rel_rig_parameters(const VectorXd& p_w, const VectorXd& p0, VectorXd& p_rel)
 {
 	assert((p0.rows() % (12)) == 0 && "flattened rig parameters in 3D mush have p0.rows() be a multiple of 12");
 	assert(p0.rows() == p_w.rows());
 	int num_b = p0.rows() / 12;
 	int dim = 3;
-	MatrixXd P_w = Map<MatrixXd>(p_w.data(), num_b * 4, 3);
-	MatrixXd P0 = Map<MatrixXd>(p0.data(), num_b * 4, 3);
+	MatrixXd P_w = Map<const MatrixXd>(p_w.data(), num_b * 4, 3);
+	MatrixXd P0 = Map<const MatrixXd>(p0.data(), num_b * 4, 3);
 	MatrixXd P_rel = MatrixXd::Zero(P0.rows(), P0.cols());
 
 	Matrix4d A_w = Matrix4d::Identity();
@@ -245,14 +245,14 @@ void world_to_rel_rig_parameters(VectorXd& p_w, VectorXd& p0, VectorXd& p_rel)
 	p_rel = Map<VectorXd>(P_rel.data(), p0.rows());
 }
 
-void rel_to_world_rig_parameters(VectorXd& p_rel, VectorXd& p0, VectorXd& p_w)
+void rel_to_world_rig_parameters(const VectorXd& p_rel, const VectorXd& p0, VectorXd& p_w)
 {
 	assert((p0.rows() % (12)) == 0 && "flattened rig parameters in 3D mush have p0.rows() be a multiple of 12");
 	assert(p0.rows() == p_rel.rows());
 	int num_b = p0.rows() / 12;
 	int dim = 3;
-	MatrixXd P_rel = Map<MatrixXd>(p_rel.data(), num_b * 4, 3);
-	MatrixXd P0 = Map<MatrixXd>(p0.data(), num_b * 4, 3);
+	MatrixXd P_rel = Map<const MatrixXd>(p_rel.data(), num_b * 4, 3);
+	MatrixXd P0 = Map<const MatrixXd>(p0.data(), num_b * 4, 3);
 	MatrixXd P_w = MatrixXd::Zero(P0.rows(), P0.cols());
 
 	Matrix4d A_rel = Matrix4d::Identity();
@@ -273,15 +273,15 @@ void rel_to_world_rig_parameters(VectorXd& p_rel, VectorXd& p0, VectorXd& p_w)
 /*
 Returns 3x4 affine bone matrix for bone i from flattened rig parameters p
 */
-void get_bone_transform(VectorXd& p, int i, MatrixXd& A)
+void get_bone_transform(const VectorXd& p, int i, MatrixXd& A)
 {
 	assert((p.rows() % (12)) == 0 && "flattened rig parameters in 3D mush have p0.rows() be a multiple of 12");
 	A.resize(3, 4);
 	A.setZero();
-	MatrixXd P = Map<MatrixXd>(p.data(), p.rows() / 3, 3);
+	MatrixXd P = Map<const MatrixXd>(p.data(), p.rows() / 3, 3);
 	A = P.block(4 * i, 0, 4, 3).transpose();
 }
-MatrixXd get_bone_transform(VectorXd& p, int i)
+MatrixXd get_bone_transform(const VectorXd& p, int i)
 {
 	MatrixXd A;
 	get_bone_transform(p, i, A);

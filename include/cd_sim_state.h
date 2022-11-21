@@ -24,7 +24,7 @@ struct cd_sim_state
 	}
 
 	
-void init(const VectorXd& z_curr, const VectorXd& z_prev, const VectorXd& p_curr, const VectorXd& p_prev)
+	void init(const VectorXd& z_curr, const VectorXd& z_prev, const VectorXd& p_curr, const VectorXd& p_prev)
 	{
 		this->z_curr = z_curr;
 		this->z_prev = z_prev;
@@ -33,14 +33,14 @@ void init(const VectorXd& z_curr, const VectorXd& z_prev, const VectorXd& p_curr
 	}
 
 
-//only init z_curr, z_prev, sets the others to 0
-void init(const VectorXd& z_curr, const VectorXd& z_prev)
-{
-	this->z_curr = z_curr;
-	this->z_prev = z_prev;
-	this->p_curr = VectorXd::Zero(0);
-	this->p_prev = VectorXd::Zero(0);
-}
+	//only init z_curr, z_prev, sets the others to 0
+	void init(const VectorXd& z_curr, const VectorXd& z_prev)
+	{
+		this->z_curr = z_curr;
+		this->z_prev = z_prev;
+		this->p_curr = VectorXd::Zero(0);
+		this->p_prev = VectorXd::Zero(0);
+	}
 
 	void update(const VectorXd& z_next, const VectorXd& p_next)
 	{
