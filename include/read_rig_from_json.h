@@ -43,7 +43,8 @@ void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& p
 	igl::list_to_matrix(pI_list, pI);
 	igl::list_to_matrix(l_list, l);
 
-	rig_type = j.value("rig_type", "handle");
+	rig_type = j.value("rig_type", "surface");
+	i.close();
 }
 void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, MatrixXd& V, MatrixXi& F, string& rig_type)
 {

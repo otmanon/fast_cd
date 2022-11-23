@@ -5,7 +5,8 @@
 #include <json.hpp>
 #include <fstream>
 #include <filesystem>
-bool write_anim_to_json(const Eigen::MatrixXd& P,  const std::string file, std::string const format)
+bool write_anim_to_json(const Eigen::MatrixXd& P, 
+	const std::string& file, std::string const format)
 {
 	std::vector<std::vector<std::vector<std::vector<double>>>> anim;
 	for (int i = 0; i < P.cols(); i++)
