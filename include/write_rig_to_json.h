@@ -23,7 +23,7 @@ bool write_rig_to_json(string& rig_path,  MatrixXd& W, MatrixXd& P0, VectorXi& p
 	std::vector<std::vector<std::vector<double>>> P0_list;
 	for (int i = 0; i < P0.rows()/4; i++)
 	{
-		MatrixXd Pi = P0.block(4*i, 0, 4, 3).transpose();
+		MatrixXd Pi = P0.block((d+1)* i, 0, (d+1), d);
 		std::vector<std::vector<double>> Pi_list;
 		igl::matrix_to_list(Pi, Pi_list);
 		P0_list.push_back(Pi_list);

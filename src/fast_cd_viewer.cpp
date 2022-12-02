@@ -12,7 +12,7 @@ fast_cd_viewer::fast_cd_viewer()
 	//while (igl_v->data_list.size() < 3) igl_v->append_mesh();
 
     igl_v->core().background_color.setOnes();
-	igl_v->core().animation_max_fps = 120;
+	igl_v->core().animation_max_fps = 60;
 	igl_v->core().is_animating = true;
 
   

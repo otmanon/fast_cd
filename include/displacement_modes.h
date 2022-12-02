@@ -14,7 +14,7 @@
 using namespace Eigen;
 
 void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const int num_modes,
-	MatrixXd& B, VectorXd& V)
+	MatrixXd& B, VectorXd& V, bool debug=false, string output_dir="")
 {
     Engine* engine;
     igl::matlab::mlinit(&engine);
@@ -46,7 +46,7 @@ void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double
 /// <param name=""> d*n x num_modes subspace matrix (eigenvectors) </param>
 /// <param name=""> num_modes x 1 subspace modal frequencies (eigenvalues) </param>
 void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const SparseMatrix<double>& J, const int num_modes, 
-	MatrixXd& B, VectorXd& V)
+	MatrixXd& B, VectorXd& V, bool debug=false, string output_dir="")
 {
     Eigen::SparseMatrix<double> Q, MZ;
     augment_with_linear_constraints(H, J, Q);

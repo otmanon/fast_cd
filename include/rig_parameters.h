@@ -20,6 +20,11 @@ Transforms a rig animation. Given a stacked list of flattened rig parameters, ap
 void transform_rig_parameters_anim(MatrixXd& anim_P, MatrixXd& A);
 
 /*
+Fits the affine transformation of a rig animation with a "rest" affine animation
+*/
+void  fit_rig_parameters_anim(MatrixXd& anim_P, VectorXd& p0);
+
+/*
 Translates _stacked_ affine rig parameters in P0 all by t on flattened input/outpout.
 Assumes columnb order flattening convenction
 */

@@ -54,7 +54,7 @@ Transforms a rig animation. Given a stacked list of flattened rig parameters, ap
 */
 void transform_rig_parameters_anim(MatrixXd& anim_P, MatrixXd& A)
 {
-	assert((A.rows() == 4 && A.cols() == 3) || (A.rows() == 3 && A.cols() == 4) && "expecting T to be 4 x 3 matrix or a 3x 4 matrix");
+	assert((A.rows() == 4 && A.cols() == 3) || (A.rows() == 3 && A.cols() == 4) && "expecting A to be 4 x 3 matrix or a 3x 4 matrix");
 
 
 	for (int i = 0; i < anim_P.cols(); i++)
@@ -63,6 +63,28 @@ void transform_rig_parameters_anim(MatrixXd& anim_P, MatrixXd& A)
 		transform_rig_parameters(p, A);
 		anim_P.col(i) = p;
 	}
+}
+
+/*
+Transforms a rig animation so that it is fitted against P0. Here, P0 is a version of anim_P that has been rotated, trnaslated and/or scaled.
+
+*/
+void  fit_rig_parameters_anim(MatrixXd& anim_P, VectorXd& p0)
+{
+	assert(anim_P.rows() ==  P0.rows()  && "rig, and transformed rig need to have same number of bones");
+	assert(anim_P.rows() > 0 && "need to have more than one bone!");
+
+	//just look at the first bone
+	Matrix4d A1 = Matrix4d::Identity();
+	Matrix4d B1 = Matrix4d::Identity();
+	A1.block(0, 0, 3, 4) = get_bone_transform(anim_P.col(0), 0);
+	B1.block(0, 0, 3, 4) = get_bone_transform(p0, 0);
+	//what did we do to anim_P to get to P0. Find X in X anim_P = P0... well X=  P anim_P-1
+	MatrixXd X = B1 * A1.inverse();
+
+	MatrixXd M = A1.topRows(3);
+	transform_rig_parameters_anim(anim_P, M);
+
 }
 
 /*

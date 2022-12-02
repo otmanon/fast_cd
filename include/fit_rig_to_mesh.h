@@ -98,3 +98,81 @@ void fit_rig_to_mesh(MatrixXd& W, MatrixXd& P0, MatrixXd& V0, MatrixXd& X, Matri
 	A = A.inverse().eval();
 	A = (A.block(0, 0, 3, 4)).eval();
 }
+
+/*
+Given a surface rig with parameters P0, fit it to the mesh defined by V, T. 
+The new rig bones might be changing scale, rotation and centroid....
+Inputs :
+V - mesh geometry
+T - tet indices
+Vs - intiial surface geometry associated with rig
+P0 - initial rig parameters
+lengths - intiial rig lengths
+Outpus:
+P0 - fitted rig parameters
+*/
+void fit_rig_to_mesh(const MatrixXd& V, const MatrixXi& T, const MatrixXd& Vs, MatrixXd& P0)
+{
+	Eigen::MatrixXi F;
+
+	Eigen::MatrixXd Xs;
+	igl::boundary_facets(T, F);
+	Eigen::VectorXi uniqueI;
+	igl::unique(F, uniqueI);
+	igl::slice(V, uniqueI, 1, Xs);
+
+	double ss; Matrix3d R; Vector3d t;
+	igl::procrustes(Xs, Vs, true, true, ss, R, t);
+
+
+	Eigen::Matrix4d A = Matrix4d::Identity();
+	A.block(0, 0, 3, 3) =  ss*R.transpose();
+	A.block(0, 3, 3, 1) = t;
+	A = A.inverse().eval();
+	MatrixXd B = A.block(0, 0, 3, 4);
+	transform_rig_parameters(P0, B);
+
+	//lengths *= ss;
+}
+
+
+void fit_rig_to_mesh(const MatrixXd& V, const MatrixXi& T, const MatrixXd& Vs, MatrixXd& P0, MatrixXd& A)
+{
+	Eigen::MatrixXi F;
+
+	Eigen::MatrixXd Xs;
+	igl::boundary_facets(T, F);
+	Eigen::VectorXi uniqueI;
+	igl::unique(F, uniqueI);
+	igl::slice(V, uniqueI, 1, Xs);
+
+	double ss; Matrix3d R; Vector3d t;
+	igl::procrustes(Xs, Vs, true, false, ss, R, t);
+
+
+	A = Matrix4d::Identity();
+	A.block(0, 0, 3, 3) = ss * R.transpose();
+	A.block(0, 3, 3, 1) = t;
+	A = A.inverse().eval();
+	MatrixXd B = A.block(0, 0, 3, 4);
+	transform_rig_parameters(P0, B);
+
+}
+
+
+void fit_rig_to_mesh_vertices(const MatrixXd& V, const MatrixXd& Vs, MatrixXd& P0, MatrixXd& A)
+{
+	Eigen::MatrixXi F;
+
+
+	double ss; Matrix3d R; Vector3d t;
+	igl::procrustes(V, Vs, true, false, ss, R, t);
+
+	A = Matrix4d::Identity();
+	A.block(0, 0, 3, 3) = ss * R.transpose();
+	A.block(0, 3, 3, 1) = t;
+	A = A.inverse().eval();
+	MatrixXd B = A.block(0, 0, 3, 4);
+	transform_rig_parameters(P0, B);
+
+}

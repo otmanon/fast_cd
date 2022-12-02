@@ -23,7 +23,7 @@ void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& p
 	std::vector<std::vector<double>> W_list = j["W"];
 	std::vector<std::vector<int>> F_list = j["F"];
 	std::vector<std::vector<std::vector<double>>> P0_list = j["p0"];
-	int d = P0_list[0].size();
+	int d = V_list[0].size();
 	int n = P0_list.size();
 	P0.resize(P0_list.size() * (d + 1), 3);
 
@@ -31,10 +31,12 @@ void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& p
 
 	for (int i = 0; i < n; i++)
 	{
-		MatrixXd M, M2;
+		MatrixXd M;
 		igl::list_to_matrix(P0_list[i], M);
-
-		P0.block(i * (d + 1), 0, d + 1, d) = M.transpose();
+		if (M.rows() == d+1)
+			P0.block(i * (d + 1), 0, d + 1, d) = M;
+		else if (M.rows() == d)
+			P0.block(i * (d + 1), 0, d + 1, d) = M.transpose();
 	}
 	//igl::list_to_matrix(P0_list, P0);
 	igl::list_to_matrix(V_list, V);
@@ -44,7 +46,7 @@ void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& p
 	igl::list_to_matrix(l_list, l);
 
 	rig_type = j.value("rig_type", "surface");
-	i.close();
+	//i.close();
 }
 void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, MatrixXd& V, MatrixXi& F, string& rig_type)
 {

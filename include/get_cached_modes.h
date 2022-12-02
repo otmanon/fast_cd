@@ -56,7 +56,7 @@ void get_cached_modes(MatrixXd& V, MatrixXi& T, MatrixXd& W, SparseMatrix<double
     if (!found)
     {
         std::cout << "recomputing " << num_modes << " modes from scratch ..." << std::endl;
-        get_modes(V, T, W, J, mode_type, num_modes, B, L, Ws);
+        get_modes(V, T, J, mode_type, num_modes, B, L, Ws);
       
         std::cout << "saving modes in " << dir <<  "..." << std::endl;
 

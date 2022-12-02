@@ -24,20 +24,15 @@ bool read_displacement_modes_from_cache(const std::string& modes_cache_dir,
     L.resize(0);
     std::string dir = modes_cache_dir;
     bool found = false;
-  
-    
     printf("looking for cached displacement modes in %s \n", modes_cache_dir.c_str());
-
-
-   found = igl::readDMAT(dir + "B.DMAT", B) && igl::readDMAT(dir + "L.DMAT", L);
-       
-   if (found)
-   {
-       assert(B.cols() == L.rows() && "Number of cached eigenvectors must be equal to number of cached eigenvalues");
-       return true;
-   }
-   else
-       return false;
+    found = igl::readDMAT(dir + "B.DMAT", B) && igl::readDMAT(dir + "L.DMAT", L);
+    if (found)
+    {
+        assert(B.cols() == L.rows() && "Number of cached eigenvectors must be equal to number of cached eigenvalues");
+        return true;
+    }
+    else
+        return false;
 }
 
 
@@ -46,11 +41,12 @@ Compares two json files and specifically makes sure all parameters
 having to do with computing modes match If they don't, return false;
 */
 
-bool check_mode_cache_safety(json& j, json& j_check)
+bool check_mode_cache_safety(const json& j, const json& j_check)
 {
     bool safe = true;
     safe = safe && j["mode_type"] == j_check["mode_type"];
     safe = safe && j["num_modes"] == j_check["num_modes"];   
+    return safe;
 }
 /*
 Reads displacement modes from cache directory modes_cache_dir. Loads them up into B and L.

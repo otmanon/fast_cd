@@ -8,9 +8,11 @@
 #include <igl/cat.h>
 #include <igl/min_quad_with_fixed.h>
 #include <igl/polar_svd3x3.h>
+#include <json.hpp>
 using namespace Eigen;
 using namespace igl;
-
+using namespace std;
+using namespace nlohmann;
 struct cd_arap_local_global_solver_params
 {
 	int max_iters;
@@ -18,6 +20,19 @@ struct cd_arap_local_global_solver_params
 	double threshold;
 
 	cd_arap_local_global_solver_params() {};
+	cd_arap_local_global_solver_params(string& param_dir) {
+		std::ifstream i(param_dir);
+		json j;
+		try
+		{
+			i >> j;
+		}
+		catch (json::parse_error& ex)
+		{
+			std::cerr << "could not read solver param cache . parse error at byte " << ex.byte << std::endl;
+		}
+	
+	};
 	cd_arap_local_global_solver_params(bool to_convergence, int max_iters, double threshold)
 	{
 		this->to_convergence = to_convergence;

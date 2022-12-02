@@ -105,10 +105,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 
 	bool read_from_cache(string& precomp_cache_dir)
 	{
-		MatrixXd B; VectorXd L; VectorXi l;
-
 		bool t = true;
-		
 		t = igl::readDMAT(precomp_cache_dir + "/BCB.DMAT", BCB) && t;
 		t = igl::readDMAT(precomp_cache_dir + "/BMB.DMAT", BMB) && t;
 		t = igl::readDMAT(precomp_cache_dir + "/BAB.DMAT", BAB) && t;
@@ -124,6 +121,36 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	
 		if (!t)
 			printf(" precomp cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n");
+		return t;
+	}
+
+	bool write_to_cache(string& precomp_cache_dir)
+	{
+		namespace fs = std::filesystem;
+		if (!fs::exists(fs::path(precomp_cache_dir)))
+		{
+			fs::create_directories(fs::path(precomp_cache_dir));
+		}
+	
+		printf("Saving fast_cd_arap matrix precomputations to cache dir %s ... \n", precomp_cache_dir.c_str());
+		bool t = true;
+		t = igl::writeDMAT(precomp_cache_dir + "/BCB.DMAT", BCB) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/BMB.DMAT", BMB) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/BAB.DMAT", BAB) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/AeqB.DMAT", AeqB) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/GmKB.DMAT", GmKB) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/GmKJ.DMAT", GmKJ) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/GmKx.DMAT", GmKx) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/G1VKB.DMAT", G1VKB) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/BMJ.DMAT", BMJ) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/BMx.DMAT", BMx) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/BCJ.DMAT", BCJ) && t;
+		t = igl::writeDMAT(precomp_cache_dir + "/BCx.DMAT", BCx) && t;
+		
+		if (!t)
+		{
+			printf("Could not save fast_cd_arap precomp cache!");
+		}
 		return t;
 	}
 };

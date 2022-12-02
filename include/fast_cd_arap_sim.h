@@ -21,28 +21,75 @@ public:
 
 	fast_cd_arap_sim() {};
 
+
+	/*
+	Initializes an arap simulator that uses fast complementary dynamics.
+	X -> mesh geometry
+	T -> tet connectivity
+	J -> control rig jacobian
+	sim_dir -> directory to simulation cache, with a sim_params.json,
+	solver_params.json, a clusters/folder a modes/ folder and a precomp/ folder
+
+	If any of these are not found, will recompute everything from scratch assuming default parameters
+	*/
+	/*
+	fast_cd_arap_sim(const MatrixXd& X, const MatrixXi& T, const SparseMatrix<double>& J, string& sim_dir)
+	{
+		//read sim_params.json, clusters and modes in this call
+		params = fast_cd_sim_params(X, T, J, sim_dir);
+
+		//read solver_params.json if not found, assume default
+		cd_arap_local_global_solver_params& solver_params = cd_arap_local_global_solver_params(sim_dir + "/solver_params.json");
+
+		if (!sp.read_from_cache(sim_dir + "/precomp/"))
+		{
+			printf("Could not read fast_cd_arap_sim matrix precomputations from cache %s, recomputing...\n", (sim_dir + "/precomp").c_str());
+			sp = fast_cd_arap_static_precomp(params);
+		}
+
+		dp = fast_cd_arap_dynamic_precomp();
+		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
+	}*/
+
 	/*
 	initializes from cache dir. If not found, throws error. DOES NOT CHECK IF THE CACHE IS OTUDATED... do that somewhere else 
 	*/
-	fast_cd_arap_sim(std::string& cache_dir, cd_arap_local_global_solver_params& solver_params)
+	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params, bool read_cache, bool write_cache)
 	{
 		namespace fs = std::filesystem;
 
-		MatrixXd B; VectorXd L; VectorXi l;
-		bool well_read = read_fast_cd_sim_static_precomputation(cache_dir, B, L, l, sp.BCB, sp.BMB, sp.BAB,
-			sp.AeqB, sp.GmKB, sp.GmKJ, sp.GmKx, sp.G1VKB, sp.BMJ, sp.BMx, sp.BCJ, sp.BCx);
+		this->params = sim_params;
+		
+		sp = fast_cd_arap_static_precomp();
 
-		if (!well_read)
-			printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir.c_str());
+		if (read_cache)
+		{
+			bool success = sp.read_from_cache(cache_dir);
+			if (!success)
+			{
+				printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir.c_str());
+				printf(" Computing fast_cd_arap precomputations from scratch... \n", cache_dir.c_str());
+				sp = fast_cd_arap_static_precomp(sim_params);
+				if (write_cache)
+					sp.write_to_cache(cache_dir);
+				
+			} 
 
-		params = fast_cd_sim_params();
-		params.B = B;
-		params.labels = l;
+		}
+		else
+		{
+			printf(" Computing fast_cd_arap precomputations from scratch... \n", cache_dir.c_str());
+			sp = fast_cd_arap_static_precomp(sim_params);
+			if (write_cache)
+				sp.write_to_cache(cache_dir);
+			
+		}
 
 		dp = fast_cd_arap_dynamic_precomp();
 		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
 	}
 
+	/*
 
 	fast_cd_arap_sim(std::string& precomp_cache_dir, std::string& modes_cache_dir, std::string& clusters_cache_dir,
 		cd_arap_local_global_solver_params& solver_params)
@@ -57,7 +104,7 @@ public:
 
 		dp = fast_cd_arap_dynamic_precomp();
 		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
-	}
+	}*/
 
 	fast_cd_arap_sim(fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params) {
 		sp =  fast_cd_arap_static_precomp(sim_params);
@@ -66,6 +113,7 @@ public:
 
 		sol =  fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
 	};
+
 	fast_cd_arap_sim(fast_cd_sim_params& params, fast_cd_arap_local_global_solver& solver, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp) : cd_arap_sim()
 	{
 		this->params = params;
