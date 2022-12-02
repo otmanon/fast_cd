@@ -15,7 +15,7 @@ struct fast_cd_subspace_parameters
 	int num_clustering_features;
 
 	string mode_type;
-
+	string subspace_constraint_type;
 	bool split_components;
 
 	//for development resons
@@ -24,13 +24,14 @@ struct fast_cd_subspace_parameters
 	string output_dir;
 	//default constructor
 	fast_cd_subspace_parameters() {}
-	fast_cd_subspace_parameters(int num_modes, string& mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug=false,
+	fast_cd_subspace_parameters(int num_modes, string& subspace_constraint_type, string& mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug=false,
 		string output_dir="") {
 		this->num_modes = num_modes;
 		this->num_clusters = num_clusters;
 		this->num_clustering_features = num_clustering_features;
 		this->mode_type = mode_type;
 		this->split_components = split_components;
+		this->subspace_constraint_type = subspace_constraint_type;
 		this->debug = debug;
 		this->output_dir = output_dir;
 
@@ -61,10 +62,10 @@ struct  fast_cd_subspace
 	VectorXi l;   // clusters
 
 
-	fast_cd_subspace(int num_modes, string& mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug = false,
+	fast_cd_subspace(int num_modes, string subspace_constraint_type, string& mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug = false,
 		string output_dir = "")
 	{
-		params = fast_cd_subspace_parameters(num_modes, mode_type, num_clusters, num_clustering_features, split_components, debug, output_dir);
+		params = fast_cd_subspace_parameters(num_modes, subspace_constraint_type, mode_type, num_clusters, num_clustering_features, split_components, debug, output_dir);
 	}
 
 	fast_cd_subspace(fast_cd_subspace_parameters& p)
@@ -102,6 +103,7 @@ struct  fast_cd_subspace
 	V -> |n|x3 geometry
 	T -> |T|x4 tet indices
 	J -> |c|x3n null space/linear orthogonality constraint
+	subspace_constraint_type -> string, either "none", or "cd", or "cd_momentum_leak"
 	read_cache -> whether or not to attempt to read modes and clusters from cache.
 	write_cache -> whether or not to write modes and clusters to cache.
 	modes_cache_dir -> directory where mode cache is
@@ -110,21 +112,35 @@ struct  fast_cd_subspace
 	recompute_modes_if_not_found -> whether or not to recompute modes from scratch if not found in cache (default true)
 	recompute_clusters_if_not_found -> whether or not to recompute clusters from scratich if not found in cache (default true)
 	*/
-	void init_with_cache(MatrixXd& V, MatrixXi& T, SparseMatrix<double>& J, bool read_cache, bool write_cache,
+	void init_with_cache(MatrixXd& V, MatrixXi& T, SparseMatrix<double>& J,  bool read_cache, bool write_cache,
 		string& modes_cache_dir, string& clusters_cache_dir, bool recompute_modes_if_not_found = true,
 		bool recompute_clusters_if_not_found = true)
 	{
+		SparseMatrix<double> Aeq = SparseMatrix<double>(0, V.rows()*V.cols());
+		if (params.subspace_constraint_type == "cd")
+		{
+			SparseMatrix<double>  M;
+			igl::massmatrix(V, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+			Aeq = (J.transpose() * igl::repdiag(M, 3));
+		}
+		else if (params.subspace_constraint_type == "cd_momentum_leak")
+		{
+			SparseMatrix<double> D, M;
+			momentum_leaking_matrix(V, T, fast_cd::MOMENTUM_LEAK_DIFFUSION, D);
+			igl::massmatrix(V, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+			Aeq = (J.transpose() * igl::repdiag(M, 3)*igl::repdiag(D, 3));
+		}
 		// load subspace from cache... if modes can't be found, they are recomputed. if clusters can't be found, they are recomputed
 		if (read_cache)
 		{
-			bool found_subspace_cache = this->read_from_cache_recompute(V, T, J, modes_cache_dir, clusters_cache_dir,
+			bool found_subspace_cache = this->read_from_cache_recompute(V, T, Aeq, modes_cache_dir, clusters_cache_dir,
 				recompute_modes_if_not_found, recompute_clusters_if_not_found);
 			if (write_cache && !found_subspace_cache)
 				write_to_cache(modes_cache_dir, clusters_cache_dir);
 		}
 		else
 		{
-			this->init(V, T, J);
+			this->init(V, T, Aeq);
 			if (write_cache)
 				this->write_to_cache(modes_cache_dir, clusters_cache_dir);
 		}

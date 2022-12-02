@@ -3,6 +3,9 @@
 #include "read_clusters_from_cache.h"
 #include "read_modes_from_cache.h"
 #include "lbs_jacobian.h"
+#include "momentum_leaking_matrix.h"
+
+#include <igl/massmatrix.h>
 
 using namespace Eigen;
 using namespace std;
@@ -20,20 +23,35 @@ struct fast_cd_sim_params : cd_sim_params
 	VectorXi labels;
 
 	string mode_type; // skinning or displacement.
+
+	string sim_constraint_type; //either none, or cd, or cd_momentum_leak;
 	fast_cd_sim_params() {};
-
-
 
 	fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T, 
 		const MatrixXd& B, const VectorXi&  l,
 		const SparseMatrix<double>& J, double mu, double lambda, double h,
-		bool do_inertia) : cd_sim_params(X, T, J, mu, lambda, h, do_inertia)
+		bool do_inertia, string sim_constraint_type = "none") : cd_sim_params(X, T, J, mu, lambda, h, do_inertia)
 	{
 		this->B = B;
 		this->labels = l;
-
-		//usually no equality constraint.
-		this->Aeq.resize(0, X.rows() * 3);
+		this->J = J;
+		if (sim_constraint_type == "cd")
+		{
+			SparseMatrix<double>  M;
+			igl::massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+			this->Aeq = (J.transpose() * igl::repdiag(M, 3));
+		}
+		else if (sim_constraint_type == "cd_momentum_leak")
+		{
+			SparseMatrix<double> D, M;
+			momentum_leaking_matrix(X, T, fast_cd::MOMENTUM_LEAK_DIFFUSION, D);
+			igl::massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+			this->Aeq = (J.transpose() * igl::repdiag(M, 3) * igl::repdiag(D, 3));
+			
+		}else 
+		{
+			this->Aeq.resize(0, X.rows() * 3);
+		}
 	}
 
 

@@ -160,7 +160,7 @@ void fit_rig_to_mesh(const MatrixXd& V, const MatrixXi& T, const MatrixXd& Vs, M
 }
 
 
-void fit_rig_to_mesh_vertices(const MatrixXd& V, const MatrixXd& Vs, MatrixXd& P0, MatrixXd& A)
+void fit_rig_to_mesh_vertices(const MatrixXd& V, const MatrixXd& Vs, MatrixXd& P0, MatrixXd& B)
 {
 	Eigen::MatrixXi F;
 
@@ -168,11 +168,12 @@ void fit_rig_to_mesh_vertices(const MatrixXd& V, const MatrixXd& Vs, MatrixXd& P
 	double ss; Matrix3d R; Vector3d t;
 	igl::procrustes(V, Vs, true, false, ss, R, t);
 
-	A = Matrix4d::Identity();
+	Matrix4d A = Matrix4d::Identity();
 	A.block(0, 0, 3, 3) = ss * R.transpose();
 	A.block(0, 3, 3, 1) = t;
 	A = A.inverse().eval();
-	MatrixXd B = A.block(0, 0, 3, 4);
+	 B = A.block(0, 0, 3, 4);
 	transform_rig_parameters(P0, B);
+
 
 }

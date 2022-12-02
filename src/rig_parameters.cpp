@@ -71,7 +71,7 @@ Transforms a rig animation so that it is fitted against P0. Here, P0 is a versio
 */
 void  fit_rig_parameters_anim(MatrixXd& anim_P, VectorXd& p0)
 {
-	assert(anim_P.rows() ==  P0.rows()  && "rig, and transformed rig need to have same number of bones");
+	assert(anim_P.rows() ==  p0.rows()  && "rig, and transformed rig need to have same number of bones");
 	assert(anim_P.rows() > 0 && "need to have more than one bone!");
 
 	//just look at the first bone
