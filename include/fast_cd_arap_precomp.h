@@ -34,10 +34,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 
 	MatrixXd BMJ;
 	VectorXd BMx;
-	MatrixXd JMJ;
-	VectorXd JMx;
-	VectorXd xMx; //this is really just a single double, saving it as a vector for consistency, writing to dmat
-
+	
 
 	MatrixXd BCJ;
 	VectorXd BCx;
@@ -73,11 +70,6 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		BCJ = p.B.transpose() * CJ;
 		BCx = p.B.transpose() * Cx;
 
-
-		VectorXd x = Map<VectorXd>(p.X.data(), p.X.rows()*p.X.cols());
-		JMJ = p.J.transpose() * M * p.J;
-		JMx = p.J.transpose() * M * x;
-		xMx = x.transpose() * M * x;
 
 		// if we have tet clusters, precompute corresponding matrices
 		if (p.labels.maxCoeff() < p.T.rows() - 1 && p.labels.rows() > 0)

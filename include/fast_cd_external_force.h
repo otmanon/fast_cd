@@ -2,6 +2,7 @@
 #include "fast_cd_sim_params.h"
 #include "cd_sim_state.h"
 #include "momentum_leaking_matrix.h"
+#include "cd_external_force.h"
 
 #include <igl/massmatrix.h>
 using namespace std;
@@ -9,22 +10,17 @@ using namespace std;
 A helper class that aids in organizing different external force types. Construct this before your simulation,
 then each simulation step query the external force with the .get() function
 */
-struct fast_cd_external_force
+struct fast_cd_external_force : public cd_external_force
 {
 
-
-	// which external force are we using, so far, just "none" and "momentum_leak" is supported
-	string external_force_type;
-
-	double external_force_magnitude;
 
 	// precomputation for "momentum_leak" force if active
 	MatrixXd invh2BMDJ;
 
-	fast_cd_external_force(fast_cd_sim_params& sim_params, string external_force_type="none", double external_force_magnitude=0)
+	fast_cd_external_force(fast_cd_sim_params& sim_params, 
+		string external_force_type="none", double external_force_magnitude=0)
+		: cd_external_force(sim_params, external_force_type, external_force_magnitude)
 	{
-		this->external_force_type = external_force_type;
-		this->external_force_magnitude = external_force_magnitude;
 
 		if (external_force_type == "momentum_leak")
 			init_momentum_leak(sim_params);
@@ -32,12 +28,13 @@ struct fast_cd_external_force
 
 	void init_momentum_leak(fast_cd_sim_params& sim_params)
 	{
-		//calculate diagonal momentum diffusion matrix with default params
-		SparseMatrix<double> D, M;
-		momentum_leaking_matrix(sim_params.X, sim_params.T, fast_cd::MOMENTUM_LEAK_DIFFUSION, D);
-		igl::massmatrix(sim_params.X, sim_params.T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
-		invh2BMDJ = sim_params.invh2*(sim_params.J.transpose() *
-			igl::repdiag(M, 3)*igl::repdiag(D, 3) * sim_params.B).transpose();
+		invh2BMDJ = sim_params.B.transpose() * invh2MDJ;
+		////calculate diagonal momentum diffusion matrix with default params
+		//SparseMatrix<double> D, M;
+		//momentum_leaking_matrix(sim_params.X, sim_params.T, fast_cd::MOMENTUM_LEAK_DIFFUSION, D);
+		//igl::massmatrix(sim_params.X, sim_params.T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+		//invh2BMDJ = sim_params.invh2*(sim_params.J.transpose() *
+		//	igl::repdiag(M, 3)*igl::repdiag(D, 3) * sim_params.B).transpose();
 
 		
 	}

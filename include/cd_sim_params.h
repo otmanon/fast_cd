@@ -11,6 +11,7 @@ template <typename MatrixType>
 using EigenDRef = Ref<MatrixType, 0, EigenDStride>;
 struct cd_sim_params
 {
+public:
 	//geometry
 	MatrixXd X;
 
@@ -42,18 +43,34 @@ struct cd_sim_params
 	cd_sim_params() {};
 	cd_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const SparseMatrix<double>& J, double mu, double lambda, double h,
-		bool do_inertia) : cd_sim_params(X, T, mu, lambda, h, do_inertia)
+		bool do_inertia, string sim_constraint_type = "none") :
+		cd_sim_params(X, T, mu, lambda, h, do_inertia, sim_constraint_type)
 	{
 
 		this->J = J;
-		Eigen::SparseMatrix<double> M;
-		massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
-		M = igl::repdiag(M, 3);
-		this->Aeq = J.transpose().eval() * M; // no D-matrix here!
+		if (sim_constraint_type == "cd")
+		{
+			SparseMatrix<double>  M;
+			igl::massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+			this->Aeq = (J.transpose() * igl::repdiag(M, 3));
+		}
+		else if (sim_constraint_type == "cd_momentum_leak")
+		{
+			SparseMatrix<double> D, M;
+			momentum_leaking_matrix(X, T, fast_cd::MOMENTUM_LEAK_DIFFUSION, D);
+			igl::massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+			this->Aeq = (J.transpose() * igl::repdiag(M, 3) * igl::repdiag(D, 3));
+
+		}
+		else
+		{
+			this->Aeq.resize(0, X.rows() * X.cols());
+		}
 	}
 
-	cd_sim_params(const MatrixXd& X, const MatrixXi& T, double mu, double lambda, double h,
-		bool do_inertia)
+	cd_sim_params(const MatrixXd& X, const MatrixXi& T, 
+		double mu, double lambda, double h,
+		bool do_inertia, string sim_constraint_type = "none")
 	{
 		this->X = X;
 		this->T = T;

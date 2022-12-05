@@ -40,7 +40,17 @@ struct cd_arap_static_precomp
 
 	//M*J
 	SparseMatrix<double>  MJ;
+
+	//J'MJ
+	MatrixXd  JMJ;
+	
+
+	//M*x
 	VectorXd Mx;
+	// vector here but really this is a scalar... only a vector for eigen consistence
+	VectorXd xMx;
+	//J'*M*x
+	VectorXd JMx;
 
 	//C*J
 	SparseMatrix<double> CJ;
@@ -109,6 +119,10 @@ struct cd_arap_static_precomp
 		}
 		Mx = M * x;
 
+		JMJ = p.J.transpose() * M * p.J;
+		JMx = p.J.transpose() * M * x;
+		xMx = x.transpose() * M * x;
+
 	}
 };
 
@@ -128,9 +142,9 @@ struct cd_arap_dynamic_precomp
 	// Body forces
 	VectorXd f_ext;
 
-	void precomp(VectorXd& z, VectorXd& p,
-		cd_sim_state& st, VectorXd& f_ext,
-		VectorXd& bc, cd_arap_static_precomp& sp)
+	void precomp(const VectorXd& z, const VectorXd& p,
+		const cd_sim_state& st, const VectorXd& f_ext,
+		const VectorXd& bc, const cd_arap_static_precomp& sp)
 	{
 		assert(f_ext.rows() == z.rows() && "Force needs to have same number of rows as D.O.Fs");
 		assert(bc.cols() == 1 && "Need to have at least one column (even if no rows)");
@@ -153,9 +167,9 @@ struct cd_arap_dynamic_precomp
 	}
 
 	//no rig params
-	void precomp(VectorXd& z,
-		cd_sim_state& st, VectorXd& f_ext,
-		VectorXd& bc, cd_arap_static_precomp& sp)
+	void precomp(const VectorXd& z,
+		const cd_sim_state& st,const  VectorXd& f_ext,
+		const VectorXd& bc, const cd_arap_static_precomp& sp)
 	{
 		assert(f_ext.rows() == z.rows() && "Force needs to have same number of rows as D.O.Fs");
 		assert(bc.cols() == 1 && "Need to have at least one column (even if no rows)");

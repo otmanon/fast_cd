@@ -20,19 +20,7 @@ struct cd_arap_local_global_solver_params
 	double threshold;
 
 	cd_arap_local_global_solver_params() {};
-	cd_arap_local_global_solver_params(string& param_dir) {
-		std::ifstream i(param_dir);
-		json j;
-		try
-		{
-			i >> j;
-		}
-		catch (json::parse_error& ex)
-		{
-			std::cerr << "could not read solver param cache . parse error at byte " << ex.byte << std::endl;
-		}
-	
-	};
+
 	cd_arap_local_global_solver_params(bool to_convergence, int max_iters, double threshold)
 	{
 		this->to_convergence = to_convergence;
@@ -46,17 +34,17 @@ struct cd_arap_local_global_solver
 	cd_arap_local_global_solver_params p;
 	VectorXd z;
 
-	min_quad_with_fixed_data<double> data;
-	Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> ldlt_solver;
+	SimplicialLDLT<SparseMatrix<double>>* ldlt_solver;
 
 	cd_arap_local_global_solver() {};
+
 	cd_arap_local_global_solver(SparseMatrix<double>& A, SparseMatrix<double>& Aeq, cd_arap_local_global_solver_params& p)
 	{
 		this->p = p;
 		VectorXi bI;
 		SparseMatrix<double> H;
 		augment_with_linear_constraints(A, Aeq, H);
-		ldlt_solver.compute(H);
+		ldlt_solver->compute(H);
 	}
 
 	VectorXd solve(const VectorXd& z, const cd_sim_params& params, const cd_arap_dynamic_precomp& dp, const cd_arap_static_precomp& sp)
@@ -113,7 +101,7 @@ struct cd_arap_local_global_solver
 		VectorXd Y;
 
 		Eigen::VectorXd rhs = -igl::cat(1, g, dp.bc);
-		VectorXd z_next = ldlt_solver.solve(rhs);
+		VectorXd z_next = ldlt_solver->solve(rhs);
 		
 		return z_next.topRows(params.X.rows()*3);
 	}

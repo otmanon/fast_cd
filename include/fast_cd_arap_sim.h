@@ -72,9 +72,7 @@ public:
 				sp = fast_cd_arap_static_precomp(sim_params);
 				if (write_cache)
 					sp.write_to_cache(cache_dir);
-				
 			} 
-
 		}
 		else
 		{
@@ -105,7 +103,7 @@ public:
 		this->dp = dp;
 	}
 
-	Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
+   Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 		////needs to be updated every timestep
 		assert(sp.AeqB.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
@@ -215,7 +213,11 @@ public:
 	//	return total;
 	//}
 
-
+	VectorXd full_space(VectorXd& z)
+	{
+		VectorXd u = params.B * z;
+		return u;
+	}
 
 
 
