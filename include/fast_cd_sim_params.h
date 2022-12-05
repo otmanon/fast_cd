@@ -17,24 +17,30 @@ void default_sim_params(double& mu, double& lambda, double& h, bool& do_inertia)
 	do_inertia = true;
 }
 
-struct fast_cd_sim_params : public cd_sim_params
+struct fast_cd_sim_params :  cd_sim_params
 {
 
 		MatrixXd B;
 		VectorXi labels;
 
-		string mode_type; // skinning or displacement.
-
-		string sim_constraint_type; //either none, or cd, or cd_momentum_leak;
-		fast_cd_sim_params() : cd_sim_params() {};
+		fast_cd_sim_params();
 
 		fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T, 
 			const MatrixXd& B, const VectorXi&  l,
 			const SparseMatrix<double>& J, double mu, 
 			double lambda, double h,
-			bool do_inertia, string sim_constraint_type = "none") : 
-			cd_sim_params(X, T, J, mu, lambda, h, do_inertia, sim_constraint_type)
+			bool do_inertia, string sim_constraint_type = "none") 
 		{
+			this->X = X;
+			this->T = T;
+			this->J = J;
+			this->mu = mu * VectorXd::Ones(T.rows());
+			this->lambda = VectorXd::Zero(T.rows());
+			this->h = h;
+			this->invh2 = 1.0 / (h * h);
+			this->do_inertia = do_inertia;
+			this->sim_constraint_type = sim_constraint_type;
+
 			this->B = B;
 			this->labels = l;
 			if (sim_constraint_type == "cd")

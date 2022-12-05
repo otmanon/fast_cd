@@ -62,8 +62,6 @@ struct cd_arap_static_precomp
 	cd_arap_static_precomp() {};
 
 
-
-
 	cd_arap_static_precomp(cd_sim_params& p)
 	{
 		VectorXd x = Map<VectorXd>(p.X.data(), p.X.rows() * p.X.cols());
@@ -97,7 +95,7 @@ struct cd_arap_static_precomp
 
 		SparseMatrix<double> I = SparseMatrix<double>(C.rows(), C.cols());
 		I.setIdentity();
-		A = (p.do_inertia * p.invh2 * M + C + p.Q + (!p.do_inertia) * 1e-9 * I);
+		A = (p.do_inertia * p.invh2 * M + C +  (!p.do_inertia) * 1e-9 * I);
 
 
 		if (p.J.rows() > 0)

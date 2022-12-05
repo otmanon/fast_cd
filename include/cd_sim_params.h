@@ -37,7 +37,15 @@ public:
 	//Extra user defined quadratic term (like for mass springs)
 	SparseMatrix<double> Q;
 
-	cd_sim_params() {};
+	string sim_constraint_type;
+
+	cd_sim_params() {
+
+		mu = VectorXd::Zero(0.0);
+		lambda = VectorXd::Zero(0.0);
+		h = 0.0;
+		do_inertia = false;
+	};
 	cd_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const SparseMatrix<double>& J, double mu, double lambda, double h,
 		bool do_inertia, string sim_constraint_type = "none") :

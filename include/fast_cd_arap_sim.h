@@ -54,8 +54,7 @@ public:
 	{
 		namespace fs = std::filesystem;
 
-		fast_cd_sim_params* fcd_params = new fast_cd_sim_params(sim_params);
-		params = fcd_params;
+	
 		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp();
 		
 
@@ -80,6 +79,7 @@ public:
 			
 		}
 
+		params = &sim_params;
 		sp = fcd_sp;
 		dp = new  fast_cd_arap_dynamic_precomp();
 		sol =  new fast_cd_arap_local_global_solver(((fast_cd_arap_static_precomp*)sp)->BAB, 
@@ -115,8 +115,8 @@ public:
 		assert(f_ext.rows() == sp->BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
 		assert(z.rows() == sp->BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
 		VectorXd z_next = z;
-		dp->precomp(z, p, state, f_ext, bc, *sp);
-		z_next = sol->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
+		((fast_cd_arap_dynamic_precomp*)dp)->precomp(z, p, state, f_ext, bc, *sp);
+		z_next = ((fast_cd_arap_local_global_solver*)sol)->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
 		return z_next;
 	}
 

@@ -4,8 +4,6 @@
 #include "cd_arap_local_global_solver.h"
 #include "cd_arap_precomp.h"
 
-
-
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
