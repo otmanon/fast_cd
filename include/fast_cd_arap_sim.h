@@ -89,23 +89,6 @@ public:
 		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
 	}
 
-	/*
-
-	fast_cd_arap_sim(std::string& precomp_cache_dir, std::string& modes_cache_dir, std::string& clusters_cache_dir,
-		cd_arap_local_global_solver_params& solver_params)
-	{
-		namespace fs = std::filesystem;
-
-		params = fast_cd_sim_params();
-		params.read_from_cache(modes_cache_dir, clusters_cache_dir);
-
-		sp = fast_cd_arap_static_precomp();
-		sp.read_from_cache(precomp_cache_dir);
-
-		dp = fast_cd_arap_dynamic_precomp();
-		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
-	}*/
-
 	fast_cd_arap_sim(fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params) {
 		sp =  fast_cd_arap_static_precomp(sim_params);
 		dp =  fast_cd_arap_dynamic_precomp();
@@ -167,6 +150,74 @@ public:
 	
 		return well_saved;
 	}
+
+
+	/*
+	Computes kinetic energy, assuming zero rig displacement.
+	*/
+	double kinetic_energy_complementary(VectorXd& z,  cd_sim_state& state)
+	{
+		// Kinetic energy K = (x - y)^T M (x - y) , y = x_hist = 2x_curr - x_prev = 2(uc + ur + x0)_curr - (uc + ur + x0)_prev = 
+		//																		   2 uc_curr - uc_prev + 2ur_curr - ur_prev + x0
+		//                K = (uc + ur + x0 - y)^T M (uc + ur + x0 - y)
+		//                K = (uc +  x0 - y)^T M (uc + x0 - y)  //assume no ur    y =  2 uc_curr - uc_prev  + x0
+		//                K = (uc + x0 - (2uc_curr - uc_prev + x0))^T M (uc + x0 - (2uc_curr - uc_prev + x0)   
+		//				  K = (uc - 2 uc_curr + uc_prev)^T M (uc - 2uc_curr +uc_prev)
+		//                K = (z - 2z_curr + z_prev)^T B^T M B (z - 2z_curr + z_prev)
+		VectorXd u = z - 2 * state.z_curr + state.z_prev;
+		double k = params.invh2 * u.transpose() * sp.BMB * u;
+		return k;
+	}
+
+	/*
+	Computes total kinetic energy
+	*/
+	double kinetic_energy(VectorXd& z, VectorXd& p, cd_sim_state& state)
+	{
+		// Kinetic energy K = (x - y)^T M (x - y) , y = x_hist = 2x_curr - x_prev = 2(uc + ur + x0)_curr - (uc + ur + x0)_prev = 
+		//															   2 uc_curr - uc_prev + 2ur_curr - ur_prev + x0
+		//           K = (uc + ur + x0 - y)^T M (uc + ur + x0 - y)
+		//           K = (uc + ur + x0 - ( 2 uc_curr - uc_prev + 2ur_curr - ur_prev + x0)) )^T M (uc + ur + x0 - ( 2 uc_curr - uc_prev + 2ur_curr - ur_prev + x0)))
+		//			 K = (uc + ur  - ( 2 uc_curr - uc_prev + 2ur_curr - ur_prev)) )^T M (uc + ur + x0 - ( 2 uc_curr - uc_prev + 2ur_curr - ur_prev)))          // c = uc - 2uc_curr + uc_prev   // r = ur - 2ur_curr + ur_prev
+		//			 K = (c + r)^TM(c+r) = c^T M c + r^T M r + 2 r^T M c;
+		//			 K =  u'B'MBu +   (Jp - x0)'M(Jd - x0) + 2(Jd - x0)'M Bu                 //c = Bu  r=Jd - x0
+		//			 K = u'B'MBu + d'J'MJd + x0'Mx0 - 2d'J'Mx0 + 2d'J'MBu - 2x0'MBu
+		VectorXd u = z - 2 * state.z_curr + state.z_prev;
+		VectorXd d = p - 2 * state.p_curr + state.p_prev;
+
+		double ku = u.transpose() * sp.BMB * u;
+		double kd = d.transpose() * sp.JMJ * d;
+		double kx = sp.xMx(0);
+		double kdx = -2 * d.transpose() * sp.JMx;
+		double kdu = 2 * d.transpose() * sp.BMJ.transpose() * u;
+		double kxu = -2 * sp.BMx.transpose() * u;
+		double total = params.invh2 *( ku + kd + kx + kdx + kdu + kxu);
+		return total;
+	}
+
+	///*
+	//Copmutes total arap energy
+	//*/
+	//double arap_energy(VectorXd& z, VectorXd& p, cd_sim_state& state)
+	//{
+	//	//rotation fitting, then evaluate energy
+
+	//}
+	//
+	///*
+	//Copmutes the total energy (elastic + inertia) for query state z, rig parameters p, and current state variables in state
+	//*/
+	//double energy(VectorXd& z, VectorXd& p, cd_sim_state& state)
+	//{
+	//	double arap = arap_energy(z, p, state);
+	//	double kinetic = kinetic_energy(z, p, state);
+	//	double total = kinetic + arap;
+	//	return total;
+	//}
+
+
+
+
 
 
 };

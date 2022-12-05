@@ -29,4 +29,26 @@ public:
 		}
 		igl::writeDMAT(filepath, P);
 	}
+
+	double mean()
+	{
+		if (P.rows() > 0)
+			return P.mean();
+		else
+			return 0.0;
+	}
+
+	/*
+	Returns mean only over last n frames
+	*/
+	double mean(int n)
+	{
+		if (P.rows() > n)
+		{
+			VectorXd p = P.bottomRows(n);
+			return p.mean();
+		}
+		else
+			return 0.0;
+	}
 };

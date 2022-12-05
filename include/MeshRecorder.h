@@ -32,7 +32,7 @@ public:
 		
 		for (int i = 0; i < this->V.size(); i++)
 		{
-			sprintf(name, "%04i.png", i);
+			sprintf(name, "%04i", i);
 			std::string filepath = dir + "/" + name + ".obj";
 			Eigen::MatrixXd V2 = V[i];
 			Eigen::MatrixXi F2 = F[i];
