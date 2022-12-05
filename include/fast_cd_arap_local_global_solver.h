@@ -3,10 +3,9 @@
 #include "fast_cd_sim_params.h"
 #include "fast_cd_arap_precomp.h"
 
-struct fast_cd_arap_local_global_solver
+struct fast_cd_arap_local_global_solver : public cd_arap_local_global_solver
 {
-	cd_arap_local_global_solver_params p;
-	VectorXd z;
+
 	LLT<MatrixXd> llt_solver;
 	LDLT<MatrixXd> ldlt_solver;
 

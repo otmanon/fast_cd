@@ -19,7 +19,7 @@ void default_sim_params(double& mu, double& lambda, double& h, bool& do_inertia)
 
 struct fast_cd_sim_params : public cd_sim_params
 {
-	public: 
+
 		MatrixXd B;
 		VectorXi labels;
 

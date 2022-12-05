@@ -17,31 +17,31 @@ struct cd_arap_sim
 {
 public:
 
-	cd_sim_params params;
+	cd_sim_params* params;
 
-	cd_arap_local_global_solver sol;
+	cd_arap_local_global_solver* sol;
 
-	cd_arap_static_precomp sp;
+	cd_arap_static_precomp* sp;
 
-	cd_arap_dynamic_precomp dp;
+	cd_arap_dynamic_precomp* dp;
 
 	cd_arap_sim() {};
 	cd_arap_sim(cd_sim_params& params, cd_arap_local_global_solver_params& solver_params) {
-		this->params = params;
+		this->params = &params;
 
-		this->sp = cd_arap_static_precomp(params);
-		this->dp = cd_arap_dynamic_precomp();
+		this->sp = new cd_arap_static_precomp(*this->params);
+		this->dp = new cd_arap_dynamic_precomp();
 
-		this->sol = cd_arap_local_global_solver(sp.A, params.Aeq, solver_params);
+		this->sol = new cd_arap_local_global_solver(sp->A, this->params->Aeq, solver_params);
 
 	};
 	cd_arap_sim(cd_sim_params& params, cd_arap_local_global_solver_params& solver_params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
 	{
-		this->params = params;
+		this->params = &params;
 
-		this->sp = sp;
-		this->dp = dp;
-		this->sol = cd_arap_local_global_solver(sp.A, params.Aeq, solver_params);
+		this->sp = &sp;
+		this->dp = &dp;
+		this->sol = new cd_arap_local_global_solver(sp.A, params.Aeq, solver_params);
 
 
 	}
@@ -49,11 +49,11 @@ public:
 	virtual Eigen::VectorXd step(const VectorXd& z, const VectorXd& p, const cd_sim_state& state,const  VectorXd& f_ext,const  VectorXd& bc)
 	{
 		//needs to be updated every timestep
-		assert(params.Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
 
-		dp.precomp(z, p, state, f_ext, bc, sp);
-		VectorXd z_next = sol.solve(z, params, dp, sp);
+		dp->precomp(z, p, state, f_ext, bc, *sp);
+		VectorXd z_next = sol->solve(z, *params, *dp, *sp);
 		return z_next;
 	}
 
@@ -61,11 +61,11 @@ public:
 	virtual Eigen::VectorXd step(const VectorXd& z, const cd_sim_state& state, const VectorXd& f_ext, const VectorXd& bc)
 	{
 		//needs to be updated every timestep
-		assert(params.Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
 
-		dp.precomp(z, state, f_ext, bc, sp);
-		VectorXd z_next = sol.solve(z, params, dp, sp);
+		dp->precomp(z, state, f_ext, bc, *sp);
+		VectorXd z_next = sol->solve(z, *params, *dp, *sp);
 		return z_next;
 	}
 
@@ -77,12 +77,12 @@ public:
 	*/
 	virtual void set_equality_constraint(SparseMatrix<double>& C)
 	{
-		this->params.Aeq = C;
+		params->Aeq = C;
 
-		sp = cd_arap_static_precomp(this->params);
-		cd_arap_local_global_solver_params old_params = sol.p;
+		sp = new cd_arap_static_precomp(*params);
+		cd_arap_local_global_solver_params old_params = sol->p;
 
-		sol = cd_arap_local_global_solver(this->sp.A, this->params.Aeq, old_params);
+		sol = new cd_arap_local_global_solver(sp->A, params->Aeq, old_params);
 	}
 
 
@@ -103,13 +103,13 @@ public:
 		VectorXd u = z - 2 * state.z_curr + state.z_prev;
 		VectorXd d = p - 2 * state.p_curr + state.p_prev;
 
-		double ku = u.transpose() * sp.M * u;
-		double kd = d.transpose() * sp.JMJ * d;
-		double kx = sp.xMx(0);
-		double kdx = -2 * d.transpose() * sp.JMx;
-		double kdu = 2 * d.transpose() * sp.MJ.transpose() * u;
-		double kxu = -2 * sp.Mx.transpose() * u;
-		double total = params.invh2 * (ku + kd + kx + kdx + kdu + kxu);
+		double ku = u.transpose() * sp->M * u;
+		double kd = d.transpose() * sp->JMJ * d;
+		double kx = sp->xMx(0);
+		double kdx = -2 * d.transpose() * sp->JMx;
+		double kdu = 2 * d.transpose() * sp->MJ.transpose() * u;
+		double kxu = -2 * sp->Mx.transpose() * u;
+		double total = params->invh2 * (ku + kd + kx + kdx + kdu + kxu);
 		return total;
 	}
 
@@ -127,7 +127,7 @@ public:
 		//				  K = (uc - 2 uc_curr + uc_prev)^T M (uc - 2uc_curr +uc_prev)
 		//                K = (z - 2z_curr + z_prev)^T B^T M B (z - 2z_curr + z_prev)
 		VectorXd u = z - 2 * state.z_curr + state.z_prev;
-		double k = params.invh2 * u.transpose() * sp.M * u;
+		double k = params->invh2 * u.transpose() * sp->M * u;
 		return k;
 	}
 

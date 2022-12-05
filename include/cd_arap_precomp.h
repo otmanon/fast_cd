@@ -60,6 +60,10 @@ struct cd_arap_static_precomp
 	VectorXd tet_vols;
 
 	cd_arap_static_precomp() {};
+
+
+
+
 	cd_arap_static_precomp(cd_sim_params& p)
 	{
 		VectorXd x = Map<VectorXd>(p.X.data(), p.X.rows() * p.X.cols());
@@ -124,6 +128,19 @@ struct cd_arap_static_precomp
 		xMx = x.transpose() * M * x;
 
 	}
+
+
+
+	virtual bool read_from_cache(string& precomp_cache_dir)
+	{
+		return false;
+	};
+
+	virtual bool write_to_cache(string& precomp_cache_dir)
+	{
+		return false;
+	}
+
 };
 
 

@@ -6,9 +6,6 @@
 #include <Eigen/Core>
 
 using namespace Eigen;
-using EigenDStride = Stride<Eigen::Dynamic, Eigen::Dynamic>;
-template <typename MatrixType>
-using EigenDRef = Ref<MatrixType, 0, EigenDStride>;
 struct cd_sim_params
 {
 public:

@@ -7,17 +7,11 @@
 #include "write_fast_cd_sim_static_precomputation.h"
 
 
-struct fast_cd_arap_sim : cd_arap_sim
+struct fast_cd_arap_sim : public cd_arap_sim
 {
 public:
 
-	fast_cd_sim_params params;
-
-	fast_cd_arap_local_global_solver sol;
-
-	fast_cd_arap_static_precomp sp;
-
-	fast_cd_arap_dynamic_precomp dp;
+	
 
 	fast_cd_arap_sim() {};
 
@@ -54,65 +48,75 @@ public:
 	/*
 	initializes from cache dir. If not found, throws error. DOES NOT CHECK IF THE CACHE IS OTUDATED... do that somewhere else 
 	*/
-	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params, bool read_cache, bool write_cache)
+	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, 
+		cd_arap_local_global_solver_params& solver_params, bool read_cache, 
+		bool write_cache)
 	{
 		namespace fs = std::filesystem;
 
-		this->params = sim_params;
+		fast_cd_sim_params* fcd_params = new fast_cd_sim_params(sim_params);
+		params = fcd_params;
+		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp();
 		
-		sp = fast_cd_arap_static_precomp();
 
 		if (read_cache)
 		{
-			bool success = sp.read_from_cache(cache_dir);
+			bool success = fcd_sp->read_from_cache(cache_dir);
 			if (!success)
 			{
 				printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir.c_str());
 				printf(" Computing fast_cd_arap precomputations from scratch... \n", cache_dir.c_str());
-				sp = fast_cd_arap_static_precomp(sim_params);
+				fcd_sp = new fast_cd_arap_static_precomp(sim_params);
 				if (write_cache)
-					sp.write_to_cache(cache_dir);
+					fcd_sp->write_to_cache(cache_dir);
 			} 
 		}
 		else
 		{
 			printf(" Computing fast_cd_arap precomputations from scratch... \n", cache_dir.c_str());
-			sp = fast_cd_arap_static_precomp(sim_params);
+			fcd_sp = new fast_cd_arap_static_precomp(sim_params);
 			if (write_cache)
-				sp.write_to_cache(cache_dir);
+				fcd_sp->write_to_cache(cache_dir);
 			
 		}
 
-		dp = fast_cd_arap_dynamic_precomp();
-		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
+		sp = fcd_sp;
+		dp = new  fast_cd_arap_dynamic_precomp();
+		sol =  new fast_cd_arap_local_global_solver(((fast_cd_arap_static_precomp*)sp)->BAB, 
+			((fast_cd_arap_static_precomp*)sp)->AeqB, solver_params);
+
 	}
 
-	fast_cd_arap_sim(fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params) {
-		sp =  fast_cd_arap_static_precomp(sim_params);
-		dp =  fast_cd_arap_dynamic_precomp();
-		params = sim_params;
+	fast_cd_arap_sim(fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params) 
+	{
+		params = &sim_params;
+		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(sim_params);
 
-		sol =  fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
+		sp = fcd_sp; // fast_cd_arap_static_precomp(sim_params);
+		dp =  new fast_cd_arap_dynamic_precomp();
+
+		sol = new fast_cd_arap_local_global_solver(fcd_sp->BAB, fcd_sp->AeqB, solver_params);
 	};
 
 	fast_cd_arap_sim(fast_cd_sim_params& params, fast_cd_arap_local_global_solver& solver, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp) : cd_arap_sim()
 	{
-		this->params = params;
-		this->sol = solver;
-		this->sp = sp;
-		this->dp = dp;
+		this->params = &params;
+		this->sol = &solver;
+		this->sp = &sp;
+		this->dp = &dp;
 	}
 
    Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
+	   fast_cd_arap_static_precomp* sp = (fast_cd_arap_static_precomp*)this->sp;
 		////needs to be updated every timestep
-		assert(sp.AeqB.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		assert(sp->AeqB.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
-		assert(f_ext.rows() == sp.BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
-		assert(z.rows() == sp.BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
+		assert(f_ext.rows() == sp->BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
+		assert(z.rows() == sp->BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
 		VectorXd z_next = z;
-		dp.precomp(z, p, state, f_ext, bc, sp);
-		z_next = sol.solve(z_next, params, dp, sp);
+		dp->precomp(z, p, state, f_ext, bc, *sp);
+		z_next = sol->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
 		return z_next;
 	}
 
@@ -127,27 +131,28 @@ public:
 		const VectorXd& p_curr, const VectorXd& p_prev, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 		////needs to be updated every timestep
-		assert(params.Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
+		fast_cd_arap_static_precomp* sp = (fast_cd_arap_static_precomp*)this->sp;
+		assert(params->Aeq.rows() == bc.rows() && "Need rhs of linear constraint to match lhs");
 		assert(f_ext.rows() == z.rows() && "Force needs to be of same dimensionality as D.O.F.'s");
-		assert(f_ext.rows() == sp.BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
-		assert(z.rows() == sp.BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
+		assert(f_ext.rows() == sp->BAB.rows() && "Force needs  to be be same dimensinoality as system we're solving");
+		assert(z.rows() == sp->BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
 		VectorXd z_next = z;
 		cd_sim_state state(z_curr, z_prev, p_curr, p_prev);
-		dp.precomp(z, p, state, f_ext, bc, sp);
-		z_next = sol.solve(z_next, params, dp, sp);
+		dp->precomp(z, p, state, f_ext, bc, *sp);
+		z_next = sol->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
 		return z_next;
 	}
 
 
-	/*Saves all precomputed matrices required for simulation in cache_dir*/
-	bool save(std::string& cache_dir)
-	{
-		VectorXd L; // L is useless at this point.
-		bool well_saved = write_fast_cd_sim_static_precomputation(cache_dir, params.B, L, params.labels, sp.BCB, sp.BMB, sp.BAB,
-			sp.AeqB, sp.GmKB, sp.GmKJ, sp.GmKx, sp.G1VKB, sp.BMJ, sp.BMx, sp.BCJ, sp.BCx);
-	
-		return well_saved;
-	}
+	///*Saves all precomputed matrices required for simulation in cache_dir*/
+	//bool save(std::string& cache_dir)
+	//{
+	//	VectorXd L; // L is useless at this point.
+	//	bool well_saved = write_fast_cd_sim_static_precomputation(cache_dir, params.B, L, params.labels, sp.BCB, sp.BMB, sp.BAB,
+	//		sp.AeqB, sp.GmKB, sp.GmKJ, sp.GmKx, sp.G1VKB, sp.BMJ, sp.BMx, sp.BCJ, sp.BCx);
+	//
+	//	return well_saved;
+	//}
 
 
 	/*
@@ -162,8 +167,9 @@ public:
 		//                K = (uc + x0 - (2uc_curr - uc_prev + x0))^T M (uc + x0 - (2uc_curr - uc_prev + x0)   
 		//				  K = (uc - 2 uc_curr + uc_prev)^T M (uc - 2uc_curr +uc_prev)
 		//                K = (z - 2z_curr + z_prev)^T B^T M B (z - 2z_curr + z_prev)
+		fast_cd_arap_static_precomp* sp = (fast_cd_arap_static_precomp*)this->sp;
 		VectorXd u = z - 2 * state.z_curr + state.z_prev;
-		double k = params.invh2 * u.transpose() * sp.BMB * u;
+		double k = params->invh2 * u.transpose() * sp->BMB * u;
 		return k;
 	}
 
@@ -182,14 +188,14 @@ public:
 		//			 K = u'B'MBu + d'J'MJd + x0'Mx0 - 2d'J'Mx0 + 2d'J'MBu - 2x0'MBu
 		VectorXd u = z - 2 * state.z_curr + state.z_prev;
 		VectorXd d = p - 2 * state.p_curr + state.p_prev;
-
-		double ku = u.transpose() * sp.BMB * u;
-		double kd = d.transpose() * sp.JMJ * d;
-		double kx = sp.xMx(0);
-		double kdx = -2 * d.transpose() * sp.JMx;
-		double kdu = 2 * d.transpose() * sp.BMJ.transpose() * u;
-		double kxu = -2 * sp.BMx.transpose() * u;
-		double total = params.invh2 *( ku + kd + kx + kdx + kdu + kxu);
+		fast_cd_arap_static_precomp* sp = (fast_cd_arap_static_precomp*)this->sp;
+		double ku = u.transpose() * sp->BMB * u;
+		double kd = d.transpose() * sp->JMJ * d;
+		double kx = sp->xMx(0);
+		double kdx = -2 * d.transpose() * sp->JMx;
+		double kdu = 2 * d.transpose() * sp->BMJ.transpose() * u;
+		double kxu = -2 * sp->BMx.transpose() * u;
+		double total = params->invh2 *( ku + kd + kx + kdx + kdu + kxu);
 		return total;
 	}
 
@@ -215,7 +221,8 @@ public:
 
 	VectorXd full_space(VectorXd& z)
 	{
-		VectorXd u = params.B * z;
+		fast_cd_sim_params* params = (fast_cd_sim_params*)this->params;
+		VectorXd u = params->B * z;
 		return u;
 	}
 
