@@ -44,7 +44,7 @@ struct cd_arap_local_global_solver
 		VectorXi bI;
 		SparseMatrix<double> H;
 		augment_with_linear_constraints(A, Aeq, H);
-		ldlt_solver->compute(H);
+		ldlt_solver = new SimplicialLDLT<SparseMatrix<double>>(H);
 	}
 
 	VectorXd solve(const VectorXd& z, const cd_sim_params& params, const cd_arap_dynamic_precomp& dp, const cd_arap_static_precomp& sp)
@@ -63,11 +63,18 @@ struct cd_arap_local_global_solver
 		}
 		else
 		{
-			for (int i = 0; i < p.max_iters; i++)
+			int iter = 0;
+			double res;
+			do
 			{
+				z_prev = z_next;
 				VectorXd r = local_step(z_next, dp, sp);
 				z_next = global_step(z_next, params, dp, sp, r);
-			}
+				res = (z_next - z_prev).norm();
+				iter += 1;
+				if (iter >= p.max_iters)
+					break;
+			} while (res > p.threshold);
 		}
 		return z_next;
 	};
