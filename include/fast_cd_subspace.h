@@ -61,7 +61,21 @@ struct  fast_cd_subspace
 
 	VectorXi l;   // clusters
 
+	fast_cd_subspace() {};
+	/*
+	Initialized and configures subspace... does NOT build it yet.
+	Inputs:
+	num_modes - (int) number of modes in subspace
+	subspace_constraint_type - (string) either "none", or "cd" or "cd_momentum_leak"
+	mode_type - (string) either "skinning" or "displacement"
+	num_clusters - (int) number of clusters
+	num_clustering_features - (int) number of clustering features used
+	split_components - (bool) whether to split the components of the clusters 
 
+	Optional:
+	debug - (bool) whether to save and store debug info 
+	output_dir - (string) output directory where we will write debug info
+	*/
 	fast_cd_subspace(int num_modes, string subspace_constraint_type, string& mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug = false,
 		string output_dir = "")
 	{
@@ -103,7 +117,7 @@ struct  fast_cd_subspace
 	V -> |n|x3 geometry
 	T -> |T|x4 tet indices
 	J -> |c|x3n null space/linear orthogonality constraint
-	subspace_constraint_type -> string, either "none", or "cd", or "cd_momentum_leak"
+	
 	read_cache -> whether or not to attempt to read modes and clusters from cache.
 	write_cache -> whether or not to write modes and clusters to cache.
 	modes_cache_dir -> directory where mode cache is
@@ -230,6 +244,13 @@ struct  fast_cd_subspace
 		return success;
 	}
 
+
+	/*
+	Reads modes and clusters from cache directories
+	Inputs:
+	  modes_dir - (string) directory where B.DMAT/W.DMAT and L.DMAT is stored
+	  clusters_dur - (string) directory where cluster labels.DMAT is stored
+	*/
 	bool read_from_cache(std::string& modes_dir, std::string& clusters_dir)
 	{
 		bool success = true;
@@ -238,6 +259,12 @@ struct  fast_cd_subspace
 		return success;
 	}
 
+
+	/*
+	Read clusters from cache directories
+	Inputs:
+	  clusters_dir - (string) directory where cluster labels.DMAT is stored
+	*/
 	bool read_clusters_from_cache(std::string& clusters_dir)
 	{
 		bool success = true;
@@ -260,6 +287,11 @@ struct  fast_cd_subspace
 		return success;
 	}
 	
+	/*
+	Read clusters from cache directories
+	Inputs:
+	  modes_dur - (string) directory where cluster B.DMAT/W.DMAT and L.DMAT is stored
+	*/
 	bool read_modes_from_cache(std::string& modes_dir)
 	{
 		bool success = true;

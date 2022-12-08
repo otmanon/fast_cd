@@ -23,8 +23,24 @@ struct fast_cd_sim_params :  cd_sim_params
 		MatrixXd B;
 		VectorXi labels;
 
-		fast_cd_sim_params();
+		fast_cd_sim_params() {};
 
+		/*
+		Contains all the parameters required to build a 
+		fast Complementary Dynamics simulator.
+
+		Inputs:
+			X - n x 3 vertex geometry
+			T - T x 4 tet indices
+			B - 3n x m subspace matrix
+			l - T x 1 clustering labels for each tet
+			J - 3n x p rig jacobian
+			mu - (double) first lame parameter
+			lambda - (double) second lame parameter
+			do_inertia - (bool) whether or not sim should have inertia 
+					(if no, then adds Tik. regularizer to laplacian
+			sim_constraint_type - (string) "none" or "cd" or "cd_momentum_leak" for now
+		*/
 		fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T, 
 			const MatrixXd& B, const VectorXi&  l,
 			const SparseMatrix<double>& J, double mu, 
