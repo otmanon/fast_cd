@@ -16,18 +16,15 @@ public:
 	fast_cd_arap_sim() {};
 
 	/*
-	initializes from cache dir. If not found, throws error. DOES NOT CHECK IF THE CACHE IS OTUDATED... do that somewhere else 
+	initializes from cache dir. If not found,
+	throws error. 
 	*/
 	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, 
 		cd_arap_local_global_solver_params& solver_params, bool read_cache, 
 		bool write_cache)
 	{
 		namespace fs = std::filesystem;
-
-	
 		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp();
-		
-
 		if (read_cache)
 		{
 			bool success = fcd_sp->read_from_cache(cache_dir);

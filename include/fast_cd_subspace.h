@@ -148,9 +148,9 @@ struct  fast_cd_subspace
 		if (read_cache)
 		{
 			bool found_subspace_cache = this->read_from_cache_recompute(V, T, Aeq, modes_cache_dir, clusters_cache_dir,
-				recompute_modes_if_not_found, recompute_clusters_if_not_found);
-			if (write_cache && !found_subspace_cache)
-				write_to_cache(modes_cache_dir, clusters_cache_dir);
+				recompute_modes_if_not_found, recompute_clusters_if_not_found, write_cache);
+			//if (write_cache && !found_subspace_cache)
+			//	write_to_cache(modes_cache_dir, clusters_cache_dir);
 		}
 		else
 		{
@@ -166,10 +166,11 @@ struct  fast_cd_subspace
 	*/
 	bool read_from_cache_recompute(MatrixXd& V, MatrixXi& T, SparseMatrix<double>& J,
 		std::string& modes_dir, std::string& clusters_dir, bool recomp_modes_if_not_found,
-		bool recomp_clusters_if_not_found)
+		bool recomp_clusters_if_not_found, bool write_cache)
 	{
 		bool success = true;
 		success = success && read_modes_from_cache(modes_dir);
+		
 		if (success && params.mode_type == "skinning")
 		{
 			SparseMatrix<double> Bs;
@@ -180,6 +181,8 @@ struct  fast_cd_subspace
 		{
 			printf("Computing %i modes from scratch, this will cause Matlab to open... \n", params.num_modes);
 			get_modes(V, T, J, params.mode_type, params.num_modes, B, L, W, params.debug, params.output_dir);
+			if (write_cache)
+				write_clusters_to_cache(modes_dir);
 		}
 		success = success && read_clusters_from_cache(clusters_dir);
 		if (!success && recomp_clusters_if_not_found)
@@ -195,6 +198,8 @@ struct  fast_cd_subspace
 				//compute_clusters_displacement_features(T, B, L, params.num_clusters, params.num_clustering_features, l, C, true);
 				compute_clusters_weight_features(T, W, L, params.num_clusters, params.num_clustering_features, l, C, params.split_components);
 			}
+			if (write_cache)
+				write_clusters_to_cache(clusters_dir);
 		}
 		return success;
 	}
@@ -305,6 +310,7 @@ struct  fast_cd_subspace
 		
 			if (success)
 				found_num_modes = W.cols();
+			
 		}
 		else if (params.mode_type == "displacement")
 		{
@@ -314,10 +320,19 @@ struct  fast_cd_subspace
 				found_num_modes = B.cols();
 		}
 		if (success)
+		{
 			correct_num_modes = found_num_modes >= params.num_modes;
+		}
 		success = success && correct_num_modes;
 		if (success)
 		{
+			if (params.mode_type == "skinning")
+				W = W.leftCols(params.num_modes).eval();
+			else if (params.mode_type == "displacement")
+				B = B.leftCols(params.num_modes).eval();
+			L = L.topRows(params.num_modes);
+			
+
 			printf("Successfully Read %s Modes from cache dir %s! \n", params.mode_type.c_str(), modes_dir.c_str());
 		}
 		if (!success)
