@@ -3,16 +3,31 @@
 #include <fstream>
 #include <json.hpp>
 #include <igl/list_to_matrix.h>
+#include <filesystem>
 using namespace nlohmann;
 using namespace std;
 using namespace Eigen;
+
+/*
+Reads a rig animation from a json file.
+Input:
+	anim_path - path to anim.json file
+Output:
+	animP - 12m x #frames matrix containing the world 
+				space animations bone transformations 
+				for each frame 
+*/
 void read_rig_anim_from_json(string& anim_path, MatrixXd& animP)
 {
 	json j;
 	std::ifstream i(anim_path);
 	i >> j;
 
-
+	namespace fs = std::filesystem;
+	if (!fs::exists(fs::path(anim_path)))
+	{
+		printf("Could not find animation .json file at %s \n", anim_path.c_str());
+	}
 	std::vector<std::vector<std::vector<std::vector<double>>>> animP_list = j["P"];
 	
 	assert(animP_list[0][0].size() == 3 && animP_list[0][0][0].size() == 4);

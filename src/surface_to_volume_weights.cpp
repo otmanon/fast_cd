@@ -9,7 +9,7 @@
 #include <igl/colon.h>
 #include <igl/point_mesh_squared_distance.h>
 #include <igl/procrustes.h>
-Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::VectorXi& bI, Eigen::MatrixXd& X, Eigen::MatrixXi& T)
+Eigen::MatrixXd surface_to_volume_weights( Eigen::MatrixXd& surfaceW,  Eigen::VectorXi& bI,  Eigen::MatrixXd& X, Eigen::MatrixXi& T)
 {
 	Eigen::MatrixXd W;
 	Eigen::SparseMatrix<double> C, Aeq;
@@ -31,8 +31,21 @@ Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::Vect
 	return W;
 }
 
+/*
+Transfers weights defined on the surface Vs to the volume V
+Fits the surface vertices of a mesh b(V) to the surface points Vs
+via a procrustes fit. 
 
-Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::MatrixXd& surfaceV, Eigen::MatrixXd& X, Eigen::MatrixXi& T)
+Inputs:
+	surfaceW - bn x m set of surface weights defined over the mesh
+	surfaceV - bn x 3 surface vertices vertex positions
+	X - n x 3 full mesh vertices
+	T - T x 4 tet mesh indices
+Outputs:
+	W - n x m set of surface weights obtained via a diffusion 
+	from the surface to the interior
+*/
+Eigen::MatrixXd surface_to_volume_weights(const Eigen::MatrixXd& surfaceW, const Eigen::MatrixXd& surfaceV, const Eigen::MatrixXd& X, const Eigen::MatrixXi& T)
 {
 	Eigen::MatrixXd W;
 	Eigen::SparseMatrix<double> C, Aeq;
@@ -59,7 +72,6 @@ Eigen::MatrixXd surface_to_volume_weights(Eigen::MatrixXd& surfaceW, Eigen::Matr
 	all = igl::colon<int>(0, X.rows() -1);
 	//map surface vertices to closest volume vertices. These are now boundary conditions
 	igl::point_mesh_squared_distance(surfaceV, X_t , all, sqrD, bI, CP);
-
 
 	Eigen::MatrixXi BI = bI.replicate(1, surfaceW.rows());
 	Eigen::MatrixXd B = Eigen::MatrixXd::Zero(C.rows(), surfaceW.cols());
