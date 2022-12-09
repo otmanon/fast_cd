@@ -3,7 +3,7 @@
 #include <fstream>
 #include <Eigen/Core>
 #include <json.hpp>
-
+#include <filesystem>
 #include <igl/list_to_matrix.h>
 using namespace nlohmann;
 using namespace std;
@@ -25,6 +25,14 @@ Outputs:
 */
 void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& pI, VectorXd& l, MatrixXd& V, MatrixXi& F, string& rig_type)
 {
+
+	namespace fs = std::filesystem;
+	if (!fs::exists(fs::path(rig_path)))
+	{
+		printf("Could not find rig path .json file at %s \n", rig_path.c_str());
+		return;
+	}
+
 	json j;
 	std::ifstream i(rig_path);
 	i >> j;

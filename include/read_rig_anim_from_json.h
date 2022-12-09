@@ -27,6 +27,7 @@ void read_rig_anim_from_json(string& anim_path, MatrixXd& animP)
 	if (!fs::exists(fs::path(anim_path)))
 	{
 		printf("Could not find animation .json file at %s \n", anim_path.c_str());
+		return;
 	}
 	std::vector<std::vector<std::vector<std::vector<double>>>> animP_list = j["P"];
 	
