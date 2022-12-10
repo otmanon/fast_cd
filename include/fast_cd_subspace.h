@@ -182,7 +182,7 @@ struct  fast_cd_subspace
 			printf("Computing %i modes from scratch, this will cause Matlab to open... \n", params.num_modes);
 			get_modes(V, T, J, params.mode_type, params.num_modes, B, L, W, params.debug, params.output_dir);
 			if (write_cache)
-				write_clusters_to_cache(modes_dir);
+				write_modes_to_cache(modes_dir);
 		}
 		success = success && read_clusters_from_cache(clusters_dir);
 		if (!success && recomp_clusters_if_not_found)

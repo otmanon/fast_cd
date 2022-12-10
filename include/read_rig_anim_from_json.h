@@ -19,16 +19,16 @@ Output:
 */
 void read_rig_anim_from_json(string& anim_path, MatrixXd& animP)
 {
-	json j;
-	std::ifstream i(anim_path);
-	i >> j;
-
 	namespace fs = std::filesystem;
 	if (!fs::exists(fs::path(anim_path)))
 	{
 		printf("Could not find animation .json file at %s \n", anim_path.c_str());
 		return;
 	}
+	json j;
+	std::ifstream i(anim_path);
+	i >> j;
+
 	std::vector<std::vector<std::vector<std::vector<double>>>> animP_list = j["P"];
 	
 	assert(animP_list[0][0].size() == 3 && animP_list[0][0][0].size() == 4);
