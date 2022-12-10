@@ -25,7 +25,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		 p - cd_arap_local_global_solver_params
 	*/
 	fast_cd_arap_local_global_solver(const MatrixXd& A, const MatrixXd& Aeq, 
-		cd_arap_local_global_solver_params& p)
+		const cd_arap_local_global_solver_params& p)
 	{
 		this->p = p;
 		VectorXi bI;

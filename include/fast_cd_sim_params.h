@@ -34,12 +34,13 @@ struct fast_cd_sim_params :  cd_sim_params
 			T - T x 4 tet indices
 			B - 3n x m subspace matrix
 			l - T x 1 clustering labels for each tet
-			J - 3n x p rig jacobian
+			J - 3n x p rig jacobian. If sim_constraint_type = none, this also 
+									doubles as the equality constraint matrix
 			mu - (double) first lame parameter
 			lambda - (double) second lame parameter
 			do_inertia - (bool) whether or not sim should have inertia 
 					(if no, then adds Tik. regularizer to laplacian
-			sim_constraint_type - (string) "none" or "cd" or "cd_momentum_leak" for now
+			sim_constraint_type - (string) "none" or "cd" or "cd_momentum_leak" or "custom" for now
 		*/
 		fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T, 
 			const MatrixXd& B, const VectorXi&  l,
@@ -72,7 +73,12 @@ struct fast_cd_sim_params :  cd_sim_params
 				igl::massmatrix(X, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
 				this->Aeq = (J.transpose() * igl::repdiag(M, 3) * igl::repdiag(D, 3));
 			
-			}else 
+			}
+			else if (sim_constraint_type == "custom")
+			{
+				this->Aeq = J.transpose();
+			}
+			else
 			{
 				this->Aeq.resize(0, X.rows() * X.cols());
 			}
