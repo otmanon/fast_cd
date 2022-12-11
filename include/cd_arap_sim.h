@@ -138,4 +138,11 @@ public:
 	{
 		return z; //for a full space sim, z is already full space
 	}
+
+
+	cd_sim_params* parameters()
+	{
+		return this->params;
+	}
+
 };

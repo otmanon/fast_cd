@@ -227,6 +227,11 @@ public:
 	}
 
 
+	cd_sim_params* parameters()
+	{
+		return (fast_cd_sim_params*) this->params;
+	}
+
 
 
 };
