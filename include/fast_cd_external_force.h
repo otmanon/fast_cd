@@ -17,6 +17,12 @@ struct fast_cd_external_force : public cd_external_force
 	// precomputation for "momentum_leak" force if active
 	MatrixXd invh2BMDJ;
 
+	/*
+	Initializes external force used in simulation
+	sim_params - (fast_cd_sim_params) parameters of our simulation
+	external_force_type - (string) either "none", or "momentum_leak"
+	external_force_magnitude - (double) 
+	*/
 	fast_cd_external_force(fast_cd_sim_params& sim_params, 
 		string external_force_type="none", double external_force_magnitude=0)
 		: cd_external_force(sim_params, external_force_type, external_force_magnitude)
@@ -45,6 +51,8 @@ struct fast_cd_external_force : public cd_external_force
 	step - which timestep of the simulation are we in. This is useful for forces that have a time-varying component
 	p -   12|B|x1 flattened rig parameters at next timestep
 	state - fast_cd_state struct that contains info on z_curr, z_prev, p_curr and p_prev. Useful for inertial-like external forces
+	Output -
+	f - m x 1 external force at this timestep
 	*/
 	VectorXd get(int step, VectorXd& p, cd_sim_state& state )
 	{

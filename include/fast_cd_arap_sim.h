@@ -15,49 +15,16 @@ public:
 
 	fast_cd_arap_sim() {};
 
-
 	/*
-	Initializes an arap simulator that uses fast complementary dynamics.
-	X -> mesh geometry
-	T -> tet connectivity
-	J -> control rig jacobian
-	sim_dir -> directory to simulation cache, with a sim_params.json,
-	solver_params.json, a clusters/folder a modes/ folder and a precomp/ folder
-
-	If any of these are not found, will recompute everything from scratch assuming default parameters
-	*/
-	/*
-	fast_cd_arap_sim(const MatrixXd& X, const MatrixXi& T, const SparseMatrix<double>& J, string& sim_dir)
-	{
-		//read sim_params.json, clusters and modes in this call
-		params = fast_cd_sim_params(X, T, J, sim_dir);
-
-		//read solver_params.json if not found, assume default
-		cd_arap_local_global_solver_params& solver_params = cd_arap_local_global_solver_params(sim_dir + "/solver_params.json");
-
-		if (!sp.read_from_cache(sim_dir + "/precomp/"))
-		{
-			printf("Could not read fast_cd_arap_sim matrix precomputations from cache %s, recomputing...\n", (sim_dir + "/precomp").c_str());
-			sp = fast_cd_arap_static_precomp(params);
-		}
-
-		dp = fast_cd_arap_dynamic_precomp();
-		sol = fast_cd_arap_local_global_solver(sp.BAB, sp.AeqB, solver_params);
-	}*/
-
-	/*
-	initializes from cache dir. If not found, throws error. DOES NOT CHECK IF THE CACHE IS OTUDATED... do that somewhere else 
+	initializes from cache dir. If not found,
+	throws error. 
 	*/
 	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, 
 		cd_arap_local_global_solver_params& solver_params, bool read_cache, 
 		bool write_cache)
 	{
 		namespace fs = std::filesystem;
-
-	
 		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp();
-		
-
 		if (read_cache)
 		{
 			bool success = fcd_sp->read_from_cache(cache_dir);
@@ -106,6 +73,18 @@ public:
 		this->dp = &dp;
 	}
 
+	/*
+	Advances the pre-configured simulation one step
+	Inputs : 
+		z :  m x 1 current guess for z ("maybe shouldn't expose this")
+		p :  p x 1 flattened rig parameters following writeup column order flattening converntion
+		state : sim_cd_state that contains info like z_curr, z_prev, p_curr and p_prev
+		f_ext : used to specify excternal forces like gravity.
+		bc :	rhs of equality constraint if some are configured in system
+				(should match in rows with sim.params.Aeq)
+	Outpus :
+		z_next : m x 1 next timestep degrees of freedom
+	*/
    Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 	   fast_cd_arap_static_precomp* sp = (fast_cd_arap_static_precomp*)this->sp;
@@ -120,13 +99,23 @@ public:
 		return z_next;
 	}
 
-	Eigen::VectorXd step_test(const VectorXd& z, const VectorXd& p, const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
-	{
-		////needs to be updated every timestep
-		std::cout << "went through this function flawlessly" << std::endl;
-		return VectorXd();
-	}
+	
 
+   /*
+   Advances the pre-configured simulation one step
+   Inputs :
+	   z :  m x 1 current guess for z ("maybe shouldn't expose this")
+	   p :  p x 1 flattened rig parameters following writeup column order flattening converntion
+	   z_curr : m x 1 current d.o.f.s
+	   z_prev : m x 1 previos d.o.f.s
+	   p_curr : p x 1 current rig parameters
+	   p_prev : p x 1 previous rig parameters
+	   f_ext : used to specify excternal forces like gravity.
+	   bc :	rhs of equality constraint if some are configured in system
+			   (should match in rows with sim.params.Aeq)
+   Outpus :
+	   z_next : m x 1 next timestep degrees of freedom
+   */
 	Eigen::VectorXd step(const VectorXd& z, const VectorXd& p, const VectorXd& z_curr, const VectorXd& z_prev,
 		const VectorXd& p_curr, const VectorXd& p_prev, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
@@ -231,7 +220,6 @@ public:
 	{
 		return (fast_cd_sim_params*) this->params;
 	}
-
 
 
 };

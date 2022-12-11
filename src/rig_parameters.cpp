@@ -310,7 +310,11 @@ MatrixXd get_bone_transform(const VectorXd& p, int i)
 	return A;
 }
 
-void world_to_rel_rig_anim(MatrixXd& P_w, VectorXd& p0, MatrixXd& P_r)
+/*
+Given a world space set of animation frames for rig parameters P_w, and a worlds space rest pose rig parameters p0,
+compute the animation as relative space rig parameters, as needed for CD
+*/
+void world_to_rel_rig_anim(const MatrixXd& P_w, const VectorXd& p0, MatrixXd& P_r)
 {
 	assert(P_w.rows() == p0.rows() && "Rig anim has different #parameters than p0");
 	assert(P_w.cols() > 0 && "need at least one frame of animation to covnert");

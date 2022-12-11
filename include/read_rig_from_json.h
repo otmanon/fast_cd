@@ -3,15 +3,36 @@
 #include <fstream>
 #include <Eigen/Core>
 #include <json.hpp>
-
+#include <filesystem>
 #include <igl/list_to_matrix.h>
 using namespace nlohmann;
 using namespace std;
 using namespace Eigen;
 
-
+/*
+Reads rig from json file 
+Inputs :
+	rig_path - (string) where is my rig.json file?
+Outputs:
+	W - n x m matrix of rig weights
+	P0 - 4mx3 matrix of rest bone world transforms
+		, where each 4x3 block is an affine handle
+	pI - mx1 parent bone Indicies, in the case of a skeleton rig
+	l - mx1 bone lengths, useful for visualization
+	V - nx 3 mesh geometry
+	F - Fx 3|4 mesh face/tet indices
+    rig_type - either "surface" or "volume", 
+*/
 void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& pI, VectorXd& l, MatrixXd& V, MatrixXi& F, string& rig_type)
 {
+
+	namespace fs = std::filesystem;
+	if (!fs::exists(fs::path(rig_path)))
+	{
+		printf("Could not find rig path .json file at %s \n", rig_path.c_str());
+		return;
+	}
+
 	json j;
 	std::ifstream i(rig_path);
 	i >> j;
@@ -46,6 +67,10 @@ void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, VectorXi& p
 	igl::list_to_matrix(l_list, l);
 
 	rig_type = j.value("rig_type", "surface");
+	if (rig_type != "surface" && rig_type != "volume")
+	{
+		printf("Rig type %s not supported, must be either surface or volume", rig_type.c_str());
+	}
 	//i.close();
 }
 void read_rig_from_json(string& rig_path, MatrixXd& W, MatrixXd& P0, MatrixXd& V, MatrixXi& F, string& rig_type)

@@ -2,9 +2,12 @@
 #include <igl/massmatrix.h>
 #include <igl/repdiag.h>
 
+#include "momentum_leaking_matrix.h"
+
 #include <Eigen/Sparse>
 #include <Eigen/Core>
-
+#include <string>
+using namespace std;
 using namespace Eigen;
 struct cd_sim_params
 {
@@ -53,6 +56,7 @@ public:
 	{
 
 		this->J = J;
+	
 		if (sim_constraint_type == "cd")
 		{
 			SparseMatrix<double>  M;
@@ -84,7 +88,7 @@ public:
 		this->h = h;
 		this->invh2 = 1.0 / (h * h);
 		this->do_inertia = do_inertia;
-
+		this->sim_constraint_type = sim_constraint_type;
 		Q.resize(X.rows() * 3, X.rows() * 3);
 		Q.setZero();
 	}

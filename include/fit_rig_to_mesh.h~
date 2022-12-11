@@ -49,6 +49,9 @@ void fit_rig_to_mesh(const MatrixXd& V, const MatrixXi& T, const MatrixXd& Vs, M
 	//lengths *= ss;
 }
 
+<<<<<<< HEAD
+
+=======
 /*
 Given a surface rig with parameters P0, fit it to the mesh defined by V, T.
 The new rig bones might be changing scale, rotationand centroid....
@@ -62,6 +65,7 @@ Outpus :
 P0 - fitted rig parameters
 B - the affine matrix that fits the rig to the mesh
 */
+>>>>>>> 9cc71963b904afbfd7efb32551901993989be823
 void fit_rig_to_mesh(const MatrixXd& V, const MatrixXi& T, const MatrixXd& Vs, MatrixXd& P0, MatrixXd& B)
 {
 	Eigen::MatrixXi F;
