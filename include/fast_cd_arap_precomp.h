@@ -105,6 +105,12 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		}
 	}
 
+	void set_equality_constraint(fast_cd_sim_params& p)
+	{
+		AeqB = p.Aeq * p.B;
+	}
+
+
 	bool read_from_cache(string& precomp_cache_dir)
 	{
 		bool t = true;

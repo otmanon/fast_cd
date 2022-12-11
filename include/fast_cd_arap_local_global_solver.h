@@ -111,7 +111,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		return z_next;
 	};
 
-	VectorXd local_step(const VectorXd& z, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
+	virtual VectorXd local_step(const VectorXd& z, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
 	{
 		VectorXd f = sp.GmKB * z + dp.GmKur + sp.GmKx;
 		int nt = f.rows() / 9;
@@ -130,7 +130,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		return r;
 	}
 
-	VectorXd global_step(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
+	virtual VectorXd global_step(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
 	{
 		VectorXd inertia_grad = -dp.BMy;
 

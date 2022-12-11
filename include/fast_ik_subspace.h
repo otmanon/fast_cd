@@ -174,7 +174,8 @@ struct  fast_ik_subspace
 
 		success = success && correct_num_clusters;
 		
-		printf("Successfully Read  Clusters from cache dir %s! \n", clusters_dir.c_str());
+		if (success)
+			printf("Successfully Read  Clusters from cache dir %s! \n", clusters_dir.c_str());
 	
 		return success;
 	}

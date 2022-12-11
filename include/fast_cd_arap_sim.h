@@ -85,7 +85,7 @@ public:
 	Outpus :
 		z_next : m x 1 next timestep degrees of freedom
 	*/
-   Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
+   virtual Eigen::VectorXd step(const VectorXd& z,  const VectorXd& p,  const cd_sim_state& state, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 	   fast_cd_arap_static_precomp* sp = (fast_cd_arap_static_precomp*)this->sp;
 		////needs to be updated every timestep
@@ -116,7 +116,7 @@ public:
    Outpus :
 	   z_next : m x 1 next timestep degrees of freedom
    */
-	Eigen::VectorXd step(const VectorXd& z, const VectorXd& p, const VectorXd& z_curr, const VectorXd& z_prev,
+	virtual Eigen::VectorXd step(const VectorXd& z, const VectorXd& p, const VectorXd& z_curr, const VectorXd& z_prev,
 		const VectorXd& p_curr, const VectorXd& p_prev, const  VectorXd& f_ext, const  VectorXd& bc)
 	{
 		////needs to be updated every timestep
@@ -187,6 +187,19 @@ public:
 		double total = params->invh2 *( ku + kd + kx + kdx + kdu + kxu);
 		return total;
 	}
+
+
+	/*
+	Updates the equality constraints to new ones as given by matrix Aeq
+	*/
+	virtual void set_equality_constraint(SparseMatrix<double>& Aeq)
+	{
+		params->set_equality_constraint(Aeq);
+		sol = new cd_arap_local_global_solver(
+			sp->A, params->Aeq,
+			sol->p);
+	}
+
 
 	///*
 	//Copmutes total arap energy

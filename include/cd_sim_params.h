@@ -93,4 +93,10 @@ public:
 		Q.setZero();
 	}
 
+
+	void set_equality_constraint(SparseMatrix<double>& Aeq)
+	{
+		assert(Aeq.cols() == X.rows() * X.cols());
+		this->Aeq = Aeq;
+	}
 };

@@ -40,13 +40,13 @@ struct fast_cd_sim_params :  cd_sim_params
 			lambda - (double) second lame parameter
 			do_inertia - (bool) whether or not sim should have inertia 
 					(if no, then adds Tik. regularizer to laplacian
-			sim_constraint_type - (string) "none" or "cd" or "cd_momentum_leak" or "custom" for now
+			sim_constraint_type - (string) "none" or "cd" or "cd_momentum_leak"
 		*/
 		fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T, 
 			const MatrixXd& B, const VectorXi&  l,
 			const SparseMatrix<double>& J, double mu, 
 			double lambda, double h,
-			bool do_inertia, string sim_constraint_type = "none") 
+			bool do_inertia, string sim_constraint_type = "none" )
 		{
 			this->X = X;
 			this->T = T;
@@ -74,14 +74,62 @@ struct fast_cd_sim_params :  cd_sim_params
 				this->Aeq = (J.transpose() * igl::repdiag(M, 3) * igl::repdiag(D, 3));
 			
 			}
-			else if (sim_constraint_type == "custom")
+			if (sim_constraint_type == "custom")
 			{
-				this->Aeq = J.transpose();
+				printf("Please provide a custom  \
+					#c x dimN equality constraint  \
+					matrix to fast_cd_sim_params like so \n \
+					fast_cd_sim_params(X, T, B, l, J, \
+					 Aeq, mu, lambda, h, do_inertia, \
+					sim_constraint_type) \
+					");
 			}
 			else
 			{
 				this->Aeq.resize(0, X.rows() * X.cols());
 			}
+		}
+
+
+	    /*
+		Contains all the parameters required to build a
+		fast Complementary Dynamics simulator.
+
+		Inputs:
+			X - n x 3 vertex geometry
+			T - T x 4 tet indices
+			B - 3n x m subspace matrix
+			l - T x 1 clustering labels for each tet
+			J - 3n x p rig jacobian. If sim_constraint_type = none, this also
+									doubles as the equality constraint matrix
+		    Aeq -c x 3n linear equality constraint matrix
+			mu - (double) first lame parameter
+			lambda - (double) second lame parameter
+			do_inertia - (bool) whether or not sim should have inertia
+					(if no, then adds Tik. regularizer to laplacian
+			
+		*/
+		fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T,
+			const MatrixXd& B, const VectorXi& l,
+			const SparseMatrix<double>& J, const SparseMatrix<double>& Aeq,
+			double mu, double lambda, double h,
+			bool do_inertia, string sim_constraint_type = "none")
+		{
+			this->X = X;
+			this->T = T;
+			this->J = J;
+			this->mu = mu * VectorXd::Ones(T.rows());
+			this->lambda = VectorXd::Zero(T.rows());
+			this->h = h;
+			this->invh2 = 1.0 / (h * h);
+			this->do_inertia = do_inertia;
+			this->sim_constraint_type = "custom";
+			this->B = B;
+			this->labels = l;
+			
+			this->Aeq = Aeq;
+			assert(Aeq.cols() == X.rows() * X.cols());
+			
 		}
 
 
@@ -100,6 +148,11 @@ struct fast_cd_sim_params :  cd_sim_params
 			this->invh2 = 1.0 / (h * h);
 		};
 
+
+		void set_equality_constraint(SparseMatrix<double>& Aeq)
+		{
+			this->Aeq = Aeq;
+		}
 		/*
 		Constructor that attempts to read skinning modes and clusters from cache. 
 		If skinning modes or clusters can't be found, print and do nothing

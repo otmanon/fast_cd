@@ -128,7 +128,6 @@ struct cd_arap_static_precomp
 	}
 
 
-
 	virtual bool read_from_cache(string& precomp_cache_dir)
 	{
 		return false;
