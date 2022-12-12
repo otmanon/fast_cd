@@ -20,6 +20,7 @@ struct fast_cd_viewer_vertex_selector : public fast_cd_viewer {
 	fast_cd_viewer_vertex_selector(int vid = 0) : fast_cd_viewer()
 	{
         this->vid = vid;
+        vertex_added = false;
         ////////////// MOUSE CLICK INTERACTION ////////////////
         currI = -1;  
         last_mouse = RowVector3f::Zero();
