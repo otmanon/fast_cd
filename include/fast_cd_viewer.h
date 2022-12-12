@@ -24,16 +24,16 @@ public:
 
 	//attach guizmo too
 	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
-	void launch();
+	virtual void launch();
 
 
-	bool default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id);
+	virtual bool default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id);
 
-	void set_pre_draw_callback(std::function<void()>& callback);
+	virtual void set_pre_draw_callback(std::function<void()>& callback);
 
-	void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
+	virtual void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
 
-	void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
+	virtual void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = [&](igl::opengl::glfw::Viewer& v,  int button, int modifier)->bool
 		{
 			callback_mouse_down(button, modifier);
@@ -41,11 +41,11 @@ public:
 		};
 	};
 
-	void set_mouse_down_callback(std::function<bool(igl::opengl::glfw::Viewer& viewer, int button, int modifier)>& callback_mouse_down) {
+	virtual void set_mouse_down_callback(std::function<bool(igl::opengl::glfw::Viewer& viewer, int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = callback_mouse_down;
 	};
 
-	void attach_guizmo(igl::opengl::glfw::imgui::ImGuizmoWidget& guizmo)
+	virtual void attach_guizmo(igl::opengl::glfw::imgui::ImGuizmoWidget& guizmo)
 	{
 		igl::opengl::glfw::imgui::ImGuiPlugin  * imgui_plugin = new igl::opengl::glfw::imgui::ImGuiPlugin();
 		igl_v->plugins.push_back(imgui_plugin);
@@ -54,17 +54,17 @@ public:
 		//imgui_plugin->widgets.push_back(guizmo);
 	}
 
-	void set_lighting_factor(double f)
+	virtual void set_lighting_factor(double f)
 	{
 		igl_v->core().lighting_factor = f;
 	}
 
-	void add_mesh( int& id)
+	virtual void add_mesh( int& id)
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
 	}
-	void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
+	virtual void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
