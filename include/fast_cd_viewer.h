@@ -3,6 +3,7 @@
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
 #include <igl/png/readPNG.h>
+
 using namespace std;
 using namespace Eigen;
 class fast_cd_viewer
@@ -10,7 +11,7 @@ class fast_cd_viewer
 public:
 	fast_cd_viewer();
 
-	void set_menu_callback(std::function<void()>& menu_callback)
+	virtual void  set_menu_callback(std::function<void()>& menu_callback)
 	{
 
 		imgui_menu->callback_draw_viewer_menu = [&]()
@@ -24,16 +25,16 @@ public:
 
 	//attach guizmo too
 	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
-	void launch();
+	virtual void  launch();
 
 
-	bool default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id);
+	virtual bool default_key_pressed_callback(igl::opengl::glfw::Viewer& viewer, unsigned int unicode_key, int modifiers, int id);
 
-	void set_pre_draw_callback(std::function<void()>& callback);
+	virtual void set_pre_draw_callback(std::function<void()>& callback);
 
-	void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
+	virtual void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
 
-	void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
+	virtual void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = [&](igl::opengl::glfw::Viewer& v,  int button, int modifier)->bool
 		{
 			callback_mouse_down(button, modifier);
@@ -41,11 +42,11 @@ public:
 		};
 	};
 
-	void set_mouse_down_callback(std::function<bool(igl::opengl::glfw::Viewer& viewer, int button, int modifier)>& callback_mouse_down) {
+	virtual void set_mouse_down_callback(std::function<bool(igl::opengl::glfw::Viewer& viewer, int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = callback_mouse_down;
 	};
 
-	void attach_guizmo(igl::opengl::glfw::imgui::ImGuizmoWidget& guizmo)
+	virtual void attach_guizmo(igl::opengl::glfw::imgui::ImGuizmoWidget& guizmo)
 	{
 		igl::opengl::glfw::imgui::ImGuiPlugin  * imgui_plugin = new igl::opengl::glfw::imgui::ImGuiPlugin();
 		igl_v->plugins.push_back(imgui_plugin);
@@ -54,88 +55,88 @@ public:
 		//imgui_plugin->widgets.push_back(guizmo);
 	}
 
-	void set_lighting_factor(double f)
+	virtual void set_lighting_factor(double f)
 	{
 		igl_v->core().lighting_factor = f;
 	}
 
-	void add_mesh( int& id)
+	virtual void add_mesh( int& id)
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
 	}
-	void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
+	virtual void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
 		igl_v->data_list[id].set_mesh(V, F);
 	}
 
-	void clear_all()
+	virtual void clear_all()
 	{
 		for (int i = 0; i < igl_v->data_list.size(); i++)
 		{
 			igl_v->data_list[i].clear();
 		}
 	}
-	void set_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int id)
+	virtual void set_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int id)
 	{
 		igl_v->data_list[id].set_mesh(V, F);
 	}
 
-	void set_camera_zoom(double zoom)
+	virtual void set_camera_zoom(double zoom)
 	{
 		igl_v->core().camera_zoom = zoom;
 	}
 
-	void set_camera_eye(const Eigen::RowVector3d& p)
+	virtual void set_camera_eye(const Eigen::RowVector3d& p)
 	{
 		igl_v->core().camera_eye = p.cast<float>();
 	}
 
-	void set_camera_center(const Eigen::RowVector3d& c)
+	virtual void set_camera_center(const Eigen::RowVector3d& c)
 	{
 		igl_v->core().camera_center = c.cast<float>();
 	}
-	void set_vertices(const Eigen::MatrixXd& V, int id)
+	virtual void set_vertices(const Eigen::MatrixXd& V, int id)
 	{
 		igl_v->data_list[id].set_vertices(V);
 	}
-	void compute_normals(int id)
+	virtual void compute_normals(int id)
 	{
 		igl_v->data_list[id].compute_normals();
 	}
 
-	void clear(int id)
+	virtual void clear(int id)
 	{
 		igl_v->data_list[id].clear();
 	}
 
-	void set_color(const Eigen::RowVector3d & d, int id)
+	virtual void set_color(const Eigen::RowVector3d & d, int id)
 	{
 		igl_v->data_list[id].set_colors(d);
 	}
-	void set_color(const Eigen::MatrixXd& d, int id)
+	virtual void set_color(const Eigen::MatrixXd& d, int id)
 	{
 		igl_v->data_list[id].set_colors(d);
 	}
 
-	void set_double_sided(bool ds, int id)
+	virtual void set_double_sided(bool ds, int id)
 	{
 		igl_v->data_list[id].double_sided = ds;
 	}
-	void invert_normals(bool invert_normals, int id)
+	virtual void invert_normals(bool invert_normals, int id)
 	{
 		igl_v->data_list[id].invert_normals = invert_normals;
 	}
 
-	void set_points(const Eigen::MatrixXd& points, int id)
+	virtual void set_points(const Eigen::MatrixXd& points, int id)
 	{
 		Eigen::RowVector3d z(0, 0, 0);
 		igl_v->data_list[id].set_points(points, z);
 	}
 
-	void configure_wireframe_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int id)
+	virtual void configure_wireframe_mesh(const Eigen::MatrixXd& V, const Eigen::MatrixXi& F, int id)
 	{
 		igl_v->data_list[id].clear();
 		igl_v->data_list[id].set_mesh(V, F);
@@ -143,82 +144,82 @@ public:
 		igl_v->data_list[id].show_lines = true;
 	}
 
-	void set_data(const Eigen::VectorXd &D, int i)
+	virtual void set_data(const Eigen::VectorXd &D, int i)
 	{
 		igl_v->data_list[i].set_data(D);
 	}
 
-	void set_data(const Eigen::VectorXd& D,  igl::ColorMapType cmap, int i)
+	virtual void set_data(const Eigen::VectorXd& D,  igl::ColorMapType cmap, int i)
 	{
 		igl_v->data_list[i].set_data(D, cmap);
 	}
 
-	void set_data(const Eigen::VectorXd& D, double min, double max, int num_steps, igl::ColorMapType cmap, int i)
+	virtual void set_data(const Eigen::VectorXd& D, double min, double max, int num_steps, igl::ColorMapType cmap, int i)
 	{
 		igl_v->data_list[i].set_data(D, min, max, cmap, num_steps );
 	}
 
-	void set_data(const Eigen::VectorXd& D, double min, double max, int i)
+	virtual void set_data(const Eigen::VectorXd& D, double min, double max, int i)
 	{
 		igl_v->data_list[i].set_data(D, min, max);
 	}
 
-	void set_points(const Eigen::MatrixXd& points,const  Eigen::RowVector3d& z, int id)
+	virtual void set_points(const Eigen::MatrixXd& points,const  Eigen::RowVector3d& z, int id)
 	{
 		igl_v->data_list[id].set_points(points, z);
 	}
 
-	void set_points(const Eigen::MatrixXd& points,const  Eigen::MatrixXd& color, int id)
+	virtual void set_points(const Eigen::MatrixXd& points,const  Eigen::MatrixXd& color, int id)
 	{
 		igl_v->data_list[id].set_points(points, color);
 	}
 
-	void set_lines(const Eigen::MatrixXd& V,const  Eigen::MatrixXi& E,const  Eigen::MatrixXd& color, int id)
+	virtual void set_lines(const Eigen::MatrixXd& V,const  Eigen::MatrixXi& E,const  Eigen::MatrixXd& color, int id)
 	{
 		igl_v->data_list[id].set_edges(V, E, color);
 	}
 
-	void set_lines(Eigen::MatrixXd& V,const  Eigen::MatrixXi& E,const  Eigen::RowVector3d& z, int id)
+	virtual void set_lines(Eigen::MatrixXd& V,const  Eigen::MatrixXi& E,const  Eigen::RowVector3d& z, int id)
 	{
 		igl_v->data_list[id].set_edges(V, E, z);
 	}
 
-	void set_lines(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E, int id)
+	virtual void set_lines(const Eigen::MatrixXd& V, const Eigen::MatrixXi& E, int id)
 	{
 		Eigen::RowVector3d z(0, 0, 0);
 		igl_v->data_list[id].set_edges(V, E, z);
 	}
-	void set_face_based(bool face_based, int id)
+	virtual void set_face_based(bool face_based, int id)
 	{
 		igl_v->data_list[id].face_based = face_based;
 	}
-	void set_show_lines(bool show_lines, int id)
+	virtual void set_show_lines(bool show_lines, int id)
 	{
 		igl_v->data_list[id].show_lines = show_lines;
 	}
 
-	bool get_show_lines(int id)
+	virtual bool get_show_lines(int id)
 	{
 		return igl_v->data_list[id].show_lines;
 	}
-	void set_show_faces(bool show_faces, int id)
+	virtual void set_show_faces(bool show_faces, int id)
 	{
 		igl_v->data_list[id].show_faces = show_faces;
 	}
-	bool get_show_faces(int id)
+	virtual bool get_show_faces(int id)
 	{
 		return igl_v->data_list[id].show_faces;
 	}
 	
 
-	void set_data_colormap(const Eigen::VectorXd& d, const Eigen::MatrixXd& cmap, int id)
+	virtual void set_data_colormap(const Eigen::VectorXd& d, const Eigen::MatrixXd& cmap, int id)
 	{
 		igl_v->data_list[id].set_data(d);
 		igl_v->data_list[id].set_colormap(cmap);
 	}
 
 
-	void set_texture(const string& tex_png,const  MatrixXd& TC,const  MatrixXi& FTC, int id)
+	virtual void set_texture(const string& tex_png,const  MatrixXd& TC,const  MatrixXi& FTC, int id)
 	{
 		Eigen::Matrix<unsigned char, -1, -1> R, G, B, A;
 		bool read = igl::png::readPNG(tex_png, R, G, B, A);
@@ -231,54 +232,58 @@ public:
 
 	//////////////////////// legacy stuff
 
-	void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters) {};
+	virtual void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters) {};
 
-	void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id){};
+	virtual void configure_clusters(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::VectorXi& clusters, int id){};
 
-	void configure_deformation_texture(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W){};
+	virtual void configure_deformation_texture(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& B, Eigen::MatrixXd& W){};
 
-	void configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id){};
-	void configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& color, int id){};
+	virtual void configure_solid_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::RowVector3d& color, int id){};
+	virtual void configure_color_mesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F, Eigen::MatrixXd& color, int id){};
 
-	void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V, Eigen::MatrixXi& F,
+	virtual void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V, Eigen::MatrixXi& F,
 		Eigen::MatrixXd& TC, Eigen::MatrixXi& FTC, int id = 0){};
 
-	void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
+	virtual void configure_color_texture(std::string texture_filepath, Eigen::MatrixXd& V_coarse, Eigen::MatrixXi& F_coarse, Eigen::MatrixXd& V_fine, Eigen::MatrixXi& F_fine,
 		Eigen::MatrixXd& UV_fine, Eigen::MatrixXi& FUV_fine){};
 
-	void configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F){};
+	virtual void configure_matcap(std::string matcap_file, Eigen::MatrixXd& V, Eigen::MatrixXi& F){};
 
-	void set_visible(bool is_visible, int id)
+	virtual void set_visible(bool is_visible, int id)
 	{
 		igl_v->data_list[id].is_visible = is_visible;
 	}
 
-	bool get_visible(int id)
+	virtual bool get_visible(int id)
 	{
 		return igl_v->data_list[id].is_visible;
 	}
 	/*
 	Renders mesh  full space mesh V.
 	*/
-	void render_full(const Eigen::MatrixXd& V, int id);
+	virtual void render_full(const Eigen::MatrixXd& V, int id) {};
 
 
 	/*
 	Renders mesh with reduced deformation z, and rig parameters p.
 	Must do a projection step Bz + Jp to get the final V. Does this step on the CPU
 	*/
-	void render_reduced_cpu_proj(const Eigen::VectorXd& z, const Eigen::VectorXd & p, const Eigen::MatrixXd& B, const Eigen::SparseMatrix<double>& J, int id);
+	virtual void render_reduced_cpu_proj(const Eigen::VectorXd& z,
+		const Eigen::VectorXd& p,
+		const Eigen::MatrixXd& B,
+		const Eigen::SparseMatrix<double>& J, int id) {};
 
-	void render_reduced_gpu_proj(const Eigen::VectorXd& z,const  Eigen::VectorXd& p, int n, int id);
+	virtual void render_reduced_gpu_proj(const Eigen::VectorXd& z, 
+		const  Eigen::VectorXd& p, int n, int id) {};
 
 	//void draw_gui(igl::opengl::glfw::imgui::ImGuiMenu& menu);
 
 	/*
 	GUIZMO controls
 	*/
-	void init_guizmo(bool visible, const Eigen::Matrix4f& A0, std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION op = ImGuizmo::TRANSLATE);
+	virtual void init_guizmo(bool visible, const Eigen::Matrix4f& A0, std::function<void(const Eigen::Matrix4f& A)>& callback, ImGuizmo::OPERATION op = ImGuizmo::TRANSLATE);
 
-	void set_guizmo_operation(ImGuizmo::OPERATION op)
+	virtual void set_guizmo_operation(ImGuizmo::OPERATION op)
 	{
 		guizmo->operation = op;
 	};
