@@ -22,6 +22,11 @@ struct fast_cd_viewer_texture : public fast_cd_viewer
 		texture_on = false;
 	};
 
+	void set_mesh(MatrixXd& V, MatrixXi& F, int id)
+	{
+		Xc = F; Fc = F;
+		fast_cd_viewer::add_mesh(V, F, id);
+	}
 	/*
 	Sets the viewer to display mesh V with connectivity F, but with texture info specified
 	in texture_obj and texture_img. 
@@ -63,6 +68,26 @@ struct fast_cd_viewer_texture : public fast_cd_viewer
 		}
 		else
 		{
+			V = U + Xc;
+		}
+		fast_cd_viewer::set_vertices(V, id);
+	}
+
+	/*
+Displays fine mesh with coarse displacement field U.
+If viewer is not configured with a texture, sets it to coarse mesh.
+*/
+	void set_coarse_vertices(VectorXd& u, bool id = 0)
+	{
+		MatrixXd V;
+		if (texture_on)
+		{
+			VectorXd v = P * u;
+			V = Map<MatrixXd>(v.data(), int(v.rows() / 3), 3) + Xf;
+		}
+		else
+		{
+			MatrixXd U = Map<MatrixXd>(u.data(), int(u.rows()/3),3);;
 			V = U + Xc;
 		}
 		fast_cd_viewer::set_vertices(V, id);
