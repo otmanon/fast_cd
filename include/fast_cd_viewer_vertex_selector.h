@@ -3,7 +3,8 @@
 #include <igl/unproject_onto_mesh.h>
 #include <igl/project.h>
 #include <igl/unproject.h>
-
+#include <igl/point_mesh_squared_distance.h>
+#include <igl/colon.h>
 struct fast_cd_viewer_vertex_selector : public fast_cd_viewer {
 
 	int currI;
@@ -153,6 +154,29 @@ struct fast_cd_viewer_vertex_selector : public fast_cd_viewer {
         bool new_vert = vertex_added;
         if (new_vert)
             vertex_added = false;
+        return new_vert;
+    }
+
+    /*
+    Before querying new handles, if a new one was added, project it to the mesh V, F
+    */
+    bool query_new_handles_on_mesh(MatrixXd& C, VectorXi& CI, const MatrixXd& V, const MatrixXi& F)
+    {
+        C = this->C;
+        CI = this->CI;
+
+        bool new_vert = vertex_added;
+        if (new_vert)
+        {
+            VectorXd sqrD;
+            MatrixXd U;
+            VectorXi VI = igl::colon<int>(0, V.rows() - 1);
+            igl::point_mesh_squared_distance(C, V, VI, sqrD, CI, U);
+            C = U;
+            this->C = C;
+            this->CI = CI;
+            vertex_added = false;
+        }
         return new_vert;
     }
 

@@ -8,7 +8,7 @@
 #include <igl/in_element.h>
 #include <igl/AABB.h>
 
-void prolongation(Eigen::MatrixXd& X_fine, Eigen::MatrixXd& X_coarse, Eigen::MatrixXi& T_coarse, Eigen::SparseMatrix<double>& W)
+void prolongation(const Eigen::MatrixXd& X_fine, const Eigen::MatrixXd& X_coarse, const Eigen::MatrixXi& T_coarse, Eigen::SparseMatrix<double>& W)
 {
 	Eigen::VectorXi I;
 
@@ -73,7 +73,7 @@ void prolongation(Eigen::MatrixXd& X_fine, Eigen::MatrixXd& X_coarse, Eigen::Mat
 
 
 
-void prolongation(Eigen::MatrixXd& X_fine, Eigen::MatrixXd& X_coarse, Eigen::MatrixXi& T_coarse, Eigen::SparseMatrix<double>& W, Eigen::SparseMatrix<double>& WI)
+void prolongation(const Eigen::MatrixXd& X_fine,const  Eigen::MatrixXd& X_coarse,const  Eigen::MatrixXi& T_coarse, Eigen::SparseMatrix<double>& W, Eigen::SparseMatrix<double>& WI)
 {
 	Eigen::VectorXi I;
 
