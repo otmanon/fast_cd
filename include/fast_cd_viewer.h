@@ -25,6 +25,7 @@ public:
 
 	//attach guizmo too
 	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer, igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo);
+
 	virtual void  launch();
 
 
