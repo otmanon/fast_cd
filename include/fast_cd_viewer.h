@@ -293,6 +293,11 @@ public:
 		return guizmo->operation;
 	}
 
+	virtual void set_animation_max_fps(int max_fps)
+	{
+		igl_v->core().animation_max_fps = max_fps;
+	}
+
 public:
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo

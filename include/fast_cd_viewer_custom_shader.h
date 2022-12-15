@@ -10,12 +10,24 @@ using namespace std;
 struct fast_cd_viewer_custom_shader : public fast_cd_viewer
 {
 
-    string v_sh;
-    string f_sh;
+    string v_sh; //vertex shader string
+    string f_sh; //fragment shader string
 
-    int max_num_bones;
-    int num_vec4;
-	fast_cd_viewer_custom_shader(string& vertex_shader, string& fragment_shader, int max_b=16) :fast_cd_viewer()
+    int max_num_primary_bones;//number of primary bones
+    int num_primary_vec4;     //number of primary vec4 we will load our weights in. (max_bones/4)
+
+    int max_num_secondary_bones; //number of secondary bones
+    int num_secondary_vec4;      //number of secondary vec4 we will load our weights in. 
+
+
+    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
+    std::vector<RowMatrixXf> p_W_list;
+    std::vector<GLuint> vbo_p_W_list;
+
+    std::vector<RowMatrixXf> s_W_list;
+    std::vector<GLuint> vbo_s_W_list;
+
+	fast_cd_viewer_custom_shader(string& vertex_shader, string& fragment_shader, int max_b_p=16, int max_b_s = 16) :fast_cd_viewer()
 	{
         namespace fs = std::filesystem;
         if (!fs::exists(fs::path(vertex_shader)))
@@ -44,16 +56,20 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             f_sh = ss.str();
         }
        
-       max_num_bones = max_b;
-       if (max_num_bones % 4 != 0)
-           printf("Maximum number of bones must be a multiple of 4 !\n");
+       max_num_secondary_bones = max_b_s;
+       max_num_primary_bones = max_b_p;
+       if (max_num_primary_bones % 4 != 0)
+           printf("Maximum number of primary bones must be a multiple of 4 !\n");
+       if (max_num_secondary_bones % 4 != 0)
+           printf("Maximum number of secondary bones must be a multiple of 4 !\n");
        printf("Assuming maximum number of bones is %i, please make sure vertex \
-            buffer has this value set in the primary_bones[n] uniform, where n==max_num_bones\n", max_num_bones);
-       num_vec4 = max_num_bones / 4;
+            buffer has this value set in the primary_bones[n] uniform, where n==max_num_bones\n", max_num_primary_bones);
+       num_primary_vec4 = max_num_primary_bones / 4;
+       num_secondary_vec4 = max_num_secondary_bones / 4;
         //initialize list 
-       vbo_W_list.resize(num_vec4);
+       vbo_p_W_list.resize(num_primary_vec4);
+       vbo_s_W_list.resize(num_secondary_vec4);
     }
-
     void launch()
     { //TODO initialized only data(0)
      //   fast_cd_viewer::launch();
@@ -278,7 +294,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         {},
         igl_v->data().meshgl.shader_text);
 
-        igl_v->core().animation_max_fps = 60;
+        igl_v->core().animation_max_fps =2000;
         igl_v->launch_rendering(true);
         igl_v->launch_shut();
         //fast_cd_viewer::launch();
@@ -286,220 +302,231 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         }
 	    
 
-        void init_buffers(int id)
+    void init_buffers(int id)
+    {
+        igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
+        // Mesh: Vertex Array Object & Buffer objects
+        glGenVertexArrays(1, &g.vao_mesh);
+        glBindVertexArray(g.vao_mesh);
+        glGenBuffers(1, &g.vbo_V);
+        glGenBuffers(1, &g.vbo_V_normals);
+        glGenBuffers(1, &g.vbo_V_ambient);
+        glGenBuffers(1, &g.vbo_V_diffuse);
+        glGenBuffers(1, &g.vbo_V_specular);
+        glGenBuffers(1, &g.vbo_V_uv);
+        glGenBuffers(1, &g.vbo_F);
+        for (int i = 0; i < num_primary_vec4; i++)
         {
-            igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
-            // Mesh: Vertex Array Object & Buffer objects
-            glGenVertexArrays(1, &g.vao_mesh);
-            glBindVertexArray(g.vao_mesh);
-            glGenBuffers(1, &g.vbo_V);
-            glGenBuffers(1, &g.vbo_V_normals);
-            glGenBuffers(1, &g.vbo_V_ambient);
-            glGenBuffers(1, &g.vbo_V_diffuse);
-            glGenBuffers(1, &g.vbo_V_specular);
-            glGenBuffers(1, &g.vbo_V_uv);
-            glGenBuffers(1, &g.vbo_F);
-            for (int i = 0; i < num_vec4; i++)
+            glGenBuffers(1, &vbo_p_W_list[i]);
+        }
+        for (int i = 0; i < num_secondary_vec4; i++)
+        {
+            glGenBuffers(1, &vbo_s_W_list[i]);
+        }
+        /*   glGenBuffers(1, &vbo_pW2);
+        glGenBuffers(1, &vbo_pW3);
+        glGenBuffers(1, &vbo_pW4);*/
+        // glGenBuffers(1, &vbo_sW);             //generate the buffers
+        glGenTextures(1, &g.vbo_tex);
+        glGenTextures(1, &g.font_atlas);
+
+        // Line overlay
+        glGenVertexArrays(1, &g.vao_overlay_lines);
+        glBindVertexArray(g.vao_overlay_lines);
+        glGenBuffers(1, &g.vbo_lines_F);
+        glGenBuffers(1, &g.vbo_lines_V);
+        glGenBuffers(1, &g.vbo_lines_V_colors);
+
+        // Point overlay
+        glGenVertexArrays(1, &g.vao_overlay_points);
+        glBindVertexArray(g.vao_overlay_points);
+        glGenBuffers(1, &g.vbo_points_F);
+        glGenBuffers(1, &g.vbo_points_V);
+        glGenBuffers(1, &g.vbo_points_V_colors);
+
+        // Text Labels
+        g.vertex_labels.init_buffers();
+        g.face_labels.init_buffers();
+        g.custom_labels.init_buffers();
+
+        g.dirty = igl::opengl::MeshGL::DIRTY_ALL;
+            
+    }
+
+
+
+    void free_buffers(int id)
+    {
+        igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
+        if (g.is_initialized)
+        {
+            glDeleteVertexArrays(1, &g.vao_mesh);
+            glDeleteVertexArrays(1, &g.vao_overlay_lines);
+            glDeleteVertexArrays(1, &g.vao_overlay_points);
+
+            glDeleteBuffers(1, &g.vbo_V);
+            glDeleteBuffers(1, &g.vbo_V_normals);
+            glDeleteBuffers(1, &g.vbo_V_ambient);
+            glDeleteBuffers(1, &g.vbo_V_diffuse);
+            glDeleteBuffers(1, &g.vbo_V_specular);
+            glDeleteBuffers(1, &g.vbo_V_uv);
+            for (int i = 0; i < num_primary_vec4; i++)
             {
-                glGenBuffers(1, &vbo_W_list[i]);
+                glDeleteBuffers(1, &vbo_p_W_list[i]);
             }
-         /*   glGenBuffers(1, &vbo_pW2);
-            glGenBuffers(1, &vbo_pW3);
-            glGenBuffers(1, &vbo_pW4);*/
-           // glGenBuffers(1, &vbo_sW);             //generate the buffers
-            glGenTextures(1, &g.vbo_tex);
-            glGenTextures(1, &g.font_atlas);
-
-            // Line overlay
-            glGenVertexArrays(1, &g.vao_overlay_lines);
-            glBindVertexArray(g.vao_overlay_lines);
-            glGenBuffers(1, &g.vbo_lines_F);
-            glGenBuffers(1, &g.vbo_lines_V);
-            glGenBuffers(1, &g.vbo_lines_V_colors);
-
-            // Point overlay
-            glGenVertexArrays(1, &g.vao_overlay_points);
-            glBindVertexArray(g.vao_overlay_points);
-            glGenBuffers(1, &g.vbo_points_F);
-            glGenBuffers(1, &g.vbo_points_V);
-            glGenBuffers(1, &g.vbo_points_V_colors);
+            for (int i = 0; i < num_secondary_vec4; i++)
+            {
+                glDeleteBuffers(1, &vbo_s_W_list[i]);
+            }
+            //  glDeleteBuffers(1, &vbo_pW1);      
+        /*     glDeleteBuffers(1, &vbo_pW2);
+            glDeleteBuffers(1, &vbo_pW3);
+            glDeleteBuffers(1, &vbo_pW4);*/
+            // glDeleteBuffers(1, &vbo_sW);
+            glDeleteBuffers(1, &g.vbo_F);
+            glDeleteBuffers(1, &g.vbo_lines_F);
+            glDeleteBuffers(1, &g.vbo_lines_V);
+            glDeleteBuffers(1, &g.vbo_lines_V_colors);
+            glDeleteBuffers(1, &g.vbo_points_F);
+            glDeleteBuffers(1, &g.vbo_points_V);
+            glDeleteBuffers(1, &g.vbo_points_V_colors);
 
             // Text Labels
-            g.vertex_labels.init_buffers();
-            g.face_labels.init_buffers();
-            g.custom_labels.init_buffers();
+            g.vertex_labels.free_buffers();
+            g.face_labels.free_buffers();
+            g.custom_labels.free_buffers();
 
-            g.dirty = igl::opengl::MeshGL::DIRTY_ALL;
-            
+            glDeleteTextures(1, &g.vbo_tex);
+            glDeleteTextures(1, &g.font_atlas);
+        }
+    }
+    //RowMatrixXf s_W;
+
+    /*
+    Binds the primary and secondary weights to our vertex buffer object.
+    */
+    void bind_weights(MatrixXd& pW, MatrixXd& sW, int fid)
+    {
+
+        //ensure pW has enough colums
+        RowMatrixXf p_W = pW.cast<float>();
+        //s_W = sW.cast<float>();
+        if (p_W.cols() > max_num_primary_bones)
+        {
+            printf("num primary weights needs to be less than or equal to %i\n", max_num_primary_bones);
+            return;
+        }
+            //pad with 0 if not enough columns
+        if (p_W.cols() < max_num_primary_bones)
+        {
+            int num_cols = p_W.cols();
+            p_W.conservativeResize(p_W.rows(), max_num_primary_bones);
+            p_W.rightCols(max_num_primary_bones - num_cols).setZero();
+        }
+        for (int i = 0; i < num_primary_vec4; i++)
+        {
+            RowMatrixXf W = p_W.block(0, 4 * i, p_W.rows(), 4);
+            p_W_list.push_back(W);
         }
 
-
-
-        void free_buffers(int id)
+        //ensure s_W has enough columns
+        RowMatrixXf s_W = sW.cast<float>();
+        if (s_W.cols() > max_num_secondary_bones)
         {
-            igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
-            if (g.is_initialized)
-            {
-                glDeleteVertexArrays(1, &g.vao_mesh);
-                glDeleteVertexArrays(1, &g.vao_overlay_lines);
-                glDeleteVertexArrays(1, &g.vao_overlay_points);
-
-                glDeleteBuffers(1, &g.vbo_V);
-                glDeleteBuffers(1, &g.vbo_V_normals);
-                glDeleteBuffers(1, &g.vbo_V_ambient);
-                glDeleteBuffers(1, &g.vbo_V_diffuse);
-                glDeleteBuffers(1, &g.vbo_V_specular);
-                glDeleteBuffers(1, &g.vbo_V_uv);
-                for (int i = 0; i < num_vec4; i++)
-                {
-                    glDeleteBuffers(1, &vbo_W_list[i]);
-                }
-              //  glDeleteBuffers(1, &vbo_pW1);      
-           /*     glDeleteBuffers(1, &vbo_pW2);
-                glDeleteBuffers(1, &vbo_pW3);
-                glDeleteBuffers(1, &vbo_pW4);*/
-               // glDeleteBuffers(1, &vbo_sW);
-                glDeleteBuffers(1, &g.vbo_F);
-                glDeleteBuffers(1, &g.vbo_lines_F);
-                glDeleteBuffers(1, &g.vbo_lines_V);
-                glDeleteBuffers(1, &g.vbo_lines_V_colors);
-                glDeleteBuffers(1, &g.vbo_points_F);
-                glDeleteBuffers(1, &g.vbo_points_V);
-                glDeleteBuffers(1, &g.vbo_points_V_colors);
-
-                // Text Labels
-                g.vertex_labels.free_buffers();
-                g.face_labels.free_buffers();
-                g.custom_labels.free_buffers();
-
-                glDeleteTextures(1, &g.vbo_tex);
-                glDeleteTextures(1, &g.font_atlas);
-            }
+            printf("num secondary bones needs to be less than or equal to %i \n", max_num_secondary_bones);
+            return;
         }
-        typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
-        //RowMatrixXf s_W;
-
-        std::vector<RowMatrixXf> p_W_list;
-        std::vector<GLuint> vbo_W_list;
-        /*
-        Binds the primary and secondary weights to our vertex buffer object.
-        */
-        void bind_weights(MatrixXd& pW, MatrixXd& sW, int fid)
+        //pad with 0 if not enough columns
+        if (s_W.cols() < max_num_secondary_bones)
         {
-            RowMatrixXf p_W = pW.cast<float>();
-            //s_W = sW.cast<float>();
-            if (p_W.cols() > max_num_bones)
-            {
-                printf("num primary weights needs to be less than or equal to 16\n");
-                return;
-            }
-
-                //pad with 0 if not enough columns
-            if (p_W.cols() < max_num_bones)
-            {
-                int num_cols = p_W.cols();
-                p_W.conservativeResize(p_W.rows(), max_num_bones);
-                p_W.rightCols(max_num_bones - num_cols).setZero();
-            }
+            int num_cols = s_W.cols();
+            s_W.conservativeResize(s_W.rows(), max_num_secondary_bones);
+            s_W.rightCols(max_num_secondary_bones - num_cols).setZero();
+        }
+        for (int i = 0; i < num_secondary_vec4; i++)
+        {
+            RowMatrixXf W = s_W.block(0, 4 * i, s_W.rows(), 4);
+            s_W_list.push_back(W);
+        }
         
-            int num_vec4 = p_W.cols() / 4;
-            for (int i = 0; i < num_vec4; i++)
-            {
-                RowMatrixXf W = p_W.block(0, 4 * i, p_W.rows(), 4);
-                p_W_list.push_back(W);
-            }
-            //for (int i = 0; i <)
-            //p_W1 = p_W.block(0, 0, p_W.rows(), 1);
-        /*    p_W2 = p_W.block(0, 4, p_W.rows(), 4);
-            p_W3 = p_W.block(0, 8, p_W.rows(), 4);
-            p_W4 = p_W.block(0, 12, p_W.rows(), 4);*/
-           
+    
 
-
-          //  VectorXf c = p_W.rowwise().sum();
-
-            igl::opengl::MeshGL& g = igl_v->data_list[fid].meshgl;
-            glBindVertexArray(g.vao_mesh);   
-            glUseProgram(g.shader_mesh);
-            //just set this to true, will only happen once at the start of the sim anyways
-            bool dirty_weights = true;
-            for (int i = 0; i < num_vec4; i++)
-            {
-                string name = "primary_weights_" + std::to_string(i+1);
-                igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_W_list[i], p_W_list[i], dirty_weights);
-            }
-       /*     igl::opengl::bind_vertex_attrib_array(g.shader_mesh, "primary_weights_2", vbo_pW2, p_W2, dirty_weights);
-            igl::opengl::bind_vertex_attrib_array(g.shader_mesh, "primary_weights_3", vbo_pW3, p_W3, dirty_weights);
-            igl::opengl::bind_vertex_attrib_array(g.shader_mesh, "primary_weights_4", vbo_pW4, p_W4, dirty_weights);*/
-
-           // string name = "primary_weights";
-           // GLint id1 = glGetAttribLocation(g.shader_mesh, name.c_str());
-           // GLint id3 = id1 + 1;
-           // GLint id2 = id1 + 2;
-           // GLint id4 = id1 + 3;
-           // glEnableVertexAttribArray(id1);
-           // glEnableVertexAttribArray(id2);
-           // glEnableVertexAttribArray(id3);
-           // glEnableVertexAttribArray(id4);
-           ///* if (p_W.size() == 0)
-           // {
-           //     glDisableVertexAttribArray(id);
-           //     printf("Vertex Buffer Object has nothing in it  \n");
-           // }*/
-           // glBindBuffer(GL_ARRAY_BUFFER, vbo_pW);
-           // if (dirty_weights)
-           //     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * p_W.size(), p_W.data(), GL_DYNAMIC_DRAW);
-           // //glVertexAttribPointer(id, p_W.cols(), GL_FLOAT, GL_FALSE, 0, 0);
-           //
-           // glVertexAttribPointer(id1, 4, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 4 *  4, (void*)(0));
-           // glVertexAttribPointer(id2, 4, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 4 * 4, (void*)(sizeof(float) * 4));
-           // glVertexAttribPointer(id3, 4, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 4 * 4, (void*)(sizeof(float) * 8));
-           // glVertexAttribPointer(id4, 4, GL_FLOAT, GL_FALSE, sizeof(GL_FLOAT) * 4 * 4, (void*)(sizeof(float) * 12));
-
-           // glVertexAttribDivisor(id1, 1);
-           // glVertexAttribDivisor(id2, 1);
-           // glVertexAttribDivisor(id3, 1);
-           // glVertexAttribDivisor(id4, 1);
-          //  igl::opengl::bind_vertex_attrib_array(g.shader_mesh, "secondary_weights", vbo_sW, s_W, dirty_weights);
-            //glBindVertexArray(0);
+        igl::opengl::MeshGL& g = igl_v->data_list[fid].meshgl;
+        glBindVertexArray(g.vao_mesh);   
+        glUseProgram(g.shader_mesh);
+        //just set this to true, will only happen once at the start of the sim anyways
+        bool dirty_weights = true;
+        for (int i = 0; i < num_primary_vec4; i++)
+        {
+            string name = "primary_weights_" + std::to_string(i+1);
+            igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_p_W_list[i], p_W_list[i], dirty_weights);
         }
 
-        RowMatrixXf BP;
-        void bind_bone_transforms(VectorXd& p, VectorXd& z, int id)
+        for (int i = 0; i < num_secondary_vec4; i++)//
         {
-      
-            
-            
-            VectorXf pf = p.cast<float>();
-            MatrixXf P = Map<MatrixXf>(pf.data(), p.rows() / 3, 3);
-            if (P.rows() < 4 * max_num_bones)
-            {
-                //pad with zeros
-                int num_rows = P.rows();
-                int max_num_rows = max_num_bones * 4;
-                P.conservativeResize(max_num_rows, 3);
-                P.bottomRows(max_num_rows - num_rows).setZero();
-                pf = Map<VectorXf>(P.data(), P.rows()*3, 1);
-            }
-            else if (P.rows() > 4 * max_num_bones)
-            {
-                P = P.topRows(4 * max_num_bones);
-                pf = Map<VectorXf>(P.data(), P.rows() * 3, 1);
-            }
-            BP  = P;
-            igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
-            glBindVertexArray(g.vao_mesh);
-            glUseProgram(g.shader_mesh);
-            GLint pw = glGetUniformLocation(g.shader_mesh, "primary_bones");
-            glUniformMatrix4x3fv(pw, max_num_bones, GL_FALSE, BP.data());
+            string name = "secondary_weights_" + std::to_string(i + 1);
+            igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_s_W_list[i], s_W_list[i], dirty_weights);
+        }
+
+    }
+
+    RowMatrixXf BP;
+    RowMatrixXf BZ;
+    void bind_bone_transforms(VectorXd& p, VectorXd& z, int id)
+    {
+        VectorXf pf = p.cast<float>();
+        MatrixXf P = Map<MatrixXf>(pf.data(), p.rows() / 3, 3);
+        if (P.rows() < 4 * max_num_primary_bones)
+        {
+            //pad with zeros
+            int num_rows = P.rows();
+            int max_num_rows = max_num_primary_bones * 4;
+            P.conservativeResize(max_num_rows, 3);
+            P.bottomRows(max_num_rows - num_rows).setZero();
+            pf = Map<VectorXf>(P.data(), P.rows()*3, 1);
+        }
+        else if (P.rows() > 4 * max_num_primary_bones)
+        {
+            P = P.topRows(4 * max_num_primary_bones);
+            pf = Map<VectorXf>(P.data(), P.rows() * 3, 1);
+        }
+        BP  = P;
 
 
-           /* VectorXf sf = z.cast<float>();
-            GLuint sw = glGetUniformLocation(g.shader_mesh, "secondary_bones");
-            glUniformMatrix4x3fv(sw, sf.size(), GL_FALSE, P.data());*/
-            //  GLuint sw = glGetUniformLocation(g.shader_mesh, "secondary_weights");
+        VectorXf zf = z.cast<float>();
+        MatrixXf Z = Map<MatrixXf>(zf.data(), zf.rows() / 3, 3);
+        if (Z.rows() < 4 * max_num_secondary_bones)
+        {
+            //pad with zeros
+            int num_rows = Z.rows();
+            int max_num_rows = max_num_secondary_bones * 4;
+            Z.conservativeResize(max_num_rows, 3);
+            Z.bottomRows(max_num_rows - num_rows).setZero();
+            zf = Map<VectorXf>(Z.data(), Z.rows() * 3, 1);
+        }
+        else if (Z.rows() > 4 * max_num_secondary_bones)
+        {
+            Z = Z.topRows(4 * max_num_secondary_bones);
+            zf = Map<VectorXf>(Z.data(), Z.rows() * 3, 1);
+        }
+        BZ = Z;
+
+        igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
+        glBindVertexArray(g.vao_mesh);
+        glUseProgram(g.shader_mesh);
+        GLint pw = glGetUniformLocation(g.shader_mesh, "primary_bones");
+        glUniformMatrix4x3fv(pw, max_num_primary_bones, GL_FALSE, BP.data());
+
+        GLint zw = glGetUniformLocation(g.shader_mesh, "secondary_bones");
+        glUniformMatrix4x3fv(zw, max_num_secondary_bones, GL_FALSE, BZ.data());
+
+
+        /* VectorXf sf = z.cast<float>();
+        GLuint sw = glGetUniformLocation(g.shader_mesh, "secondary_bones");
+        glUniformMatrix4x3fv(sw, sf.size(), GL_FALSE, P.data());*/
+        //  GLuint sw = glGetUniformLocation(g.shader_mesh, "secondary_weights");
 
           
 
-        }
+    }
 };
