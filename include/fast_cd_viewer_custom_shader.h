@@ -6,6 +6,24 @@
 #include <filesystem>
 #include <igl/opengl/create_shader_program.h>
 #include <igl/opengl/bind_vertex_attrib_array.h>
+#include <igl/opengl/destroy_shader_program.h>
+
+//if face based
+  // Input:
+//   X  #V by dim quantity
+// Output:
+//   X_vbo  #F*3 by dim scattering per corner
+void per_corner(const Eigen::MatrixXd& X, const Eigen::MatrixXi& F,
+    igl::opengl::MeshGL::RowMatrixXf& X_vbo)
+{
+    X_vbo.resize(F.rows() * 3, X.cols());
+    for (unsigned i = 0; i < F.rows(); ++i)
+        for (unsigned j = 0; j < 3; ++j)
+            X_vbo.row(i * 3 + j) = X.row(F(i, j)).cast<float>();
+   
+}
+
+
 using namespace std;
 struct fast_cd_viewer_custom_shader : public fast_cd_viewer
 {
@@ -87,184 +105,32 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
        dirty_secondary_bones = false;
     }
 
-    void launch(bool launch_rendering = true)
-    { //TODO initialized only data(0)
-     //   fast_cd_viewer::launch();
-     //   return;
-        if (igl_v->data().meshgl.is_initialized)
-        {
-            return;
-        }
-        igl_v->data().meshgl.is_initialized = true;
-        std::string mesh_vertex_shader_string = v_sh;
-            //R"(#version 150
-            //    uniform mat4 view;
-            //    uniform mat4 proj;
-            //    uniform mat4 normal_matrix;
-            //    in vec3 position;
-            //    in vec3 normal;
-            //    out vec3 position_eye;
-            //    out vec3 normal_eye;
-            //    in vec4 Ka;
-            //    in vec4 Kd;
-            //    in vec4 Ks;
-            //    in vec2 texcoord;
-            //    out vec2 texcoordi;
-            //    out vec4 Kai;
-            //    out vec4 Kdi;
-            //    out vec4 Ksi;
+    void launch(int max_fps = 60, bool launch_rendering = true)
+    { 
 
-            //    void main()
-            //    {
-            //        position_eye = vec3 (view * vec4 (position, 1.0));
-            //        normal_eye = vec3 (normal_matrix * vec4 (normal, 0.0));
-            //        normal_eye = normalize(normal_eye);
-            //        gl_Position = proj * vec4 (position_eye, 1.0); //proj * view * vec4(position, 1.0);"
-            //        Kai = Ka;
-            //        Kdi = Kd;
-            //        Ksi = Ks;
-            //        texcoordi = texcoord;
-            //    }
-            // )";
-
-            std::string mesh_fragment_shader_string =  f_sh;
- 
-    std::string overlay_vertex_shader_string =
-    R"(#version 150
-        uniform mat4 view;
-        uniform mat4 proj;
-        in vec3 position;
-        in vec3 color;
-        out vec3 color_frag;
-
-        void main()
-        {
-            gl_Position = proj * view * vec4 (position, 1.0);
-            color_frag = color;
-        }
-        )";
-
-    std::string overlay_fragment_shader_string =
-    R"(#version 150
-        in vec3 color_frag;
-        out vec4 outColor;
-        void main()
-        {
-        outColor = vec4(color_frag, 1.0);
-        }
-        )";
-
-    std::string overlay_point_fragment_shader_string =
-        R"(#version 150
-        in vec3 color_frag;
-        out vec4 outColor;
-        void main()
-        {
-            if (length(gl_PointCoord - vec2(0.5)) > 0.5)
-            discard;
-            outColor = vec4(color_frag, 1.0);
-        }
-        )";
-
-    std::string text_vert_shader =
-        R"(#version 330
-        in vec3 position;
-        in float character;
-        in float offset;
-        uniform mat4 view;
-        uniform mat4 proj;
-        out int vCharacter;
-        out float vOffset;
-        void main()
-        {
-            vCharacter = int(character);
-            vOffset = offset;
-            gl_Position = proj * view * vec4(position, 1.0);
-        }
-        )";
-
-    std::string text_geom_shader =
-    R"(#version 150 core
-        layout(points) in;
-        layout(triangle_strip, max_vertices = 4) out;
-        out vec2 gTexCoord;
-        uniform mat4 view;
-        uniform mat4 proj;
-        uniform vec2 CellSize;
-        uniform vec2 CellOffset;
-        uniform vec2 RenderSize;
-        uniform vec2 RenderOrigin;
-        uniform float TextShiftFactor;
-        in int vCharacter[1];
-        in float vOffset[1];
-        void main()
-        {
-            // Code taken from https://prideout.net/strings-inside-vertex-buffers
-            // Determine the final quad's position and size:
-            vec4 P = gl_in[0].gl_Position + vec4( vOffset[0]*TextShiftFactor, 0.0, 0.0, 0.0 ); // 0.04
-            vec4 U = vec4(1, 0, 0, 0) * RenderSize.x; // 1.0
-            vec4 V = vec4(0, 1, 0, 0) * RenderSize.y; // 1.0
-
-            // Determine the texture coordinates:
-            int letter = vCharacter[0]; // used to be the character
-            letter = clamp(letter - 32, 0, 96);
-            int row = letter / 16 + 1;
-            int col = letter % 16;
-            float S0 = CellOffset.x + CellSize.x * col;
-            float T0 = CellOffset.y + 1 - CellSize.y * row;
-            float S1 = S0 + CellSize.x - CellOffset.x;
-            float T1 = T0 + CellSize.y;
-
-            // Output the quad's vertices:
-            gTexCoord = vec2(S0, T1); gl_Position = P - U - V; EmitVertex();
-            gTexCoord = vec2(S1, T1); gl_Position = P + U - V; EmitVertex();
-            gTexCoord = vec2(S0, T0); gl_Position = P - U + V; EmitVertex();
-            gTexCoord = vec2(S1, T0); gl_Position = P + U + V; EmitVertex();
-            EndPrimitive();
-        }
-    )";
-
-    std::string text_frag_shader =
-    R"(#version 330
-        out vec4 outColor;
-        in vec2 gTexCoord;
-        uniform sampler2D font_atlas;
-        uniform vec3 TextColor;
-        void main()
-        {
-            float A = texture(font_atlas, gTexCoord).r;
-            outColor = vec4(TextColor, A);
-        }
-        )";
     igl_v->launch_init(true, false, "fast CD App", 1920, 1080);
-   // igl_v->data().meshgl.init_buffers();
+
+    igl_v->data_list[0].meshgl.init();
+ 
     init_buffers(0);
-    igl_v->data().meshgl.init_text_rendering();
+
+   
+    igl::opengl::MeshGL& g = igl_v->data_list[0].meshgl;
+    igl::opengl::destroy_shader_program(g.shader_mesh);
+
+    std::string mesh_vertex_shader_string = v_sh;
+
+    std::string mesh_fragment_shader_string =  f_sh;
+
     igl::opengl::create_shader_program(
         mesh_vertex_shader_string,
         mesh_fragment_shader_string,
         {},
-        igl_v->data().meshgl.shader_mesh);
-    igl::opengl::create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_fragment_shader_string,
-        {},
-        igl_v->data().meshgl.shader_overlay_lines);
-    igl::opengl::create_shader_program(
-        overlay_vertex_shader_string,
-        overlay_point_fragment_shader_string,
-        {},
-        igl_v->data().meshgl.shader_overlay_points);
-    igl::opengl::create_shader_program(
-        text_geom_shader,
-        text_vert_shader,
-        text_frag_shader,
-        {},
-        igl_v->data().meshgl.shader_text);
+        g.shader_mesh);
 
     if (launch_rendering)
         {
-            igl_v->core().animation_max_fps =2000;
+            igl_v->core().animation_max_fps = max_fps;
             igl_v->launch_rendering(true);
             igl_v->launch_shut();
             //fast_cd_viewer::launch();
@@ -275,52 +141,23 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     //vreate all the vbo indicies
     void init_buffers(int id)
     {
-        igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
-        // Mesh: Vertex Array Object & Buffer objects
-        glGenVertexArrays(1, &g.vao_mesh);
+        igl::opengl::MeshGL& g = igl_v->data_list[0].meshgl;
+      
         glBindVertexArray(g.vao_mesh);
-        glGenBuffers(1, &g.vbo_V);
-        glGenBuffers(1, &g.vbo_V_normals);
-        glGenBuffers(1, &g.vbo_V_ambient);
-        glGenBuffers(1, &g.vbo_V_diffuse);
-        glGenBuffers(1, &g.vbo_V_specular);
-        glGenBuffers(1, &g.vbo_V_uv);
-        glGenBuffers(1, &g.vbo_F);
+       
         for (int i = 0; i < num_primary_vec4; i++)
         {
             glGenBuffers(1, &vbo_p_W_list[i]);
         }
         for (int i = 0; i < num_secondary_vec4; i++)
         {
-            glGenBuffers(1, &vbo_s_W_list[i]);
+            glGenBuffers(1, &vbo_s_W_list[i]);//
         }
-        /*   glGenBuffers(1, &vbo_pW2);
-        glGenBuffers(1, &vbo_pW3);
-        glGenBuffers(1, &vbo_pW4);*/
-        // glGenBuffers(1, &vbo_sW);             //generate the buffers
-        glGenTextures(1, &g.vbo_tex);
-        glGenTextures(1, &g.font_atlas);
-
-        // Line overlay
-        glGenVertexArrays(1, &g.vao_overlay_lines);
-        glBindVertexArray(g.vao_overlay_lines);
-        glGenBuffers(1, &g.vbo_lines_F);
-        glGenBuffers(1, &g.vbo_lines_V);
-        glGenBuffers(1, &g.vbo_lines_V_colors);
-
-        // Point overlay
-        glGenVertexArrays(1, &g.vao_overlay_points);
-        glBindVertexArray(g.vao_overlay_points);
-        glGenBuffers(1, &g.vbo_points_F);
-        glGenBuffers(1, &g.vbo_points_V);
-        glGenBuffers(1, &g.vbo_points_V_colors);
-
-        // Text Labels
-        g.vertex_labels.init_buffers();
-        g.face_labels.init_buffers();
-        g.custom_labels.init_buffers();
-
+          
         g.dirty = igl::opengl::MeshGL::DIRTY_ALL;
+
+        dirty_primary_weights = true;
+        dirty_secondary_weights = true;
             
     }
     //destroy all the vbos
@@ -329,16 +166,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
         if (g.is_initialized)
         {
-            glDeleteVertexArrays(1, &g.vao_mesh);
-            glDeleteVertexArrays(1, &g.vao_overlay_lines);
-            glDeleteVertexArrays(1, &g.vao_overlay_points);
-
-            glDeleteBuffers(1, &g.vbo_V);
-            glDeleteBuffers(1, &g.vbo_V_normals);
-            glDeleteBuffers(1, &g.vbo_V_ambient);
-            glDeleteBuffers(1, &g.vbo_V_diffuse);
-            glDeleteBuffers(1, &g.vbo_V_specular);
-            glDeleteBuffers(1, &g.vbo_V_uv);
+           
             for (int i = 0; i < num_primary_vec4; i++)
             {
                 glDeleteBuffers(1, &vbo_p_W_list[i]);
@@ -347,47 +175,40 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             {
                 glDeleteBuffers(1, &vbo_s_W_list[i]);
             }
-            //  glDeleteBuffers(1, &vbo_pW1);      
-        /*     glDeleteBuffers(1, &vbo_pW2);
-            glDeleteBuffers(1, &vbo_pW3);
-            glDeleteBuffers(1, &vbo_pW4);*/
-            // glDeleteBuffers(1, &vbo_sW);
-            glDeleteBuffers(1, &g.vbo_F);
-            glDeleteBuffers(1, &g.vbo_lines_F);
-            glDeleteBuffers(1, &g.vbo_lines_V);
-            glDeleteBuffers(1, &g.vbo_lines_V_colors);
-            glDeleteBuffers(1, &g.vbo_points_F);
-            glDeleteBuffers(1, &g.vbo_points_V);
-            glDeleteBuffers(1, &g.vbo_points_V_colors);
-
-            // Text Labels
-            g.vertex_labels.free_buffers();
-            g.face_labels.free_buffers();
-            g.custom_labels.free_buffers();
-
-            glDeleteTextures(1, &g.vbo_tex);
-            glDeleteTextures(1, &g.font_atlas);
         }
     }
     
+
+
     //stores the data of the primary weights and sets dirty flag to true. DOES NOT BIND THESE WEIHTS TO THE VBO
     void set_primary_weights(const MatrixXd& pW, int fid)
     {
-        //ensure pW has enough colums
-        RowMatrixXf p_W = pW.cast<float>();
-        //s_W = sW.cast<float>();
+
+        igl::opengl::MeshGL& g = igl_v->data_list[fid].meshgl;
+ 
+        RowMatrixXf p_W;
+        if (igl_v->data_list[fid].face_based)
+        {
+            per_corner(pW, igl_v->data_list[fid].F, p_W);
+        }
+        else
+        {
+            //ensure pW has enough colums
+             p_W = pW.cast<float>();
+        }
+
         if (p_W.cols() > max_num_primary_bones)
         {
             printf("num primary weights needs to be less than or equal to %i\n", max_num_primary_bones);
-            return;
-        }
+           // return;
+        }        
         //pad with 0 if not enough columns
         if (p_W.cols() < max_num_primary_bones)
         {
             int num_cols = p_W.cols();
             p_W.conservativeResize(p_W.rows(), max_num_primary_bones);
             p_W.rightCols(max_num_primary_bones - num_cols).setZero();
-        }
+        }        
         for (int i = 0; i < num_primary_vec4; i++)
         {
             RowMatrixXf W = p_W.block(0, 4 * i, p_W.rows(), 4);
@@ -399,12 +220,22 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     //stores the data of the secondary weights and sets dirty flag to true. DOES NOT BIND THESE WEIHTS TO THE VBO
     void set_secondary_weights(const MatrixXd& sW, int fid)
     { 
-        //ensure s_W has enough columns
-        RowMatrixXf s_W = sW.cast<float>();
+
+        RowMatrixXf s_W;
+        if (igl_v->data_list[fid].face_based)
+        {
+            per_corner(sW, igl_v->data_list[fid].F, s_W);
+        }
+        else
+        {
+            //ensure pW has enough colums
+            s_W = sW.cast<float>();
+        }
+        
         if (s_W.cols() > max_num_secondary_bones)
         {
             printf("num secondary bones needs to be less than or equal to %i \n", max_num_secondary_bones);
-            return;
+        //    return;
         }
         //pad with 0 if not enough columns
         if (s_W.cols() < max_num_secondary_bones)
@@ -413,6 +244,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             s_W.conservativeResize(s_W.rows(), max_num_secondary_bones);
             s_W.rightCols(max_num_secondary_bones - num_cols).setZero();
         }
+
         for (int i = 0; i < num_secondary_vec4; i++)
         {
             RowMatrixXf W = s_W.block(0, 4 * i, s_W.rows(), 4);
@@ -533,39 +365,57 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     //call this to update any of the uniforms/vertex attributes that have changes by checking the dirty flags
     void updateGL(int fid)
     {
+        igl_v->data_list[fid].face_based = false; // temporary fix, make sure face based is false
         igl::opengl::MeshGL& g = igl_v->data_list[fid].meshgl;
-        glBindVertexArray(g.vao_mesh);  //are these necessary?
-        glUseProgram(g.shader_mesh);
-
+      //  glBindVertexArray(g.vao_mesh);  //are these necessary?//
+       //glVertex
+   //    glUseProgram(g.shader_mesh);
+      //  g.v
         if (dirty_primary_weights)
         {
+            GLint h;
+            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
+           glBindVertexArray(g.vao_mesh);
+           // glBindVertexBuffer(vertexBindingPoint, mesh.vbo, mesh.vboOffset, sizeof(Vertex));
             for (int i = 0; i < num_primary_vec4; i++)
             {
                 string name = "primary_weights_" + std::to_string(i + 1);
                 igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_p_W_list[i], p_W_list[i], true);
             }
             dirty_primary_weights = false;
+
+         //   glBindVertexArray(h);
         }
-        if (dirty_secondary_weights)
+        if (dirty_secondary_weights)   
         {
+            GLint h;
+           glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
+            glBindVertexArray(g.vao_mesh);
+        //    glBindVertexArray(g.vao_mesh);
             for (int i = 0; i < num_secondary_vec4; i++)//
             {
                 string name = "secondary_weights_" + std::to_string(i + 1);
                 igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_s_W_list[i], s_W_list[i], true);
             }
             dirty_secondary_weights = false;
+            
+          //  glBindVertexArray(h);
         }
         if (dirty_primary_bones)
         {
+         //   glBindVertexArray(g.vao_mesh);
             GLint pw = glGetUniformLocation(g.shader_mesh, "primary_bones");
             glUniformMatrix4x3fv(pw, max_num_primary_bones, GL_FALSE, BP.data());
             dirty_primary_bones = false;
         }
         if (dirty_secondary_bones)
         {
+          //  glBindVertexArray(g.vao_mesh);
             GLint zw = glGetUniformLocation(g.shader_mesh, "secondary_bones");
             glUniformMatrix4x3fv(zw, max_num_secondary_bones, GL_FALSE, BZ.data());
             dirty_secondary_bones = false;
         }
+       // glBindVertexArray(0);
+
     }
 };
