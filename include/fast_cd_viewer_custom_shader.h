@@ -60,9 +60,11 @@ struct fast_cd_gl
     fast_cd_gl(int id, int max_num_primary_bones=16, int max_num_secondary_bones=16)
     {
         this->id = id;
-        this->max_num_primary_bones;
-        this->max_num_secondary_bones;
+        this->max_num_primary_bones = max_num_primary_bones;
+        this->max_num_secondary_bones = max_num_primary_bones;
 
+        num_primary_vec4 = max_num_primary_bones / 4;
+        num_secondary_vec4 = max_num_secondary_bones / 4;
 
         vbo_p_W_list.resize(num_primary_vec4);
         vbo_s_W_list.resize(num_secondary_vec4);
@@ -305,8 +307,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             buffer has this value set in the primary_bones[n] uniform, where n==max_num_bones\n", max_num_primary_bones);
        num_primary_vec4 = max_num_primary_bones / 4;
        num_secondary_vec4 = max_num_secondary_bones / 4;
-     
-       fcd_gl.push_back(fast_cd_gl(0, num_primary_vec4, num_secondary_vec4));
+       fast_cd_gl f = fast_cd_gl(0, num_primary_vec4, num_secondary_vec4);
+       fcd_gl.push_back(f);
     }
 
 
@@ -448,9 +450,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         igl_v->append_mesh();
         id = igl_v->data_list.size() - 1;
         igl_v->data_list[id].clear();
-
-        fcd_gl.push_back(fast_cd_gl(id,
-            max_num_primary_bones, max_num_secondary_bones));
+        fast_cd_gl f = fast_cd_gl(id, num_primary_vec4, num_secondary_vec4);
+        fcd_gl.push_back(f);
     }
 
     void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
@@ -459,8 +460,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         id = igl_v->data_list.size() - 1;
         igl_v->data_list[id].clear();
         igl_v->data_list[id].set_mesh(V, F);
-        fcd_gl.push_back(fast_cd_gl(id,
-            max_num_primary_bones, max_num_secondary_bones));
+        fast_cd_gl f = fast_cd_gl(id, num_primary_vec4, num_secondary_vec4);
+        fcd_gl.push_back(f);
     }
 
 
