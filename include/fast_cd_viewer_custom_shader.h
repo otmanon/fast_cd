@@ -23,6 +23,7 @@ void per_corner(const Eigen::MatrixXd& X, const Eigen::MatrixXi& F,
    
 }
 
+typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
 
 /*
 Container for each mesh containing the fastCD info needed to render it
@@ -38,8 +39,7 @@ struct fast_cd_gl
     int num_secondary_vec4;      //number of secondary vec4 we will load our weights in. 
 
 
-    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
-
+ 
     std::vector<RowMatrixXf> p_W_list;
     std::vector<GLuint> vbo_p_W_list;
 
@@ -262,23 +262,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     int max_num_secondary_bones; //number of secondary bones
     int num_secondary_vec4;      //number of secondary vec4 we will load our weights in. 
 
+    std::vector<fast_cd_gl> fcd_gl;
 
-    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
-    std::vector<RowMatrixXf> p_W_list;
-    std::vector<GLuint> vbo_p_W_list;
-
-    std::vector<RowMatrixXf> s_W_list;
-    std::vector<GLuint> vbo_s_W_list;
-
-    RowMatrixXf BP; //primary bone matrices
-    RowMatrixXf BZ; //secondary bone matrices
-    //secondary weights and primary weights will always be dirty at the same time: at the star tof the sim. For some reason I can't initialize them until the first draw call
-  
-    bool dirty_primary_weights;
-    bool dirty_secondary_weights;
-
-    bool dirty_primary_bones;
-    bool dirty_secondary_bones;
 
     fast_cd_viewer_custom_shader() {};
 	fast_cd_viewer_custom_shader(string& vertex_shader, string& fragment_shader, int max_b_p=16, int max_b_s = 16) :fast_cd_viewer()
@@ -320,15 +305,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             buffer has this value set in the primary_bones[n] uniform, where n==max_num_bones\n", max_num_primary_bones);
        num_primary_vec4 = max_num_primary_bones / 4;
        num_secondary_vec4 = max_num_secondary_bones / 4;
-        //initialize list 
-       vbo_p_W_list.resize(num_primary_vec4);
-       vbo_s_W_list.resize(num_secondary_vec4);
-
-       dirty_primary_weights = false;
-       dirty_secondary_weights = false;
-
-       dirty_primary_bones = false;
-       dirty_secondary_bones = false;
+     
+       fcd_gl.push_back(fast_cd_gl(0, num_primary_vec4, num_secondary_vec4));
     }
 
 
@@ -339,6 +317,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             init_shaders(i);
         }
     }
+
     void init_shaders(int id)
     {
         igl_v->data_list[id].meshgl.init();
@@ -379,45 +358,26 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     //vreate all the vbo indicies
     void init_buffers(int id)
     {
-        igl::opengl::MeshGL& g = igl_v->data_list[0].meshgl;
+
+        igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
       
         glBindVertexArray(g.vao_mesh);
+
+        assert(id < igl_v->data_list.size() && "id is not associated with an igl data mesh!");
+
+        fcd_gl[id].init_buffers(g);
        
-        for (int i = 0; i < num_primary_vec4; i++)
-        {
-            glGenBuffers(1, &vbo_p_W_list[i]);
-        }
-        for (int i = 0; i < num_secondary_vec4; i++)
-        {
-            glGenBuffers(1, &vbo_s_W_list[i]);//
-        }
           
         g.dirty = igl::opengl::MeshGL::DIRTY_ALL;
 
-        dirty_primary_weights = true;
-        dirty_secondary_weights = true;
-            
     }
     //destroy all the vbos
     void free_buffers(int id)
     {
         igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
-        if (g.is_initialized)
-        {
-           
-            for (int i = 0; i < num_primary_vec4; i++)
-            {
-                glDeleteBuffers(1, &vbo_p_W_list[i]);
-            }
-            for (int i = 0; i < num_secondary_vec4; i++)
-            {
-                glDeleteBuffers(1, &vbo_s_W_list[i]);
-            }
-        }
+        fcd_gl[id].free_buffers(g);
     }
     
-
-
     //stores the data of the primary weights and sets dirty flag to true. DOES NOT BIND THESE WEIHTS TO THE VBO
     void set_primary_weights(const MatrixXd& pW, int fid)
     {
@@ -435,24 +395,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
              p_W = pW.cast<float>();
         }
 
-        if (p_W.cols() > max_num_primary_bones)
-        {
-            printf("num primary weights needs to be less than or equal to %i\n", max_num_primary_bones);
-           // return;
-        }        
-        //pad with 0 if not enough columns
-        if (p_W.cols() < max_num_primary_bones)
-        {
-            int num_cols = p_W.cols();
-            p_W.conservativeResize(p_W.rows(), max_num_primary_bones);
-            p_W.rightCols(max_num_primary_bones - num_cols).setZero();
-        }        
-        for (int i = 0; i < num_primary_vec4; i++)
-        {
-            RowMatrixXf W = p_W.block(0, 4 * i, p_W.rows(), 4);
-            p_W_list.push_back(W);
-        }
-        dirty_primary_weights = true;
+        fcd_gl[fid].set_primary_weights(p_W);
+        
     }
 
     //stores the data of the secondary weights and sets dirty flag to true. DOES NOT BIND THESE WEIHTS TO THE VBO
@@ -470,25 +414,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             s_W = sW.cast<float>();
         }
         
-        if (s_W.cols() > max_num_secondary_bones)
-        {
-            printf("num secondary bones needs to be less than or equal to %i \n", max_num_secondary_bones);
-        //    return;
-        }
-        //pad with 0 if not enough columns
-        if (s_W.cols() < max_num_secondary_bones)
-        {
-            int num_cols = s_W.cols();
-            s_W.conservativeResize(s_W.rows(), max_num_secondary_bones);
-            s_W.rightCols(max_num_secondary_bones - num_cols).setZero();
-        }
-
-        for (int i = 0; i < num_secondary_vec4; i++)
-        {
-            RowMatrixXf W = s_W.block(0, 4 * i, s_W.rows(), 4);
-            s_W_list.push_back(W);
-        }
-        dirty_secondary_weights = true;
+        fcd_gl[fid].set_secondary_weights(s_W);
     }
 
     void set_weights(const MatrixXd& pW, const MatrixXd& sW, int fid)
@@ -500,45 +426,13 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     void set_primary_bone_transforms(VectorXd& p, int id)
     {
         VectorXf pf = p.cast<float>();
-        MatrixXf P = Map<MatrixXf>(pf.data(), p.rows() / 3, 3);
-        if (P.rows() < 4 * max_num_primary_bones)
-        {
-            //pad with zeros
-            int num_rows = P.rows();
-            int max_num_rows = max_num_primary_bones * 4;
-            P.conservativeResize(max_num_rows, 3);
-            P.bottomRows(max_num_rows - num_rows).setZero();
-            pf = Map<VectorXf>(P.data(), P.rows() * 3, 1);
-        }
-        else if (P.rows() > 4 * max_num_primary_bones)
-        {
-            P = P.topRows(4 * max_num_primary_bones);
-            pf = Map<VectorXf>(P.data(), P.rows() * 3, 1);
-        }
-        BP = P;
-        dirty_primary_bones = true;
+        fcd_gl[fid].set_primary_bone_transforms(pf);
     }
 
     void set_secondary_bone_transforms(VectorXd& z, int id)
     {
         VectorXf zf = z.cast<float>();
-        MatrixXf Z = Map<MatrixXf>(zf.data(), zf.rows() / 3, 3);
-        if (Z.rows() < 4 * max_num_secondary_bones)
-        {
-            //pad with zeros
-            int num_rows = Z.rows();
-            int max_num_rows = max_num_secondary_bones * 4;
-            Z.conservativeResize(max_num_rows, 3);
-            Z.bottomRows(max_num_rows - num_rows).setZero();
-            zf = Map<VectorXf>(Z.data(), Z.rows() * 3, 1);
-        }
-        else if (Z.rows() > 4 * max_num_secondary_bones)
-        {
-            Z = Z.topRows(4 * max_num_secondary_bones);
-            zf = Map<VectorXf>(Z.data(), Z.rows() * 3, 1);
-        }
-        BZ = Z;
-        dirty_secondary_bones = true;
+        fcd_gl[fid].set_primary_bone_transforms(zf);
     }
 
     void set_bone_transforms(VectorXd& p, VectorXd& z, int id)
@@ -549,7 +443,25 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     }
 
    
-    
+    void add_mesh(int& id)
+    {
+        igl_v->append_mesh();
+        id = igl_v->data_list.size() - 1;
+        igl_v->data_list[id].clear();
+
+        fcd_gl.push_back(fast_cd_gl(id,
+            max_num_primary_bones, max_num_secondary_bones));
+    }
+
+    void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
+    {
+        igl_v->append_mesh();
+        id = igl_v->data_list.size() - 1;
+        igl_v->data_list[id].clear();
+        igl_v->data_list[id].set_mesh(V, F);
+        fcd_gl.push_back(fast_cd_gl(id,
+            max_num_primary_bones, max_num_secondary_bones));
+    }
 
 
     //call this to update any of the uniforms/vertex attributes that have changes by checking the dirty flags
@@ -557,55 +469,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     {
         igl_v->data_list[fid].face_based = false; // temporary fix, make sure face based is false
         igl::opengl::MeshGL& g = igl_v->data_list[fid].meshgl;
-      //  glBindVertexArray(g.vao_mesh);  //are these necessary?//
-       //glVertex
-   //    glUseProgram(g.shader_mesh);
-      //  g.v
-        if (dirty_primary_weights)
-        {
-            GLint h;
-            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
-           glBindVertexArray(g.vao_mesh);
-           // glBindVertexBuffer(vertexBindingPoint, mesh.vbo, mesh.vboOffset, sizeof(Vertex));
-            for (int i = 0; i < num_primary_vec4; i++)
-            {
-                string name = "primary_weights_" + std::to_string(i + 1);
-                igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_p_W_list[i], p_W_list[i], true);
-            }
-            dirty_primary_weights = true;
-
-         //   glBindVertexArray(h);
-        }
-        if (dirty_secondary_weights)   
-        {
-            GLint h;
-           glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
-            glBindVertexArray(g.vao_mesh);
-        //    glBindVertexArray(g.vao_mesh);
-            for (int i = 0; i < num_secondary_vec4; i++)//
-            {
-                string name = "secondary_weights_" + std::to_string(i + 1);
-                igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_s_W_list[i], s_W_list[i], true);
-            }
-            dirty_secondary_weights = true;
-            
-          //  glBindVertexArray(h);
-        }
-        if (dirty_primary_bones)
-        {
-         //   glBindVertexArray(g.vao_mesh);
-            GLint pw = glGetUniformLocation(g.shader_mesh, "primary_bones");
-            glUniformMatrix4x3fv(pw, max_num_primary_bones, GL_FALSE, BP.data());
-            dirty_primary_bones = true; // false;
-        }
-        if (dirty_secondary_bones)
-        {
-          //  glBindVertexArray(g.vao_mesh);
-            GLint zw = glGetUniformLocation(g.shader_mesh, "secondary_bones");
-            glUniformMatrix4x3fv(zw, max_num_secondary_bones, GL_FALSE, BZ.data());
-            dirty_secondary_bones = true;//false;
-        }
-       // glBindVertexArray(0);
+        fcd_gl[fid].updateGL(g);
 
     }
 };
