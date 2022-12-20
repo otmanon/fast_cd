@@ -65,11 +65,13 @@ public:
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
+		igl_v->data_list[id].clear();
 	}
 	virtual void add_mesh(const MatrixXd& V, const MatrixXi& F, int& id)
 	{
 		igl_v->append_mesh();
 		id = igl_v->data_list.size() - 1;
+		igl_v->data_list[id].clear();
 		igl_v->data_list[id].set_mesh(V, F);
 	}
 

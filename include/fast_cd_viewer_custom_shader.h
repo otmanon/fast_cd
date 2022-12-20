@@ -55,6 +55,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     bool dirty_primary_bones;
     bool dirty_secondary_bones;
 
+    fast_cd_viewer_custom_shader() {};
 	fast_cd_viewer_custom_shader(string& vertex_shader, string& fragment_shader, int max_b_p=16, int max_b_s = 16) :fast_cd_viewer()
 	{
         namespace fs = std::filesystem;
