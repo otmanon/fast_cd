@@ -315,6 +315,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
 
     void init_shaders(int id)
     {
+        igl_v->data_list[id].meshgl.free();
         igl_v->data_list[id].meshgl.init();
 
         init_buffers(id);
@@ -353,18 +354,10 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     //vreate all the vbo indicies
     void init_buffers(int id)
     {
-
         igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
-      
-        
-
         assert(id < igl_v->data_list.size() && "id is not associated with an igl data mesh!");
-
         fcd_gl[id].init_buffers(g);
-       
-          
         g.dirty = igl::opengl::MeshGL::DIRTY_ALL;
-
     }
     //destroy all the vbos
     void free_buffers(int id)
@@ -442,6 +435,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         igl_v->append_mesh();
         id = igl_v->data_list.size() - 1;
         igl_v->data_list[id].clear();
+        init_all_shaders();
         fast_cd_gl f = fast_cd_gl(id, num_primary_vec4, num_secondary_vec4);
         fcd_gl.push_back(f);
     }
@@ -452,6 +446,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         id = igl_v->data_list.size() - 1;
         igl_v->data_list[id].clear();
         igl_v->data_list[id].set_mesh(V, F);
+        init_all_shaders();
         fast_cd_gl f = fast_cd_gl(id, num_primary_vec4, num_secondary_vec4);
         fcd_gl.push_back(f);
     }
