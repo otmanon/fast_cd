@@ -307,7 +307,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             buffer has this value set in the primary_bones[n] uniform, where n==max_num_bones\n", max_num_primary_bones);
        num_primary_vec4 = max_num_primary_bones / 4;
        num_secondary_vec4 = max_num_secondary_bones / 4;
-       fast_cd_gl f = fast_cd_gl(0, num_primary_vec4, num_secondary_vec4);
+       fast_cd_gl f = fast_cd_gl(0, max_num_primary_bones, max_num_primary_bones);
        fcd_gl.push_back(f);
     }
 
@@ -428,13 +428,13 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     void set_primary_bone_transforms(VectorXd& p, int id)
     {
         VectorXf pf = p.cast<float>();
-        fcd_gl[fid].set_primary_bone_transforms(pf);
+        fcd_gl[id].set_primary_bone_transforms(pf);
     }
 
     void set_secondary_bone_transforms(VectorXd& z, int id)
     {
         VectorXf zf = z.cast<float>();
-        fcd_gl[fid].set_primary_bone_transforms(zf);
+        fcd_gl[id].set_secondary_bone_transforms(zf);
     }
 
     void set_bone_transforms(VectorXd& p, VectorXd& z, int id)
