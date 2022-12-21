@@ -78,7 +78,8 @@ struct fast_cd_gl
 
     void init_buffers(igl::opengl::MeshGL& g)
     {
-
+        GLint h;
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
         glBindVertexArray(g.vao_mesh);
 
         for (int i = 0; i < num_primary_vec4; i++)
@@ -94,10 +95,14 @@ struct fast_cd_gl
 
         dirty_primary_weights = true;
         dirty_secondary_weights = true;
+        glBindVertexArray(h);
     }
 
     void free_buffers(igl::opengl::MeshGL& g)
     {
+        GLint h;
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
+        glBindVertexArray(g.vao_mesh);
         if (g.is_initialized)
         {
 
@@ -110,6 +115,7 @@ struct fast_cd_gl
                 glDeleteBuffers(1, &vbo_s_W_list[i]);
             }
         }
+        glBindVertexArray(h);
     }
     void set_primary_weights(RowMatrixXf& p_W)
     {
@@ -204,7 +210,7 @@ struct fast_cd_gl
         glBindVertexArray(g.vao_mesh);
         //  glBindVertexArray(g.vao_mesh);  //are these necessary?//
          //glVertex
-     //    glUseProgram(g.shader_mesh);
+         glUseProgram(g.shader_mesh);
         //  g.v
         if (dirty_primary_weights)
         {
@@ -369,8 +375,6 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     //stores the data of the primary weights and sets dirty flag to true. DOES NOT BIND THESE WEIHTS TO THE VBO
     void set_primary_weights(const MatrixXd& pW, int fid)
     {
-
-        igl::opengl::MeshGL& g = igl_v->data_list[fid].meshgl;
  
         RowMatrixXf p_W;
         if (igl_v->data_list[fid].face_based)
@@ -384,13 +388,13 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         }
 
         fcd_gl[fid].set_primary_weights(p_W);
-        
+
     }
 
     //stores the data of the secondary weights and sets dirty flag to true. DOES NOT BIND THESE WEIHTS TO THE VBO
     void set_secondary_weights(const MatrixXd& sW, int fid)
     { 
-
+   
         RowMatrixXf s_W;
         if (igl_v->data_list[fid].face_based)
         {
@@ -403,29 +407,36 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         }
         
         fcd_gl[fid].set_secondary_weights(s_W);
+  
     }
 
     void set_weights(const MatrixXd& pW, const MatrixXd& sW, int fid)
     {
+        
         set_primary_weights(pW, fid);
         set_secondary_weights(sW, fid);
     }
 
     void set_primary_bone_transforms(VectorXd& p, int id)
     {
+    
         fcd_gl[id].set_primary_bone_transforms(p);
+
     }
 
     void set_secondary_bone_transforms(VectorXd& z, int id)
     {
-    
+
         fcd_gl[id].set_secondary_bone_transforms(z);
+
     }
 
     void set_bone_transforms(VectorXd& p, VectorXd& z, int id)
     {
+   
         set_primary_bone_transforms(p, id);
         set_secondary_bone_transforms(z, id);
+     
 
     }
 
