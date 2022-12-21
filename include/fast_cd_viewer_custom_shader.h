@@ -158,9 +158,10 @@ struct fast_cd_gl
 
     }
 
-    void set_primary_bone_transforms(VectorXf& p)
+    void set_primary_bone_transforms(VectorXd& p)
     {
-        MatrixXf P = Map<MatrixXf>(p.data(), p.rows() / 3, 3);
+        VectorXf pf = p.cast<float>();
+        MatrixXf P = Map<MatrixXf>(pf.data(), pf.rows() / 3, 3);
         if (P.rows() < 4 * max_num_primary_bones)
         {
             //pad with zeros
@@ -177,9 +178,10 @@ struct fast_cd_gl
         dirty_primary_bones = true;
     }
 
-    void set_secondary_bone_transforms(VectorXf& z)
+    void set_secondary_bone_transforms(VectorXd& z)
     {
-        MatrixXf Z = Map<MatrixXf>(z.data(), z.rows() / 3, 3);
+        VectorXf zf = z.cast<float>();
+        MatrixXf Z = Map<MatrixXf>(zf.data(), zf.rows() / 3, 3);
         if (Z.rows() < 4 * max_num_secondary_bones)
         {
             //pad with zeros
@@ -197,56 +199,46 @@ struct fast_cd_gl
     }
     void updateGL(igl::opengl::MeshGL& g)
     {
-
+        GLint h;
+        glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
+        glBindVertexArray(g.vao_mesh);
         //  glBindVertexArray(g.vao_mesh);  //are these necessary?//
          //glVertex
      //    glUseProgram(g.shader_mesh);
         //  g.v
         if (dirty_primary_weights)
         {
-            GLint h;
-            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
-            glBindVertexArray(g.vao_mesh);
+            
             // glBindVertexBuffer(vertexBindingPoint, mesh.vbo, mesh.vboOffset, sizeof(Vertex));
             for (int i = 0; i < num_primary_vec4; i++)
             {
                 string name = "primary_weights_" + std::to_string(i + 1);
                 igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_p_W_list[i], p_W_list[i], true);
             }
-            dirty_primary_weights = true;
-
-            //   glBindVertexArray(h);
+            dirty_primary_weights = false;
         }
         if (dirty_secondary_weights)
         {
-            GLint h;
-            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &h);
-            glBindVertexArray(g.vao_mesh);
-            //    glBindVertexArray(g.vao_mesh);
             for (int i = 0; i < num_secondary_vec4; i++)//
             {
                 string name = "secondary_weights_" + std::to_string(i + 1);
                 igl::opengl::bind_vertex_attrib_array(g.shader_mesh, name.c_str(), vbo_s_W_list[i], s_W_list[i], true);
             }
-            dirty_secondary_weights = true;
-
-            //  glBindVertexArray(h);
+            dirty_secondary_weights = false;
         }
         if (dirty_primary_bones)
         {
-            //   glBindVertexArray(g.vao_mesh);
             GLint pw = glGetUniformLocation(g.shader_mesh, "primary_bones");
             glUniformMatrix4x3fv(pw, max_num_primary_bones, GL_FALSE, BP.data());
-            dirty_primary_bones = true; // false;
+            dirty_primary_bones =  false;
         }
         if (dirty_secondary_bones)
         {
-            //  glBindVertexArray(g.vao_mesh);
             GLint zw = glGetUniformLocation(g.shader_mesh, "secondary_bones");
             glUniformMatrix4x3fv(zw, max_num_secondary_bones, GL_FALSE, BZ.data());
-            dirty_secondary_bones = true;//false;
+            dirty_secondary_bones = false;
         }
-        // glBindVertexArray(0);
+        glBindVertexArray(h);
     }
 };
 
@@ -308,6 +300,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
        num_primary_vec4 = max_num_primary_bones / 4;
        num_secondary_vec4 = max_num_secondary_bones / 4;
        fast_cd_gl f = fast_cd_gl(0, max_num_primary_bones, max_num_primary_bones);
+
        fcd_gl.push_back(f);
     }
 
@@ -363,7 +356,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
 
         igl::opengl::MeshGL& g = igl_v->data_list[id].meshgl;
       
-        glBindVertexArray(g.vao_mesh);
+        
 
         assert(id < igl_v->data_list.size() && "id is not associated with an igl data mesh!");
 
@@ -427,14 +420,13 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
 
     void set_primary_bone_transforms(VectorXd& p, int id)
     {
-        VectorXf pf = p.cast<float>();
-        fcd_gl[id].set_primary_bone_transforms(pf);
+        fcd_gl[id].set_primary_bone_transforms(p);
     }
 
     void set_secondary_bone_transforms(VectorXd& z, int id)
     {
-        VectorXf zf = z.cast<float>();
-        fcd_gl[id].set_secondary_bone_transforms(zf);
+    
+        fcd_gl[id].set_secondary_bone_transforms(z);
     }
 
     void set_bone_transforms(VectorXd& p, VectorXd& z, int id)
