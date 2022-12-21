@@ -435,8 +435,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         igl_v->append_mesh();
         id = igl_v->data_list.size() - 1;
         igl_v->data_list[id].clear();
-        init_all_shaders();
-        fast_cd_gl f = fast_cd_gl(id, num_primary_vec4, num_secondary_vec4);
+   //     init_all_shaders();
+        fast_cd_gl f = fast_cd_gl(id, max_num_primary_bones, max_num_secondary_bones);
         fcd_gl.push_back(f);
     }
 
@@ -445,9 +445,15 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         igl_v->append_mesh();
         id = igl_v->data_list.size() - 1;
         igl_v->data_list[id].clear();
+<<<<<<< HEAD
         init_all_shaders();
         igl_v->data_list[id].set_mesh(V, F);
         fast_cd_gl f = fast_cd_gl(id, num_primary_vec4, num_secondary_vec4);
+=======
+        igl_v->data_list[id].set_mesh(V, F);
+    //    init_all_shaders();
+        fast_cd_gl f = fast_cd_gl(id, max_num_primary_bones, max_num_secondary_bones);
+>>>>>>> d03fa98d9a3e973a23893621273205be1a61c756
         fcd_gl.push_back(f);
     }
 
