@@ -1,6 +1,10 @@
 #pragma once
 #include "lbs_jacobian.h"
 #include "create_directory_by_force.h"
+#include "compute_clusters_igl.h"
+
+#include "get_modes.h"
+
 #include <Eigen/Core>
 #include <igl/readDMAT.h>
 
