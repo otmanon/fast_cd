@@ -1,4 +1,5 @@
 #pragma once
+#include <fast_cd_viewer_parameters.h>
 #include <igl/opengl/glfw/Viewer.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <igl/opengl/glfw/imgui/ImGuizmoWidget.h>
@@ -299,7 +300,15 @@ public:
 	{
 		igl_v->core().animation_max_fps = max_fps;
 	}
-
+	/*
+	configures viewer at index id with viewer parameters p
+	*/
+	void configure_viewer(fast_cd_viewer_parameters& p, int id)
+	{
+		invert_normals(p.invert_normals, id);
+		set_show_faces(p.show_faces, id);
+		set_show_lines(p.show_lines, id);
+	}
 public:
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo
