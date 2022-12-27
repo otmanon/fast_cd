@@ -6,6 +6,7 @@
 #include "surface_to_volume_weights.h"
 #include "fit_rig_to_mesh.h"
 #include "read_rig_anim_from_json.h"
+#include "rig_parameters.h"
 
 /*
 Helper class for one object of many in the fast cd scene
@@ -78,6 +79,11 @@ struct fast_cd_scene_obj
         st.init(z, z, p, p);
 	}
 	
+
+    virtual void transform_animation(MatrixXd& A)
+    {
+        transform_rig_parameters_anim(anim_P, A);
+    }
     /*
     Steps the fast cd animation for this object forward in time
     */
