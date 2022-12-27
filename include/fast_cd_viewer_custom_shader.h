@@ -69,11 +69,11 @@ struct fast_cd_gl
         vbo_p_W_list.resize(num_primary_vec4);
         vbo_s_W_list.resize(num_secondary_vec4);
 
-        dirty_primary_weights = false;
-        dirty_secondary_weights = false;
+        dirty_primary_weights = true;
+        dirty_secondary_weights = true;
 
-        dirty_primary_bones = false;
-        dirty_secondary_bones = false;
+        dirty_primary_bones = true;
+        dirty_secondary_bones = true;
     }
 
     void init_buffers(igl::opengl::MeshGL& g)
@@ -214,7 +214,7 @@ struct fast_cd_gl
         //  g.v
         if (dirty_primary_weights)
         {
-            
+            printf("Dirty primary weights \n");
             // glBindVertexBuffer(vertexBindingPoint, mesh.vbo, mesh.vboOffset, sizeof(Vertex));
             for (int i = 0; i < num_primary_vec4; i++)
             {
@@ -225,6 +225,7 @@ struct fast_cd_gl
         }
         if (dirty_secondary_weights)
         {
+            printf("Dirty primary weights \n");
             for (int i = 0; i < num_secondary_vec4; i++)//
             {
                 string name = "secondary_weights_" + std::to_string(i + 1);
@@ -341,7 +342,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
             g.shader_mesh);
 
     }
-    void launch(int max_fps = 60, bool launch_rendering = true)
+    void launch(int max_fps = 6000, bool launch_rendering = true)
     { 
 
     igl_v->launch_init(true, false, "fast CD App", 1920, 1080);
@@ -349,7 +350,8 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
     init_all_shaders();
     if (launch_rendering)
         {
-            igl_v->core().animation_max_fps = max_fps;
+        igl_v->core().animation_max_fps = max_fps;// max_fps;
+            igl_v->core().is_animating = true;
             igl_v->launch_rendering(true);
             igl_v->launch_shut();
             //fast_cd_viewer::launch();
