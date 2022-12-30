@@ -18,7 +18,7 @@ struct fast_cd_scene_obj
     cd_sim_state st;
 
 	bool do_cd;
-
+    bool loop;
  
 	MatrixXd anim_P;
     MatrixXd W; //control rig weights
@@ -30,11 +30,12 @@ struct fast_cd_scene_obj
     MatrixXd V;
     MatrixXi T, F;
     int timestep; //which timestep of the simulation is this obejct on.
-	fast_cd_scene_obj(MatrixXd& V, MatrixXi& T, std::string rig_path, std::string rig_anim_path, fast_cd_subspace& sub, fast_cd_arap_sim& sim)
+	fast_cd_scene_obj(const MatrixXd& V, const MatrixXi& T, std::string rig_path, std::string rig_anim_path, fast_cd_subspace& sub, fast_cd_arap_sim& sim)
 	{
 		this->sim = sim;
         this->sub = sub;
 		do_cd = true;
+        loop = true;
         timestep = 0;
         this->V = V;
         this->T = T;
@@ -91,6 +92,13 @@ struct fast_cd_scene_obj
     {   //get animation rig parameters
         p = anim_P.col(timestep % anim_P.cols());
         z = VectorXd::Zero(sub.W.cols()*12);
+        if (loop)
+        {
+            if (timestep % anim_P.cols() == 0)
+            {
+                st.init(z, z, p, p);
+            }
+        }
         if (do_cd)
         {
             VectorXd f_ext = VectorXd::Zero(sub.W.cols()*12); //  ii.momentum_leaking_force* reduced_sim->params.invh2* BMDJ* (2.0 * state.p_curr - state.p_prev - p);           

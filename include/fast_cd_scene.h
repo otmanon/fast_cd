@@ -15,9 +15,9 @@ struct fast_cd_scene
 	fast_cd_viewer_custom_shader viewer;
 
 	std::function<void()> pre_draw_callback;
-	fast_cd_scene(std::string vertex_shader, std::string fragment_shader)
+	fast_cd_scene(std::string vertex_shader, std::string fragment_shader, int num_primary_bones = 16, int num_secondary_bones = 16)
 	{
-		viewer = fast_cd_viewer_custom_shader(vertex_shader, fragment_shader, 16, 16);
+		viewer = fast_cd_viewer_custom_shader(vertex_shader, fragment_shader, num_primary_bones, num_secondary_bones);
 
 		pre_draw_callback = [&]()
 		{
@@ -36,7 +36,7 @@ struct fast_cd_scene
 		object_id.push_back(id);
 
 		viewer.set_mesh(obj.V, obj.F, id);
-		viewer.invert_normals(true, 0);
+		viewer.invert_normals(true, id);
 		//where to do we load + attach weights? I think here
 		viewer.set_weights(obj.W, obj.Ws, id);//
 		return id;

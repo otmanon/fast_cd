@@ -1,5 +1,6 @@
 #pragma once
 #include "fast_cd_viewer.h"
+#include "per_corner_helper.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -8,20 +9,6 @@
 #include <igl/opengl/bind_vertex_attrib_array.h>
 #include <igl/opengl/destroy_shader_program.h>
 
-//if face based
-  // Input:
-//   X  #V by dim quantity
-// Output:
-//   X_vbo  #F*3 by dim scattering per corner
-void per_corner(const Eigen::MatrixXd& X, const Eigen::MatrixXi& F,
-    igl::opengl::MeshGL::RowMatrixXf& X_vbo)
-{
-    X_vbo.resize(F.rows() * 3, X.cols());
-    for (unsigned i = 0; i < F.rows(); ++i)
-        for (unsigned j = 0; j < 3; ++j)
-            X_vbo.row(i * 3 + j) = X.row(F(i, j)).cast<float>();
-   
-}
 
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
 
@@ -381,7 +368,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         RowMatrixXf p_W;
         if (igl_v->data_list[fid].face_based)
         {
-            per_corner(pW, igl_v->data_list[fid].F, p_W);
+            per_corner_helper(pW, igl_v->data_list[fid].F, p_W);
         }
         else
         {
@@ -400,7 +387,7 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
         RowMatrixXf s_W;
         if (igl_v->data_list[fid].face_based)
         {
-            per_corner(sW, igl_v->data_list[fid].F, s_W);
+            per_corner_helper(sW, igl_v->data_list[fid].F, s_W);
         }
         else
         {
