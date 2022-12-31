@@ -22,10 +22,10 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		A - m x m system matrix
 		Aeq - c x m constraint rows that enforece Aeq z = b 
 				as linear equality constraints
-		 p - cd_arap_local_global_solver_params
+		 p - local_global_solver_params
 	*/
 	fast_cd_arap_local_global_solver(const MatrixXd& A, const MatrixXd& Aeq, 
-		const cd_arap_local_global_solver_params& p)
+		const local_global_solver_params& p)
 	{
 		this->p = p;
 		VectorXi bI;
@@ -58,7 +58,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		bool run_solver_to_convergence, int max_iters,
 		double convergence_threshold)
 	{
-		this->p = cd_arap_local_global_solver_params(
+		this->p = local_global_solver_params(
 			run_solver_to_convergence,
 			max_iters, convergence_threshold);
 		VectorXi bI;

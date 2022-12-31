@@ -33,7 +33,8 @@ template bool igl::list_to_matrix<double, Eigen::Matrix<double, 1, 3, 1, 1, 3> >
 
 #include <igl/diag.cpp>
 template void  igl::diag<double, Eigen::Block< Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, 1> >(Eigen::MatrixBase< Eigen::Block< Eigen::Matrix<double, -1, -1, 0, -1, -1>, -1, 1, 1> > const&, Eigen::SparseMatrix<double, 0, int>&);
-
+template void  igl::diag<double, Eigen::Matrix<int, -1, 1, 0, -1, 1> >(Eigen::MatrixBase< Eigen::Matrix<int, -1, 1, 0, -1, 1> > const&, Eigen::SparseMatrix<double, 0, int>&);
+template void  igl::diag<double,  Eigen::Matrix<double, -1, 1, 0, -1, 1> >( Eigen::SparseMatrix<double, 0, int> const&,  Eigen::MatrixBase< Eigen::Matrix<double, -1, 1, 0, -1, 1> >&);
 //#include <igl/procrustes.cpp>
 //template void  igl::procrustes< Eigen::Matrix<double, -1, -1, 0, -1, -1>,  Eigen::Matrix<double, -1, -1, 0, -1, -1>, double,  Eigen::Matrix<double, 3, 3, 0, 3, 3>,  Eigen::Matrix<double, 3, 1, 0, 3, 1> >( Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&,  Eigen::MatrixBase< Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, bool, bool, double&,  Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 3, 0, 3, 3> >&,  Eigen::PlainObjectBase< Eigen::Matrix<double, 3, 1, 0, 3, 1> >&);
 

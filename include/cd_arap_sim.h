@@ -24,7 +24,7 @@ public:
 	cd_arap_dynamic_precomp* dp;
 
 	cd_arap_sim() {};
-	cd_arap_sim(cd_sim_params& params, cd_arap_local_global_solver_params& solver_params) {
+	cd_arap_sim(cd_sim_params& params, local_global_solver_params& solver_params) {
 		this->params = &params;
 
 		this->sp = new cd_arap_static_precomp(*this->params);
@@ -33,7 +33,7 @@ public:
 		this->sol = new cd_arap_local_global_solver(sp->A, this->params->Aeq, solver_params);
 
 	};
-	cd_arap_sim(cd_sim_params& params, cd_arap_local_global_solver_params& solver_params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
+	cd_arap_sim(cd_sim_params& params, local_global_solver_params& solver_params, cd_arap_dynamic_precomp& dp, cd_arap_static_precomp& sp)
 	{
 		this->params = &params;
 
@@ -78,7 +78,7 @@ public:
 		params->Aeq = C;
 
 		sp = new cd_arap_static_precomp(*params);
-		cd_arap_local_global_solver_params old_params = sol->p;
+		local_global_solver_params old_params = sol->p;
 
 		sol = new cd_arap_local_global_solver(sp->A, params->Aeq, old_params);
 	}

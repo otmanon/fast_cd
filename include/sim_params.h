@@ -1,25 +1,72 @@
 #pragma once
+#include "ympr_to_lame.h"
+
+#include <igl/massmatrix.h>
+#include <igl/repdiag.h>
+
+#include <Eigen/Sparse>
 #include <Eigen/Core>
+#include <string>
+using namespace std;
+using namespace Eigen;
+struct sim_params
+{
+public:
+	//geometry
+	MatrixXd X;
 
-struct sim_params {
-    Eigen::VectorXd z_curr, z_prev;
-    Eigen::VectorXd p_curr, p_prev;
+	//tet indices
+	MatrixXi T;
 
-    void init(Eigen::VectorXd& z, Eigen::VectorXd& p)
-    {
-        this->z_curr = z;
-        this->z_prev = z;
+	//timestep
+	double h;
+	double invh2;
 
-        this->p_curr = p;
-        this->p_prev = p;
-    }
+	// first lame parameter per tet
+	VectorXd mu;
 
-    void update(Eigen::VectorXd& z, Eigen::VectorXd& p)
-    {
-        this->p_prev = p_curr;
-        this->p_curr = p;
+	//second lame parameter per tet
+	VectorXd lambda;
 
-        this->z_prev = z_curr;
-        this->z_curr = z;
-    }
+	//Equality constraints given as input from user
+	SparseMatrix<double> Aeq;
+
+	//whether to activate inertia or not. if false, will add a bit of regularization to quadratic term
+	bool do_inertia;
+
+	//Extra user defined quadratic term (like for mass springs)
+	SparseMatrix<double> Q;
+
+	string sim_constraint_type;
+
+	sim_params() {
+	};
+
+	sim_params(const MatrixXd& X, const MatrixXi& T,
+		double ym, double pr, double h,
+		bool do_inertia)
+	{
+		this->X = X;
+		this->T = T;
+
+		double mu, lambda;
+		ympr_to_lame(ym, pr, mu,lambda);
+		
+		this->mu = mu * VectorXd::Ones(T.rows());
+		this->lambda = lambda * VectorXd::Ones(T.rows());
+		this->h = h;
+		this->invh2 = 1.0 / (h * h);
+		this->do_inertia = do_inertia;
+		this->sim_constraint_type = sim_constraint_type;
+		Q.resize(X.rows() * 3, X.rows() * 3);
+		Q.setZero();
+		this->Aeq.resize(0, X.rows() * X.cols());
+	}
+
+
+	void set_equality_constraint(SparseMatrix<double>& Aeq)
+	{
+		assert(Aeq.cols() == X.rows() * X.cols());
+		this->Aeq = Aeq;
+	}
 };

@@ -2,6 +2,7 @@
 #include "cd_sim_params.h"
 #include "cd_arap_precomp.h"
 #include "augment_with_linear_constraints.h"
+#include "local_global_solver_params.h"
 
 #include <Eigen/Sparse>
 #include <Eigen/Core>
@@ -13,32 +14,17 @@ using namespace Eigen;
 using namespace igl;
 using namespace std;
 using namespace nlohmann;
-struct cd_arap_local_global_solver_params
-{
-	int max_iters;
-	bool to_convergence;
-	double threshold;
-
-	cd_arap_local_global_solver_params() {};
-
-	cd_arap_local_global_solver_params(bool to_convergence, int max_iters, double threshold)
-	{
-		this->to_convergence = to_convergence;
-		this->max_iters = max_iters;
-		this->threshold = threshold;
-	}
-};
 
 struct cd_arap_local_global_solver
 {
-	cd_arap_local_global_solver_params p;
+	local_global_solver_params p;
 	VectorXd z;
 
 	SimplicialLDLT<SparseMatrix<double>>* ldlt_solver;
 
 	cd_arap_local_global_solver() {};
 
-	cd_arap_local_global_solver(SparseMatrix<double>& A, SparseMatrix<double>& Aeq, cd_arap_local_global_solver_params& p)
+	cd_arap_local_global_solver(SparseMatrix<double>& A, SparseMatrix<double>& Aeq, local_global_solver_params& p)
 	{
 		this->p = p;
 		VectorXi bI;

@@ -6,7 +6,7 @@ struct fast_ik_arap_local_global_solver
 	: fast_cd_arap_local_global_solver
 {
 	fast_ik_arap_local_global_solver(const MatrixXd& A, const MatrixXd& Aeq,
-		const cd_arap_local_global_solver_params& p) :
+		const local_global_solver_params& p) :
 		fast_cd_arap_local_global_solver(A, Aeq, p)
 	{};
 

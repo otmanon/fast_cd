@@ -18,12 +18,12 @@ struct fast_ik_sim : fast_cd_arap_sim
 		W - n x m rig weights
 		l - n x 1 cluster labels
 		bI - bI x 1 constraint indices into V
-		cd_arap_local_global_solver_params - (nuff said)
+		local_global_solver_params - (nuff said)
 	*/
 	fast_ik_sim(const MatrixXd& V, const MatrixXi& T, 
 		const MatrixXd& W,
 		const VectorXi& l, const VectorXi& bI,
-		const cd_arap_local_global_solver_params& 
+		const local_global_solver_params& 
 		solver_params)
 	{
 		SparseMatrix<double> B;
@@ -58,13 +58,13 @@ struct fast_ik_sim : fast_cd_arap_sim
 		W - n x m rig weights
 		l - n x 1 cluster labels
 		S - c x dim n equality constraint matrix
-		cd_arap_local_global_solver_params - (nuff said)
+		local_global_solver_params - (nuff said)
 	*/
 	fast_ik_sim(const MatrixXd& V, const MatrixXi& T,
 		const MatrixXd& W,
 		const VectorXi& l,
 		const SparseMatrix<double>& S,
-		const cd_arap_local_global_solver_params& 
+		const local_global_solver_params& 
 		solver_params)
 	{
 		SparseMatrix<double> B;

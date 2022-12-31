@@ -20,7 +20,7 @@ public:
 	throws error. 
 	*/
 	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, 
-		cd_arap_local_global_solver_params& solver_params, bool read_cache, 
+		local_global_solver_params& solver_params, bool read_cache, 
 		bool write_cache)
 	{
 		namespace fs = std::filesystem;
@@ -54,7 +54,7 @@ public:
 
 	}
 
-	fast_cd_arap_sim(fast_cd_sim_params& sim_params, cd_arap_local_global_solver_params& solver_params) 
+	fast_cd_arap_sim(fast_cd_sim_params& sim_params, local_global_solver_params& solver_params) 
 	{
 		params = &sim_params;
 		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(sim_params);

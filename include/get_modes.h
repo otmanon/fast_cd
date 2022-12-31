@@ -3,6 +3,7 @@
 #include "displacement_modes.h"
 #include "selection_matrix.h"
 #include "skinning_modes.h"
+#include "linear_elasticity_hessian.h"
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
@@ -11,6 +12,9 @@
 #include <igl/repdiag.h>
 #include <igl/colon.h>
 #include <igl/cat.h>
+
+
+
 using namespace Eigen;
 using namespace igl;
 /*
@@ -37,14 +41,16 @@ void get_modes(const MatrixXd& V, const MatrixXi& T, const SparseMatrix<double>&
 	massmatrix(V, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
 
 	SparseMatrix<double>  H;
-	arap_hessian(V, T, H);
+
 
 	if (mode_type == "displacement")
 	{ //these are arap hessian modes
+		arap_hessian(V, T, H);
 		displacement_modes(H, M, J, num_modes, B, L, debug, output_dir);
 	}
 	else if (mode_type == "skinning")
 	{
+		arap_hessian(V, T, H);
 		skinning_modes( V, H, M, J , num_modes, B, Ws,  L, debug, output_dir);
 	}
 	else{
