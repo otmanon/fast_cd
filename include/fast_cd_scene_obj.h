@@ -101,7 +101,7 @@ struct fast_cd_scene_obj
         }
         if (do_cd)
         {
-            VectorXd f_ext = VectorXd::Zero(sub.W.cols()*12); //  ii.momentum_leaking_force* reduced_sim->params.invh2* BMDJ* (2.0 * state.p_curr - state.p_prev - p);           
+            VectorXd f_ext = VectorXd::Zero(sub.W.cols()*12); //  ii.momentum_leaking_force* reduced_sim->params.invh2* BMDJ* (2.0 * state.p_curr - state.p_prev - sol_p);           
             VectorXd bc; //no boundary conditions
             z = st.z_curr;
             z = sim.step(z, p, st, f_ext, bc);

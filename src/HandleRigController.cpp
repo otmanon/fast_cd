@@ -207,8 +207,8 @@ void  HandleRigMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer* vi
 	//	update_parameters_at_handle(p_rest, T, handleI);
 		const int c = p_rest.rows() / 12;
 		V.row(handleI) = A.block(0, 3, 3, 1).transpose().cast<double>();
-		//compute_handle_positions_from_parameters(p, V);
-		//V.row(handleI) = Eigen::RowVector3d(p(c*0 + handleI * 4), p(c*1 + handleI * 4), p(c * 2 + handleI * 4));
+		//compute_handle_positions_from_parameters(sol_p, V);
+		//V.row(handleI) = Eigen::RowVector3d(sol_p(c*0 + handleI * 4), sol_p(c*1 + handleI * 4), sol_p(c * 2 + handleI * 4));
 	};
 }
 
@@ -275,7 +275,7 @@ bool HandleRigMouseController::mouse_down(igl::opengl::glfw::Viewer& viewer, int
 			Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
 			
 		//	for (int i = 0; i < T.rows()-1; i++)
-			//	T.row(i) = p.middleRows(4 * handleI + 12*i, 4 * handleI + 4 + 12*handleI).cast<float>();
+			//	T.row(i) = sol_p.middleRows(4 * handleI + 12*i, 4 * handleI + 4 + 12*handleI).cast<float>();
 			Eigen::Matrix4f A = matrix4f_from_parameters(p_rel, handleI);
 			Eigen::Matrix4f A_rest = matrix4f_from_parameters(p_rest, handleI);
 			this->guizmo->T =  A_rest * A;
@@ -348,7 +348,7 @@ Eigen::MatrixX4f HandleRigMouseController::matrix4f_from_parameters(Eigen::Vecto
 	A.topRows(3) = T.transpose();
 	//for (int i = 0; i < 3; i++)
 	//{
-	//	Eigen::VectorXd row = p.middleRows(ind * 4 + i * 4 * (num_p),4);
+	//	Eigen::VectorXd row = sol_p.middleRows(ind * 4 + i * 4 * (num_p),4);
 	//	T.row(i) = row.transpose().cast<float>();
 //
 	//}

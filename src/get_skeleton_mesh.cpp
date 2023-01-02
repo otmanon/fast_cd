@@ -1,7 +1,7 @@
 #include "get_skeleton_mesh.h"
 #include "rig_parameters.h"
 /*
-From absolute world rig parameters p, build your skeleton mesh.
+From absolute world rig parameters sol_p, build your skeleton mesh.
 */
 void get_skeleton_mesh(const float thickness, const  Eigen::VectorXd& p,const  Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC)
 {
@@ -68,7 +68,7 @@ void get_skeleton_mesh(const float thickness, const  Eigen::VectorXd& p,const  E
 }
 
 /*
-Wrapper that takes in relative rig parameters p and rest world rig parameters p0
+Wrapper that takes in relative rig parameters sol_p and rest world rig parameters p0
 */
 void get_skeleton_mesh(const float thickness,const  Eigen::VectorXd& p, const Eigen::VectorXd& p0, const Eigen::VectorXd& bl, Eigen::MatrixXd& renderV, Eigen::MatrixXi& renderF, Eigen::MatrixXd& renderC)
 {

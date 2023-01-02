@@ -80,7 +80,7 @@ void world_to_rel_rig_parameters(const VectorXd& p_w, const VectorXd& p0, Vector
 
 void rel_to_world_rig_parameters(const VectorXd& p_rel, const VectorXd& p0, VectorXd& p_w);
 /*
-Returns 3x4 affine bone matrix for bone i from flattened rig parameters p
+Returns 3x4 affine bone matrix for bone i from flattened rig parameters sol_p
 */
 void get_bone_transform(const VectorXd& p, int i, MatrixXd& A);
 

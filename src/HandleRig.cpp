@@ -323,9 +323,9 @@ bool HandleRig::write_rig_to_json(std::string filename)
 	
 	filename = fs::path(filename).extension().string() == ".json" ? filename : filename + ".json";
 
-	//fs::path p = fs::path(filename);
+	//fs::path sol_p = fs::path(filename);
 	
-	//std::string parent_path = p.parent_path().string();
+	//std::string parent_path = sol_p.parent_path().string();
 	if (!fs::exists(fs::path(filename).parent_path()))
 	{
 		

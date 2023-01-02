@@ -269,7 +269,7 @@ public:
 
 
 	/*
-	Renders mesh with reduced deformation z, and rig parameters p.
+	Renders mesh with reduced deformation z, and rig parameters sol_p.
 	Must do a projection step Bz + Jp to get the final V. Does this step on the CPU
 	*/
 	virtual void render_reduced_cpu_proj(const Eigen::VectorXd& z,
@@ -301,7 +301,7 @@ public:
 		igl_v->core().animation_max_fps = max_fps;
 	}
 	/*
-	configures viewer at index id with viewer parameters p
+	configures viewer at index id with viewer parameters sol_p
 	*/
 	void configure_viewer(fast_cd_viewer_parameters& p, int id)
 	{

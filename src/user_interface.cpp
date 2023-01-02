@@ -220,7 +220,7 @@ void InteractiveCDHook::render_reduced_cpu_proj(igl::opengl::glfw::Viewer& v, Ei
 
  v - libigl viewer
  z - reduced space coefficients for our simulation
- p - rig parameters (row flattened 12x1 transformation matrices)
+ sol_p - rig parameters (row flattened 12x1 transformation matrices)
  n - (int) number of vertices
 
  */

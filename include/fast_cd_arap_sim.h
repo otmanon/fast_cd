@@ -1,17 +1,24 @@
 #pragma once
 #include "cd_arap_sim.h"
-#include "fast_cd_sim_params.h"
+#include "fast_cd_arap_sim_params.h"
 #include "fast_cd_arap_precomp.h"
 #include "fast_cd_arap_local_global_solver.h"
 #include "read_fast_cd_sim_static_precompute.h"
 #include "write_fast_cd_sim_static_precomputation.h"
 
 
-struct fast_cd_arap_sim : public cd_arap_sim
+struct fast_cd_arap_sim
 {
 public:
 
 	
+	fast_cd_arap_sim_params* params;
+
+	fast_cd_arap_local_global_solver* sol;
+
+	fast_cd_arap_static_precomp* sp;
+
+	fast_cd_arap_dynamic_precomp* dp;
 
 	fast_cd_arap_sim() {};
 
@@ -19,7 +26,7 @@ public:
 	initializes from cache dir. If not found,
 	throws error. 
 	*/
-	fast_cd_arap_sim(std::string& cache_dir, fast_cd_sim_params& sim_params, 
+	fast_cd_arap_sim(std::string& cache_dir, fast_cd_arap_sim_params& sim_params, 
 		local_global_solver_params& solver_params, bool read_cache, 
 		bool write_cache)
 	{
@@ -54,7 +61,7 @@ public:
 
 	}
 
-	fast_cd_arap_sim(fast_cd_sim_params& sim_params, local_global_solver_params& solver_params) 
+	fast_cd_arap_sim(fast_cd_arap_sim_params& sim_params, local_global_solver_params& solver_params) 
 	{
 		params = &sim_params;
 		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(sim_params);
@@ -65,7 +72,7 @@ public:
 		sol = new fast_cd_arap_local_global_solver(fcd_sp->BAB, fcd_sp->AeqB, solver_params);
 	};
 
-	fast_cd_arap_sim(fast_cd_sim_params& params, fast_cd_arap_local_global_solver& solver, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp) : cd_arap_sim()
+	fast_cd_arap_sim(fast_cd_arap_sim_params& params, fast_cd_arap_local_global_solver& solver, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp)
 	{
 		this->params = &params;
 		this->sol = &solver;
@@ -77,7 +84,7 @@ public:
 	Advances the pre-configured simulation one step
 	Inputs : 
 		z :  m x 1 current guess for z ("maybe shouldn't expose this")
-		p :  p x 1 flattened rig parameters following writeup column order flattening converntion
+		sol_p :  sol_p x 1 flattened rig parameters following writeup column order flattening converntion
 		state : sim_cd_state that contains info like z_curr, z_prev, p_curr and p_prev
 		f_ext : used to specify excternal forces like gravity.
 		bc :	rhs of equality constraint if some are configured in system
@@ -95,7 +102,7 @@ public:
 		assert(z.rows() == sp->BAB.rows() && "intiial guess must be same dimensinoality as system we're solving");
 		VectorXd z_next = z;
 		((fast_cd_arap_dynamic_precomp*)dp)->precomp(z, p, state, f_ext, bc, *sp);
-		z_next = ((fast_cd_arap_local_global_solver*)sol)->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
+		z_next = ((fast_cd_arap_local_global_solver*)sol)->solve(z_next, *((fast_cd_arap_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
 		return z_next;
 	}
 
@@ -105,11 +112,11 @@ public:
    Advances the pre-configured simulation one step
    Inputs :
 	   z :  m x 1 current guess for z ("maybe shouldn't expose this")
-	   p :  p x 1 flattened rig parameters following writeup column order flattening converntion
+	   sol_p :  sol_p x 1 flattened rig parameters following writeup column order flattening converntion
 	   z_curr : m x 1 current d.o.f.s
 	   z_prev : m x 1 previos d.o.f.s
-	   p_curr : p x 1 current rig parameters
-	   p_prev : p x 1 previous rig parameters
+	   p_curr : sol_p x 1 current rig parameters
+	   p_prev : sol_p x 1 previous rig parameters
 	   f_ext : used to specify excternal forces like gravity.
 	   bc :	rhs of equality constraint if some are configured in system
 			   (should match in rows with sim.params.Aeq)
@@ -128,7 +135,7 @@ public:
 		VectorXd z_next = z;
 		cd_sim_state state(z_curr, z_prev, p_curr, p_prev);
 		dp->precomp(z, p, state, f_ext, bc, *sp);
-		z_next = sol->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
+		z_next = sol->solve(z_next, *((fast_cd_arap_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
 		return z_next;
 	}
 
@@ -195,7 +202,7 @@ public:
 	virtual void set_equality_constraint(SparseMatrix<double>& Aeq)
 	{
 		params->set_equality_constraint(Aeq);
-		sol = new cd_arap_local_global_solver(
+		sol = new fast_cd_arap_local_global_solver(
 			sp->A, params->Aeq,
 			sol->p);
 	}
@@ -204,34 +211,34 @@ public:
 	///*
 	//Copmutes total arap energy
 	//*/
-	//double arap_energy(VectorXd& z, VectorXd& p, cd_sim_state& state)
+	//double arap_energy(VectorXd& z, VectorXd& sol_p, cd_sim_state& state)
 	//{
 	//	//rotation fitting, then evaluate energy
 
 	//}
 	//
 	///*
-	//Copmutes the total energy (elastic + inertia) for query state z, rig parameters p, and current state variables in state
+	//Copmutes the total energy (elastic + inertia) for query state z, rig parameters sol_p, and current state variables in state
 	//*/
-	//double energy(VectorXd& z, VectorXd& p, cd_sim_state& state)
+	//double energy(VectorXd& z, VectorXd& sol_p, cd_sim_state& state)
 	//{
-	//	double arap = arap_energy(z, p, state);
-	//	double kinetic = kinetic_energy(z, p, state);
+	//	double arap = arap_energy(z, sol_p, state);
+	//	double kinetic = kinetic_energy(z, sol_p, state);
 	//	double total = kinetic + arap;
 	//	return total;
 	//}
 
 	VectorXd full_space(VectorXd& z)
 	{
-		fast_cd_sim_params* params = (fast_cd_sim_params*)this->params;
+		fast_cd_arap_sim_params* params = (fast_cd_arap_sim_params*)this->params;
 		VectorXd u = params->B * z;
 		return u;
 	}
 
 
-	cd_sim_params* parameters()
+	fast_cd_arap_sim_params* parameters()
 	{
-		return (fast_cd_sim_params*) this->params;
+		return (fast_cd_arap_sim_params*) this->params;
 	}
 
 

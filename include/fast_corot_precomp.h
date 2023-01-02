@@ -36,6 +36,7 @@ struct fast_corot_static_precomp : public corot_static_precomp
 	VectorXd cluster_vols;
 	VectorXd cluster_lambda;
 	VectorXd cluster_mu;
+
 	fast_corot_static_precomp() {};
 
 	fast_corot_static_precomp(fast_sim_params& p) : corot_static_precomp(p)
@@ -76,7 +77,7 @@ struct fast_corot_static_precomp : public corot_static_precomp
 		GVmuKB = G1 * VmuK * p.B;
 		GVlamKB = G1 * VlamK * p.B;
 	 //Eigen::SparseMatrix<double> G, G_tmp, S_cols, S_rows, G_1, G_m;
-		// grouping_matrix_from_clusters(p.labels, G);
+		// grouping_matrix_from_clusters(sol_p.labels, G);
 	}
 };
 

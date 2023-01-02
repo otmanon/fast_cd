@@ -1,6 +1,6 @@
 #pragma once
 #include "cd_arap_local_global_solver.h"
-#include "fast_cd_sim_params.h"
+#include "fast_cd_arap_sim_params.h"
 #include "fast_cd_arap_precomp.h"
 
 struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
@@ -22,7 +22,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		A - m x m system matrix
 		Aeq - c x m constraint rows that enforece Aeq z = b 
 				as linear equality constraints
-		 p - local_global_solver_params
+		 sol_p - local_global_solver_params
 	*/
 	fast_cd_arap_local_global_solver(const MatrixXd& A, const MatrixXd& Aeq, 
 		const local_global_solver_params& p)
@@ -73,7 +73,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		prev_res = std::numeric_limits<double>::max();
 	}
 
-	VectorXd solve(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
+	VectorXd solve(const VectorXd& z, const fast_cd_arap_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp)
 	{
 		Eigen::VectorXd z_next = z, z_prev = z;
 		if (p.to_convergence)
@@ -130,7 +130,7 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 		return r;
 	}
 
-	virtual VectorXd global_step(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
+	virtual VectorXd global_step(const VectorXd& z, const fast_cd_arap_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
 	{
 		VectorXd inertia_grad = -dp.BMy;
 

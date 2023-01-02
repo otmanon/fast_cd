@@ -24,7 +24,7 @@ public:
 	Input:
 	X -	|V| x 3 matrix of mesh vertices
 	T - |T|x4   tet mesh indices
-	J - 3V x p  rig jacobian, can easily be obtained from the Rig class
+	J - 3V x sol_p  rig jacobian, can easily be obtained from the Rig class
 	ym - double young's modulus, physical material parameter denoting stiffness
 	pr - double poisson ratio, ranges from 0-0.49  (anything over 0.5, will explode). Controlls material incompressibility
 	dt - double timestep

@@ -14,7 +14,7 @@ Eigen::MatrixX4f matrix4f_from_parameters(Eigen::VectorXd& p, int ind)
 	A.topRows(3) = T.transpose();
 	//for (int i = 0; i < 3; i++)
 	//{
-	//	Eigen::VectorXd row = p.middleRows(ind * 4 + i * 4 * (num_p),4);
+	//	Eigen::VectorXd row = sol_p.middleRows(ind * 4 + i * 4 * (num_p),4);
 	//	T.row(i) = row.transpose().cast<float>();
 //
 	//}

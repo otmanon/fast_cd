@@ -729,10 +729,10 @@ void FastCDSim::update_subspace_fast(const Eigen::VectorXd& p)
 
 	//Eigen::SparseMatrix<double> R;
 	//Eigen::MatrixXd R_stack;
-//	per_vertex_rotation(p, W, R, R_stack);
+//	per_vertex_rotation(sol_p, W, R, R_stack);
 
 	//Eigen::MatrixXd R_test;
-	//rot_mat.IRI.update(p, R_test);
+	//rot_mat.IRI.update(sol_p, R_test);
 	//
 	//Eigen::MatrixXd error = R_test - R;
 	//printf("R test error : %f \n", error.cwiseAbs().sum());
@@ -772,12 +772,12 @@ void FastCDSim::update_subspace_fast(const Eigen::VectorXd& p)
 	rmp.BKMKX = BKMKX.row(0).transpose();
 
 	//rmp.BKMKB = B.transpose() * fmp.KMK * B;
-	//rot_mat.BKMKB.update(p, BKMKB); //quadratic term
+	//rot_mat.BKMKB.update(sol_p, BKMKB); //quadratic term
 	//printf("BKMKB error norm : %f \n", (BKMKB.transpose() - rmp.BKMKB).cwiseAbs().sum());
 	//rmp.BKMKB = BKMKB.transpose();
 
 	//rmp.BMB = B.transpose() * fmp.M * B;
-	//rot_mat.BMB.update(p, BMB); //for inertia, quadratic term
+	//rot_mat.BMB.update(sol_p, BMB); //for inertia, quadratic term
 	//printf("BMB error norm : %f \n", (BMB - rmp.BMB).cwiseAbs().sum());
 	//rmp.BMB = BMB.transpose();
 
@@ -785,7 +785,7 @@ void FastCDSim::update_subspace_fast(const Eigen::VectorXd& p)
 //	Eigen::SparseMatrix<double> spI; spI.resize(B.rows(), B.rows());
 //	spI.setIdentity();
 //	Eigen::MatrixXd IRIRI = I * R.transpose() * I * R * I; Eigen::MatrixXd IRIRI_test;
-//	rot_mat.IRIRI.update(p, IRIRI_test);
+//	rot_mat.IRIRI.update(sol_p, IRIRI_test);
 //	printf("IRIRI error norm : %f  \n", (IRIRI - IRIRI_test).norm());
 }
 

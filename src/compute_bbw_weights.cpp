@@ -8,8 +8,8 @@
 #include <igl/unique_rows.h>
 
 /*
-For a rig with rest pose parameters p, attached to a volumetric mesh V, T, compute bounded biharmonic weights
-by finding the closest vertex point to each rig joint in p, and calling bbw.h
+For a rig with rest pose parameters sol_p, attached to a volumetric mesh V, T, compute bounded biharmonic weights
+by finding the closest vertex point to each rig joint in sol_p, and calling bbw.h
 */
 Eigen::MatrixXd compute_bbw_weights(Eigen::VectorXd& p, Eigen::MatrixXd& V, Eigen::MatrixXi& T)
 {

@@ -1,6 +1,6 @@
 #pragma once
 #include "cd_arap_precomp.h"
-#include "fast_cd_sim_params.h"
+#include "fast_cd_arap_sim_params.h"
 #include "grouping_matrix_from_clusters.h"
 #include "interweaving_matrix.h"
 #include "read_fast_cd_sim_static_precompute.h"
@@ -42,14 +42,14 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	fast_cd_arap_static_precomp() {};
 
 
-	fast_cd_arap_static_precomp(fast_cd_sim_params& p) : cd_arap_static_precomp(p)
+	fast_cd_arap_static_precomp(fast_cd_arap_sim_params& p) : cd_arap_static_precomp(p)
 	{
 		init(p);
 	}	
 
 
 	
-	void init(fast_cd_sim_params& p)
+	void init(fast_cd_arap_sim_params& p)
 	{
 		BCB = p.B.transpose() * C * p.B;
 		BMB = p.B.transpose() * M * p.B;
@@ -105,7 +105,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		}
 	}
 
-	void set_equality_constraint(fast_cd_sim_params& p)
+	void set_equality_constraint(fast_cd_arap_sim_params& p)
 	{
 		AeqB = p.Aeq * p.B;
 	}

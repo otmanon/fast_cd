@@ -89,7 +89,7 @@ public:
 	//Weight matrix
 	Eigen::MatrixXd W;
 
-	//dim 3|V| x 12p rig jacobian matrix dx/dp... keep as dense for now, mighthave to change it to sparse later
+	//dim 3|V| x 12sol_p rig jacobian matrix dx/dp... keep as dense for now, mighthave to change it to sparse later
 	Eigen::SparseMatrix<double> J;
 
 	//dim 3|V|x3|V| matrix representing the null map of the rig, that is , 1 on the diagonal if the vertex in question is NOT controlled by the rig

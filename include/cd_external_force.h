@@ -44,7 +44,7 @@ struct cd_external_force
 	Returns the external force being supplied to the fast complementary dynamics system.
 	Inputs:
 	step - which timestep of the simulation are we in. This is useful for forces that have a time-varying component
-	p -   12|B|x1 flattened rig parameters at next timestep
+	sol_p -   12|B|x1 flattened rig parameters at next timestep
 	state - fast_cd_state struct that contains info on z_curr, z_prev, p_curr and p_prev. Useful for inertial-like external forces
 	*/
 	virtual VectorXd get(int step, VectorXd& p, cd_sim_state& state)

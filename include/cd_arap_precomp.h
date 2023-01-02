@@ -89,7 +89,7 @@ struct cd_arap_static_precomp
 		Cx = C * x;
 
 		/*SparseMatrix<double> C_test;
-		igl::cotmatrix(p.X, p.T, C_test);
+		igl::cotmatrix(sol_p.X, sol_p.T, C_test);
 		C_test = igl::repdiag(C_test, 3);
 		cout << "Cotan Laplacian Check " << (C + C_test).cwiseAbs().sum() << endl;*/
 

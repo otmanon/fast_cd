@@ -128,7 +128,7 @@ void SkeletonRigFKMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer*
 
 		igl::forward_kinematics(C0, BE, pI, this->R_rel_parent, A_list); // A_list contains global transformation matrices for each bone
 		
-	    //From A_list, need to flatten it to p.
+	    //From A_list, need to flatten it to sol_p.
 		Eigen::VectorXd p;
 		p.resize(12 * num_b);
 		Eigen::Matrix4f AG = Eigen::Matrix4f::Identity();
@@ -140,8 +140,8 @@ void SkeletonRigFKMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer*
 
 		p_rel = p;
 		Eigen::VectorXd p_glob;
-		//from p, get relative rig parameters... this is what CD ultimately uses!
-	//	get_relative_parameters(p_rest, p, p_rel);
+		//from sol_p, get relative rig parameters... this is what CD ultimately uses!
+	//	get_relative_parameters(p_rest, sol_p, p_rel);
 		get_absolute_parameters(p_rest, p, p_glob);
 		//get new C... for visualization purposes. 
 		Eigen::MatrixXd joints, tips;
@@ -156,8 +156,8 @@ void SkeletonRigFKMouseController::init_guizmo_viewer(igl::opengl::glfw::Viewer*
 	//	get_tip_positions_from_parameters(p_rel)
 		//V.row(handleI) = A.block(0, 3, 3, 1).transpose().cast<double>();
 		//
-		//compute_handle_positions_from_parameters(p, V);
-		//V.row(handleI) = Eigen::RowVector3d(p(c*0 + handleI * 4), p(c*1 + handleI * 4), p(c * 2 + handleI * 4));
+		//compute_handle_positions_from_parameters(sol_p, V);
+		//V.row(handleI) = Eigen::RowVector3d(sol_p(c*0 + handleI * 4), sol_p(c*1 + handleI * 4), sol_p(c * 2 + handleI * 4));
 	};
 }
 
@@ -326,7 +326,7 @@ bool SkeletonRigFKMouseController::mouse_down(igl::opengl::glfw::Viewer& viewer,
 			Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
 
 			//	for (int i = 0; i < T.rows()-1; i++)
-				//	T.row(i) = p.middleRows(4 * handleI + 12*i, 4 * handleI + 4 + 12*handleI).cast<float>();
+				//	T.row(i) = sol_p.middleRows(4 * handleI + 12*i, 4 * handleI + 4 + 12*handleI).cast<float>();
 			Eigen::Matrix4f A = matrix4f_from_parameters(p_glob, handleI);
 			this->guizmo->T = A;
 			return true;

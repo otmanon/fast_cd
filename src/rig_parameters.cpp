@@ -200,6 +200,7 @@ void set_rig_parameters_identity(MatrixXd& P0)
 	assert(P0.cols() == 3 && "expecting stacked (4 #bones) x 3 P0");
 	assert((P0.rows() % 4) == 0 && "expecting stacked (4 #bones) x 3 P0");
 	int num_b = P0.rows() / 4;
+	P0.setZero();
 	for (int i = 0; i < num_b; i++)
 	{
 		P0.block(4 * i, 0, 3, 3) = Matrix3d::Identity();
@@ -293,7 +294,7 @@ void rel_to_world_rig_parameters(const VectorXd& p_rel, const VectorXd& p0, Vect
 }
 
 /*
-Returns 3x4 affine bone matrix for bone i from flattened rig parameters p
+Returns 3x4 affine bone matrix for bone i from flattened rig parameters sol_p
 */
 void get_bone_transform(const VectorXd& p, int i, MatrixXd& A)
 {

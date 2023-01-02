@@ -14,8 +14,8 @@ struct fast_sim_params : sim_params
 
 	fast_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
-		double mu, double lambda, double h,
-		bool do_inertia) : sim_params(X, T,  mu, lambda, h, do_inertia)
+		double ym, double pr, double h,
+		bool do_inertia) : sim_params(X, T,  ym, pr, h, do_inertia)
 	{
 		this->B = B;
 		this->labels = l;
