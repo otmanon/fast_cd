@@ -9,7 +9,7 @@
 #include <string>
 using namespace std;
 using namespace Eigen;
-struct sim_params
+struct corot_sim_params
 {
 public:
 	//geometry
@@ -39,10 +39,10 @@ public:
 
 	string sim_constraint_type;
 
-	sim_params() {
+	corot_sim_params() {
 	};
 
-	sim_params(const MatrixXd& X, const MatrixXi& T,
+	corot_sim_params(const MatrixXd& X, const MatrixXi& T,
 		double ym, double pr, double h,
 		bool do_inertia)
 	{

@@ -42,7 +42,7 @@ struct fast_cd_corot_local_global_solver
 
 	//TODO this is the same code as alll the other local globals olvers... need 
 	//method of abstracting the two.
-	VectorXd solve(const VectorXd& z, const VectorXd& p, const fast_cd_sim_params& params,
+	VectorXd solve(const VectorXd& z, const VectorXd& p, const fast_cd_corot_sim_params& params,
 		const fast_cd_corot_dynamic_precomp& dp, const fast_cd_corot_static_precomp& sp)
 	{
 		Eigen::VectorXd z_next = z, z_prev = z;
@@ -97,7 +97,7 @@ struct fast_cd_corot_local_global_solver
 			F = F_stack.block(3 * i, 0, 3, 3).transpose();// *sp.tet_vols(i);
 
 			igl::polar_svd3x3(F, rot);
-			R.block(3 * i, 0, 3, 3) = rot;
+			R.block(3 * i, 0, 3, 3) = rot.transpose();
 			vol = (rot.transpose()* F - Matrix3d::Identity()).trace() * rot.transpose(); // trace(R'*F - eye(2))*R;
 			VG.block(3 * i, 0, 3, 3) = vol;
 		}
@@ -107,7 +107,7 @@ struct fast_cd_corot_local_global_solver
 
 	//TODO project z onto the constraint set if it isn't satisfied at first
 	VectorXd global_step(const VectorXd& z,const VectorXd&p,
-		const  fast_cd_sim_params& params,
+		const  fast_cd_corot_sim_params& params,
 		const fast_cd_corot_dynamic_precomp& dp,
 		const fast_cd_corot_static_precomp& sp,
 		VectorXd& r, VectorXd& vol_g)
@@ -129,7 +129,7 @@ struct fast_cd_corot_local_global_solver
 			dz = llt_solver.solve(rhs);
 		VectorXd z_next = z + dz.topRows(params.B.cols());
 
-		//hould do a line search here:
+		////hould do a line search here:
 		double alpha = 2.0;
 		double E0 = fast_cd_energy(z, p, params, dp, sp);
 		double E = E0;
@@ -140,13 +140,13 @@ struct fast_cd_corot_local_global_solver
 			E = fast_cd_energy(z_next, p, params, dp, sp);
 		} while (E > E0 + 1e-8);
 
-		//std::cout << alpha << std::endl;
+		std::cout << alpha << std::endl;
 		return z_next;
 	}
 
 
 	double fast_cd_corot_energy(const VectorXd& z, const VectorXd& p,
-		const  fast_cd_sim_params& params,
+		const  fast_cd_corot_sim_params& params,
 		const fast_cd_corot_dynamic_precomp& dp,
 		const fast_cd_corot_static_precomp& sp)
 	{
@@ -163,7 +163,7 @@ struct fast_cd_corot_local_global_solver
 			F = F_stack.block(3 * i, 0, 3, 3).transpose();// *sp.tet_vols(i);
 
 			igl::polar_svd3x3(F, rot);
-			R.block(3 * i, 0, 3, 3) = rot; //rot needs to be transposed here to be correct
+			R.block(3 * i, 0, 3, 3) = rot.transpose(); //rot needs to be transposed here to be correct
 
 			Matrix3d temp = rot.transpose() * F - Matrix3d::Identity();
 			vol_energy += 0.5 * sp.cluster_vols(i) * sp.cluster_lambda(i) *
@@ -171,14 +171,14 @@ struct fast_cd_corot_local_global_solver
 			// ;
 		}
 		VectorXd r = Map<const VectorXd>(R.data(), R.rows() * R.cols());
-		double arap_energy_efficient = 0.5 * (double)(z.transpose() * (sp.BCmuB * z)) +
+		double arap_energy_efficient = (double)(0.5 * z.transpose() * (sp.BCmuB * z)) +
 			z.transpose() * (sp.BCmuJ*p - sp.GVmuKB.transpose() * r);
-		double total_energy = arap_energy_efficient +  0*vol_energy;
+		double total_energy = arap_energy_efficient +  vol_energy;
 		return total_energy;
 	}
 
 	double fast_cd_kinetic_energy(const VectorXd& z, const VectorXd& p,
-		const  fast_cd_sim_params& params,
+		const  fast_cd_corot_sim_params& params,
 		const fast_cd_corot_dynamic_precomp& dp, const fast_cd_corot_static_precomp& sp)
 	{
 		double energy = params.invh2 * params.do_inertia *
@@ -188,7 +188,7 @@ struct fast_cd_corot_local_global_solver
 	}
 
 	double fast_cd_energy(const VectorXd& z,const VectorXd& p,
-		const  fast_cd_sim_params& params,
+		const  fast_cd_corot_sim_params& params,
 		const fast_cd_corot_dynamic_precomp& dp,
 		const fast_cd_corot_static_precomp& sp)
 	{

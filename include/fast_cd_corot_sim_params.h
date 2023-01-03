@@ -1,6 +1,6 @@
 #pragma once
 
-#include "fast_sim_params.h"
+#include "fast_corot_sim_params.h"
 #include "read_clusters_from_cache.h"
 #include "read_modes_from_cache.h"
 #include "lbs_jacobian.h"
@@ -12,18 +12,18 @@ using namespace Eigen;
 using namespace std;
 
 
-struct fast_cd_sim_params : fast_sim_params
+struct fast_cd_corot_sim_params : fast_corot_sim_params
 {
 	SparseMatrix<double> J;
 
-	fast_cd_sim_params() {};
+	fast_cd_corot_sim_params() {};
 
 
-	fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T,
+	fast_cd_corot_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
 		const SparseMatrix<double>& J, double ym,
 		double pr, double h,
-		bool do_inertia) : fast_sim_params(X, T, B, l, ym, pr, h, do_inertia)
+		bool do_inertia) : fast_corot_sim_params(X, T, B, l, ym, pr, h, do_inertia)
 	{
 		this->J = J;	
 	}
@@ -45,7 +45,7 @@ struct fast_cd_sim_params : fast_sim_params
 				(if no, then adds Tik. regularizer to laplacian
 		sim_constraint_type - (string) "none" or "cd" or "cd_momentum_leak"
 	*/
-	fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T,
+	fast_cd_corot_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
 		const SparseMatrix<double>& J, double mu,
 		double lambda, double h,
@@ -81,8 +81,8 @@ struct fast_cd_sim_params : fast_sim_params
 		{
 			printf("Please provide a custom  \
 					#c x dimN equality constraint  \
-					matrix to fast_cd_sim_params like so \n \
-					fast_cd_sim_params(X, T, B, l, J, \
+					matrix to fast_cd_corot_sim_params like so \n \
+					fast_cd_corot_sim_params(X, T, B, l, J, \
 					 Aeq, mu, lambda, h, do_inertia, \
 					sim_constraint_type) \
 					");
@@ -112,7 +112,7 @@ struct fast_cd_sim_params : fast_sim_params
 				(if no, then adds Tik. regularizer to laplacian
 
 	*/
-	fast_cd_sim_params(const MatrixXd& X, const MatrixXi& T,
+	fast_cd_corot_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
 		const SparseMatrix<double>& J, const SparseMatrix<double>& Aeq,
 		double mu, double lambda, double h,

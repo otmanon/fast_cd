@@ -1,6 +1,6 @@
 #pragma once
 #include "corot_precomp.h"
-#include "fast_sim_params.h"
+#include "fast_corot_sim_params.h"
 #include "repeat_for_each_entry.h"
 #include "repeat_mat_for_each_entry.h"
 
@@ -39,7 +39,7 @@ struct fast_corot_static_precomp : public corot_static_precomp
 
 	fast_corot_static_precomp() {};
 
-	fast_corot_static_precomp(fast_sim_params& p) : corot_static_precomp(p)
+	fast_corot_static_precomp(fast_corot_sim_params& p) : corot_static_precomp(p)
 	{
 		
 		BCmuB = p.B.transpose() * Cmu *p.B;

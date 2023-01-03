@@ -8,7 +8,7 @@ struct fast_cd_corot_static_precomp : public fast_corot_static_precomp
 	MatrixXd BCmuJ;
 	SparseMatrix<double> GKJ;
 	
-	fast_cd_corot_static_precomp(fast_cd_sim_params& p) :  fast_corot_static_precomp(p)
+	fast_cd_corot_static_precomp(fast_cd_corot_sim_params& p) :  fast_corot_static_precomp(p)
 	{
 		BMJ = p.B.transpose() * M* p.J;
 		BCmuJ = p.B.transpose() * Cmu * p.J;

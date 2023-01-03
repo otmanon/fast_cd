@@ -34,7 +34,7 @@ struct corot_local_global_solver
 		ldlt_solver = new SimplicialLDLT<SparseMatrix<double>>(H);
 	}
 
-	VectorXd solve(const VectorXd& z, const sim_params& params, const corot_dynamic_precomp& dp, const corot_static_precomp& sp)
+	VectorXd solve(const VectorXd& z, const corot_sim_params& params, const corot_dynamic_precomp& dp, const corot_static_precomp& sp)
 	{
 		Eigen::VectorXd z_next = z, z_prev = z;
 		if (p.to_convergence)
@@ -94,7 +94,7 @@ struct corot_local_global_solver
 	}
 
 	VectorXd global_step(const VectorXd& z,
-		const  sim_params& params, 
+		const  corot_sim_params& params, 
 		const corot_dynamic_precomp& dp,
 		const corot_static_precomp& sp, 
 		VectorXd& r, VectorXd& vol_g)
@@ -128,7 +128,7 @@ struct corot_local_global_solver
 
 
 	double corot_energy(const VectorXd& z,
-		const  sim_params& params,
+		const  corot_sim_params& params,
 		const corot_dynamic_precomp& dp, const corot_static_precomp& sp)
 	{
 		VectorXd f = sp.K * z + sp.Kx;
@@ -162,7 +162,7 @@ struct corot_local_global_solver
 	}
 
 	double kinetic_energy(const VectorXd& z,
-		const  sim_params& params,
+		const  corot_sim_params& params,
 		const corot_dynamic_precomp& dp, const corot_static_precomp& sp)
 	{
 		double energy = params.invh2 * params.do_inertia * 
@@ -174,7 +174,7 @@ struct corot_local_global_solver
 
 	
 	double energy(const VectorXd& z,
-		const  sim_params& params, 
+		const  corot_sim_params& params, 
 		const corot_dynamic_precomp& dp, const corot_static_precomp& sp)
 	{
 		double corot= corot_energy(z, params, dp, sp);

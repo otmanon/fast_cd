@@ -55,7 +55,7 @@ struct corot_static_precomp
 	corot_static_precomp() {};
 
 
-	corot_static_precomp(sim_params& p)
+	corot_static_precomp(corot_sim_params& p)
 	{
 		VectorXd x = Map<VectorXd>(p.X.data(), p.X.rows() * p.X.cols());
 		igl::massmatrix(p.X, p.T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
@@ -76,14 +76,15 @@ struct corot_static_precomp
 		igl::diag(exp_mu, Mu);
 		igl::diag(exp_lam, Lam);
 
-		Cmu = K.transpose() * Mu * V * K;
+		SparseMatrix<double> I = SparseMatrix<double>(M.rows(), M.cols());
+		I.setIdentity();
+		Cmu =  K.transpose() * Mu * V * K + (!p.do_inertia) * 1e-9 * I;
 		Clam = K.transpose() * Lam * V * K;
 		Cmux = Cmu * x;
 		Clamx = Clam * x;
 
-		SparseMatrix<double> I = SparseMatrix<double>(Cmu.rows(), Cmu.cols());
-		I.setIdentity();
-		A = (p.do_inertia * p.invh2 * M + Cmu + (!p.do_inertia) * 1e-9 * I);
+
+		A = p.do_inertia * p.invh2 * M + Cmu;
 		Kx = K * x;
 		VmuK = V * Mu * K;
 		VlamK = V * Lam * K;

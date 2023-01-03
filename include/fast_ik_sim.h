@@ -36,10 +36,10 @@ struct fast_ik_sim : fast_cd_arap_sim
 
 		SparseMatrix<double> J(0, B.rows());
 
-		params = new fast_cd_sim_params(V, T,
+		params = new fast_cd_arap_sim_params(V, T,
 			Bd, l, J, S, 1, 0, 1e-2, false);
 
-		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(*((fast_cd_sim_params*)params));
+		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(*((fast_cd_arap_sim_params*)params));
 
 		sp = fcd_sp; // fast_cd_arap_static_precomp(sim_params);
 		dp = new fast_cd_arap_dynamic_precomp();
@@ -76,10 +76,10 @@ struct fast_ik_sim : fast_cd_arap_sim
 		SparseMatrix<double> J(B.rows(), 0);
 
 
-		params = new fast_cd_sim_params(V, T,
+		params = new fast_cd_arap_sim_params(V, T,
 			Bd, l, J, S, 1, 0, 1e-2, false);
 
-		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(*((fast_cd_sim_params*)params));
+		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(*((fast_cd_arap_sim_params*)params));
 
 		sp = fcd_sp; // fast_cd_arap_static_precomp(sim_params);
 		dp = new fast_cd_arap_dynamic_precomp();
@@ -114,7 +114,7 @@ struct fast_ik_sim : fast_cd_arap_sim
 		VectorXd x = Map<VectorXd>(params->X.data(), params->X.rows()* params->X.cols());
 		
 		((fast_cd_arap_dynamic_precomp*)dp)->precomp(z, p, state, f_ext, bc, *sp);
-		z_next = ((fast_ik_arap_local_global_solver*)sol)->solve(z_next, *((fast_cd_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
+		z_next = ((fast_ik_arap_local_global_solver*)sol)->solve(z_next, *((fast_cd_arap_sim_params*)params), *((fast_cd_arap_dynamic_precomp*)dp), *sp);
 		return z_next;
 	}
 
@@ -123,8 +123,8 @@ struct fast_ik_sim : fast_cd_arap_sim
 	*/
 	virtual void set_equality_constraint(SparseMatrix<double>& Aeq)
 	{
-		((fast_cd_sim_params*)params)->set_equality_constraint(Aeq);
-		((fast_cd_arap_static_precomp*)sp)->set_equality_constraint(*((fast_cd_sim_params*)params));
+		((fast_cd_arap_sim_params*)params)->set_equality_constraint(Aeq);
+		((fast_cd_arap_static_precomp*)sp)->set_equality_constraint(*((fast_cd_arap_sim_params*)params));
 		sol = new fast_ik_arap_local_global_solver(
 			((fast_cd_arap_static_precomp*)sp)->BAB, ((fast_cd_arap_static_precomp*)sp)->AeqB,
 			sol->p);

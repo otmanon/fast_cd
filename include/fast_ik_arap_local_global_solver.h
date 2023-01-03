@@ -30,7 +30,7 @@ struct fast_ik_arap_local_global_solver
 		return r;
 	}
 
-	VectorXd global_step(const VectorXd& z, const fast_cd_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
+	VectorXd global_step(const VectorXd& z, const fast_cd_arap_sim_params& params, const fast_cd_arap_dynamic_precomp& dp, const fast_cd_arap_static_precomp& sp, const VectorXd& r)
 	{
 		
 		VectorXd x = Map<const VectorXd>(params.X.data(), params.X.rows() * params.X.cols());

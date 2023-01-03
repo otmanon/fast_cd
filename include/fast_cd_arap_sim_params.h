@@ -1,6 +1,5 @@
 #pragma once
 #include "cd_sim_params.h"
-#include "fast_sim_params.h"
 #include "read_clusters_from_cache.h"
 #include "read_modes_from_cache.h"
 #include "lbs_jacobian.h"

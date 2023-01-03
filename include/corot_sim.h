@@ -15,7 +15,7 @@ struct corot_sim
 {
 public:
 
-	sim_params* params;
+	corot_sim_params* params;
 
 	corot_local_global_solver* sol;
 
@@ -24,7 +24,7 @@ public:
 	corot_dynamic_precomp* dp;
 
 	corot_sim() {};
-	corot_sim(sim_params& params, local_global_solver_params& solver_params) {
+	corot_sim(corot_sim_params& params, local_global_solver_params& solver_params) {
 		this->params = &params;
 		this->sp = new corot_static_precomp(*this->params);
 		this->dp = new corot_dynamic_precomp();
@@ -32,7 +32,7 @@ public:
 		this->sol = new corot_local_global_solver(sp->A, this->params->Aeq, solver_params);
 
 	};
-	corot_sim(sim_params& params, local_global_solver_params& solver_params, corot_dynamic_precomp& dp, corot_static_precomp& sp)
+	corot_sim(corot_sim_params& params, local_global_solver_params& solver_params, corot_dynamic_precomp& dp, corot_static_precomp& sp)
 	{
 		this->params = &params;
 		this->sp = &sp;
@@ -74,7 +74,7 @@ public:
 	}
 
 
-	sim_params* parameters()
+	corot_sim_params* parameters()
 	{
 		return this->params;
 	}

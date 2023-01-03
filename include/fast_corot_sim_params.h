@@ -1,21 +1,21 @@
 #pragma once
-#include "sim_params.h"
+#include "corot_sim_params.h"
 
 #include <igl/massmatrix.h>
 
 using namespace Eigen;
-struct fast_sim_params : sim_params
+struct fast_corot_sim_params : corot_sim_params
 {
 	MatrixXd B;
 	VectorXi labels;
 
 	MatrixXd AeqB;
-	fast_sim_params() {};
+	fast_corot_sim_params() {};
 
-	fast_sim_params(const MatrixXd& X, const MatrixXi& T,
+	fast_corot_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
 		double ym, double pr, double h,
-		bool do_inertia) : sim_params(X, T,  ym, pr, h, do_inertia)
+		bool do_inertia) : corot_sim_params(X, T,  ym, pr, h, do_inertia)
 	{
 		this->B = B;
 		this->labels = l;

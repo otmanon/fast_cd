@@ -7,7 +7,7 @@ struct fast_cd_corot_sim
 
 public:
 
-	fast_cd_sim_params* params;
+	fast_cd_corot_sim_params* params;
 
 	fast_cd_corot_local_global_solver* sol;
 
@@ -17,7 +17,7 @@ public:
 
 	fast_cd_corot_sim() {};
 
-	fast_cd_corot_sim(fast_cd_sim_params& params, local_global_solver_params& solver_params) {
+	fast_cd_corot_sim(fast_cd_corot_sim_params& params, local_global_solver_params& solver_params) {
 		this->params = &params;
 		this->sp = new fast_cd_corot_static_precomp(*this->params);
 		this->dp = new fast_cd_corot_dynamic_precomp();
@@ -25,7 +25,7 @@ public:
 		this->sol = new fast_cd_corot_local_global_solver(sp->BAB, this->params->AeqB, solver_params);
 
 	};
-	fast_cd_corot_sim(fast_cd_sim_params& params, local_global_solver_params& solver_params, fast_cd_corot_dynamic_precomp& dp, fast_cd_corot_static_precomp& sp)
+	fast_cd_corot_sim(fast_cd_corot_sim_params& params, local_global_solver_params& solver_params, fast_cd_corot_dynamic_precomp& dp, fast_cd_corot_static_precomp& sp)
 	{
 		this->params = &params;
 		this->sp = &sp;
@@ -67,7 +67,7 @@ public:
 	}
 
 
-	fast_cd_sim_params* parameters()
+	fast_cd_corot_sim_params* parameters()
 	{
 		return this->params;
 	}
