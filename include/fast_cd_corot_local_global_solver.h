@@ -69,6 +69,8 @@ struct fast_cd_corot_local_global_solver
 				local_step(z_next, p,  dp, sp, r, vg);
 				z_next = global_step(z_next, p,  params, dp, sp, r, vg);
 				res = (z_next - z_prev).norm();
+				/*if (res < sol_p.threshold)
+					break;*/
 				iter += 1;
 				if (iter >= sol_p.max_iters)
 					break;
@@ -127,20 +129,24 @@ struct fast_cd_corot_local_global_solver
 			dz = ldlt_solver.solve(rhs);
 		else
 			dz = llt_solver.solve(rhs);
-		VectorXd z_next = z + dz.topRows(params.B.cols());
+		dz = dz.topRows(params.B.cols());
+		VectorXd z_next = z + dz;
 
 		////hould do a line search here:
 		double alpha = 2.0;
 		double E0 = fast_cd_energy(z, p, params, dp, sp);
 		double E = E0;
+
+		double c = 0.5;
+	//	double threshold = +c * alpha * g.transpose() * dz
 		do
 		{
 			alpha /= 2.0;
 			z_next = z + alpha * dz;
 			E = fast_cd_energy(z_next, p, params, dp, sp);
-		} while (E > E0 + 1e-8);
+		} while (E > E0 + 1e-5 );
 
-		std::cout << alpha << std::endl;
+	//	std::cout << alpha << std::endl;
 		return z_next;
 	}
 
@@ -196,7 +202,7 @@ struct fast_cd_corot_local_global_solver
 		double inertia = fast_cd_kinetic_energy(z,p,  params, dp, sp);
 
 		double ext = z.transpose() * dp.f_ext;
-		double total_energy = corot + inertia + ext;
+		double total_energy = corot + (inertia + ext);
 		return total_energy;
 	};
 

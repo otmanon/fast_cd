@@ -69,27 +69,27 @@ struct corot_static_precomp
 		VectorXd exp_vols = repeat_for_each_entry(tet_vols, 3, 3);
 		igl::diag(exp_vols, V);
 
-		SparseMatrix<double> Mu, Lam;
+		//SparseMatrix<double> Mu, Lam;
 		VectorXd exp_mu, exp_lam;
 		exp_mu = repeat_for_each_entry(p.mu, 3, 3);
 		exp_lam = repeat_for_each_entry(p.lambda, 3, 3);
-		igl::diag(exp_mu, Mu);
-		igl::diag(exp_lam, Lam);
+		//igl::diag(exp_mu, Mu);
+		//igl::diag(exp_lam, Lam);
 
 		SparseMatrix<double> I = SparseMatrix<double>(M.rows(), M.cols());
 		I.setIdentity();
-		Cmu =  K.transpose() * Mu * V * K + (!p.do_inertia) * 1e-9 * I;
-		Clam = K.transpose() * Lam * V * K;
+		Cmu = p.mu.mean() * K.transpose() * V * K;// +(!p.do_inertia) * 1e-12 * I;
+		Clam = p.lambda.mean()  * K.transpose() * V * K;
 		Cmux = Cmu * x;
 		Clamx = Clam * x;
 
 
 		A = p.do_inertia * p.invh2 * M + Cmu;
 		Kx = K * x;
-		VmuK = V * Mu * K;
-		VlamK = V * Lam * K;
-		VmuKx = V * Mu * Kx;
-		VlamKx = V * Lam * Kx;
+		VmuK = p.mu.mean() * V * K;
+		VlamK = p.lambda.mean() * V * K;
+		VmuKx = p.mu.mean() * V  * Kx;
+		VlamKx = p.lambda.mean() * V * Kx;
 
 
 	}
