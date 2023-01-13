@@ -221,7 +221,7 @@ void set_rig_parameters_identity(VectorXd& p0)
 	p0 = Map<VectorXd>(P0.data(), (dim * (dim + 1)) * num_b);
 }
 
-void get_translations_from_rig_parameters(MatrixXd& P, MatrixXd& T)
+void get_translations_from_rig_parameters(const MatrixXd& P, MatrixXd& T)
 {
 	assert(P.cols() == 3 && "expecting stacked (4 #bones) x 3 P0");
 	assert((P.rows() % 4) == 0 && "expecting stacked (4 #bones) x 3 P0");
@@ -233,12 +233,12 @@ void get_translations_from_rig_parameters(MatrixXd& P, MatrixXd& T)
 	}
 }
 
-void get_translations_from_rig_parameters(VectorXd& p, MatrixXd& T)
+void get_translations_from_rig_parameters(const VectorXd& p, MatrixXd& T)
 {
 	assert((p.rows() % (12)) == 0 && "flattened rig parameters in 3D mush have p0.rows() be a multiple of 12");
 	int num_b = p.rows() / 12;
 	int dim = 3;
-	MatrixXd P = Map<MatrixXd>(p.data(), num_b * (dim + 1), dim);
+	MatrixXd P = Map<const MatrixXd>(p.data(), num_b * (dim + 1), dim);
 	get_translations_from_rig_parameters(P, T);
 }
 

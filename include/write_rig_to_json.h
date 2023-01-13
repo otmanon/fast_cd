@@ -11,7 +11,8 @@ using namespace std;
 using namespace Eigen;
 
 
-bool write_rig_to_json(string& rig_path,  MatrixXd& W, MatrixXd& P0, VectorXi& pI, VectorXd& l, MatrixXd& V, MatrixXi& T, string& rig_type)
+bool write_rig_to_json(string& rig_path, const  MatrixXd& W, const MatrixXd& P0, 
+	VectorXi& pI, VectorXd& l, const MatrixXd& V, const MatrixXi& T, string& rig_type)
 {
 
 

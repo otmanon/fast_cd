@@ -14,12 +14,10 @@ public:
 
 	virtual void  set_menu_callback(std::function<void()>& menu_callback)
 	{
-
 		imgui_menu->callback_draw_viewer_menu = [&]()
 		{
 			menu_callback();
 		};
-	
 	};
 
 	fast_cd_viewer(igl::opengl::glfw::Viewer* viewer);

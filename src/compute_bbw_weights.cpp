@@ -11,7 +11,7 @@
 For a rig with rest pose parameters sol_p, attached to a volumetric mesh V, T, compute bounded biharmonic weights
 by finding the closest vertex point to each rig joint in sol_p, and calling bbw.h
 */
-Eigen::MatrixXd compute_bbw_weights(Eigen::VectorXd& p, Eigen::MatrixXd& V, Eigen::MatrixXi& T)
+Eigen::MatrixXd compute_bbw_weights(const Eigen::VectorXd& p, const Eigen::MatrixXd& V, const Eigen::MatrixXi& T)
 {
 	Eigen::MatrixXd joint_positions;
 	get_translations_from_rig_parameters(p, joint_positions);

@@ -19,7 +19,7 @@ struct fast_cd_scene_obj
 
 	bool do_cd;
     bool loop;
- 
+    int anim_length;
 	MatrixXd anim_P;
     MatrixXd W; //control rig weights
     MatrixXd Ws; //secondary rig weights
@@ -30,8 +30,18 @@ struct fast_cd_scene_obj
     MatrixXd V;
     MatrixXi T, F;
     int timestep; //which timestep of the simulation is this obejct on.
-	fast_cd_scene_obj(const MatrixXd& V, const MatrixXi& T, std::string rig_path, std::string rig_anim_path, fast_cd_subspace& sub, fast_cd_arap_sim& sim)
+    std::string name;
+    
+
+    //Texutre info if applicable
+    bool do_texture; 
+    MatrixXd V_tex, TC, N;
+    MatrixXi F_tex, FTC, FN;
+    SparseMatrix<double> P;
+
+    fast_cd_scene_obj(std::string name, const MatrixXd& V, const MatrixXi& T, std::string rig_path, std::string rig_anim_path, fast_cd_subspace& sub, fast_cd_arap_sim& sim)
 	{
+        this->name = name;
 		this->sim = sim;
         this->sub = sub;
 		do_cd = true;
@@ -55,7 +65,9 @@ struct fast_cd_scene_obj
         MatrixXd rA(3, 4);
         if (rig_type == "surface")  
         {
+         //   printf("Made it before surface_to_volume_weights call!\n");
             W = surface_to_volume_weights(W, Vs, V, T);
+           // printf("Made it past surface_to_volume_weights call!\n");
             fit_rig_to_mesh(V, T, Vs, P0, rA);
         }
         else if (rig_type == "volume")
@@ -78,6 +90,10 @@ struct fast_cd_scene_obj
         p = anim_P.col(0);
         z = VectorXd::Zero(sub.W.cols() * 12);
         st.init(z, z, p, p);
+
+        anim_length = anim_P.cols();
+
+        do_texture = false;
 	}
 	
 
@@ -90,11 +106,11 @@ struct fast_cd_scene_obj
     */
     virtual void step(VectorXd& p, VectorXd& z)
     {   //get animation rig parameters
-        p = anim_P.col(timestep % anim_P.cols());
+        p = anim_P.col(timestep % anim_length);
         z = VectorXd::Zero(sub.W.cols()*12);
         if (loop)
         {
-            if (timestep % anim_P.cols() == 0)
+            if (timestep % anim_length == 0)
             {
                 st.init(z, z, p, p);
             }

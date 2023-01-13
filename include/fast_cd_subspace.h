@@ -65,6 +65,8 @@ struct  fast_cd_subspace
 
 	VectorXi l;   // clusters
 
+	SparseMatrix<double> Aeq; //custom constraint. empty if not using custom constraint c x 3V
+
 	fast_cd_subspace() {};
 	/*
 	Initialized and configures subspace... does NOT build it yet.
@@ -148,6 +150,15 @@ struct  fast_cd_subspace
 			igl::massmatrix(V, T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
 			Aeq = (J.transpose() * igl::repdiag(M, 3)*igl::repdiag(D, 3));
 		}
+		else if (params.subspace_constraint_type == "custom")
+		{
+			if (this->Aeq.rows() == 0 || this->Aeq.cols() != V.rows()*3)
+			{
+				printf("Aeq matrix does not have the right amount of rows or columns to be valid. Please set the constraint \n \
+				  by first calling fast_cd_subspace::set_custom_subspace_constraint(Aeq) before this call \n");
+			}
+			Aeq = this->Aeq;
+		}
 		// load subspace from cache... if modes can't be found, they are recomputed. if clusters can't be found, they are recomputed
 		if (read_cache)
 		{
@@ -162,6 +173,12 @@ struct  fast_cd_subspace
 			if (write_cache)
 				this->write_to_cache(modes_cache_dir, clusters_cache_dir);
 		}
+	}
+
+	
+	void set_custom_subspace_constraint(SparseMatrix<double>& Aeq)
+	{
+		this->Aeq = Aeq;
 	}
 
 	/*

@@ -13,8 +13,10 @@ public:
 		
 	}
 
+
 	void record_frame(double n)
 	{
+
 		P.conservativeResize(P.rows()+ 1);
 		P(P.rows() - 1) = n;
 	}

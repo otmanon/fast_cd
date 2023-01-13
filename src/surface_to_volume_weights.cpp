@@ -71,18 +71,22 @@ Eigen::MatrixXd surface_to_volume_weights(const Eigen::MatrixXd& surfaceW, const
 	X_t = ((scale * R * X.transpose()).colwise() + t).transpose();
 	all = igl::colon<int>(0, X.rows() -1);
 	//map surface vertices to closest volume vertices. These are now boundary conditions
+	//printf("Made it before dist query \n");
 	igl::point_mesh_squared_distance(surfaceV, X_t , all, sqrD, bI, CP);
-
+	//printf("Made it past dist query \n");
 	Eigen::MatrixXi BI = bI.replicate(1, surfaceW.rows());
 	Eigen::MatrixXd B = Eigen::MatrixXd::Zero(C.rows(), surfaceW.cols());
 	igl::min_quad_with_fixed_data<double> data;
+	//printf("Made it before mqwf_precomp!\n");
 	igl::min_quad_with_fixed_precompute(C, bI, Aeq, true, data);
+	//printf("Made it past mqwf_precomp!\n");
 	igl::min_quad_with_fixed_solve(data, B, surfaceW, Beq, W);
-
+	//printf("Made it past mqwf_solve!\n");
 	W = W.cwiseMax(0.0);
 	W = W.cwiseMin(1.0);
 	//normalize weight matrix
 	Eigen::VectorXd sums = W.rowwise().sum();
 	W.array().colwise() /= W.rowwise().sum().array();
+	//printf("Made it at end of surface_to_volume_weights call!\n");
 	return W;
 }

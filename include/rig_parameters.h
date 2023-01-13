@@ -71,9 +71,9 @@ Assumes columnb order flattening convenction
 */
 void set_rig_parameters_identity(VectorXd& p0);
 
-void get_translations_from_rig_parameters(MatrixXd& P, MatrixXd& T);
+void get_translations_from_rig_parameters(const MatrixXd& P, MatrixXd& T);
 
-void get_translations_from_rig_parameters(VectorXd& p, MatrixXd& T);
+void get_translations_from_rig_parameters(const VectorXd& p, MatrixXd& T);
 
 
 void world_to_rel_rig_parameters(const VectorXd& p_w, const VectorXd& p0, VectorXd& p_rel);
