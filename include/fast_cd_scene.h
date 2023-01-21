@@ -109,8 +109,9 @@ struct fast_cd_scene
 				if (controllable_object_id >= 0 )
 				{
 
-					if (old_controllable_object_id >= 0 && controllable_object_id != old_controllable_object_id)
+					if (controllable_object_id != old_controllable_object_id && old_controllable_object_id >= 0)
 					{
+						printf("old controllable object id %d \n", old_controllable_object_id);
 						scene_objects[old_controllable_object_id].controlled = false;
 						MatrixXd A = (A0.inverse() * viewer.guizmo->T).topRows(3).cast<double>();
 						scene_objects[old_controllable_object_id].transform_animation(A);
@@ -160,6 +161,10 @@ struct fast_cd_scene
 				num_t, num_obj, 1.0/totalt.mean(24));
 		};
 		viewer.set_menu_callback(menu_callback);
+
+		controllable_object_id = -1;
+		p_frozen = VectorXd(0);
+		A0.setZero();
 	};
 	
 
