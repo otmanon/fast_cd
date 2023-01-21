@@ -106,7 +106,7 @@ struct fast_cd_scene
 				
 				int  old_controllable_object_id = controllable_object_id;
 				controllable_object_id = pick_scene_object(last_mouse);
-				if (controllable_object_id >= 0 )
+				if (controllable_object_id >= 0)
 				{
 
 					if (controllable_object_id != old_controllable_object_id && old_controllable_object_id >= 0)
@@ -120,7 +120,7 @@ struct fast_cd_scene
 					scene_objects[controllable_object_id].controlled = true;
 					//initialize  A0
 					A0 = Matrix4f::Identity();
-					
+
 					//calculate the  center of mass. 
 					VectorXd u =
 						scene_objects[controllable_object_id].sim.params->B * scene_objects[controllable_object_id].st.z_curr +
@@ -137,6 +137,8 @@ struct fast_cd_scene
 					viewer.guizmo->T = A0;
 					printf("id %i, \n", controllable_object_id);
 				}
+				else if (old_controllable_object_id >= 0)
+					controllable_object_id = old_controllable_object_id; 
 			}
 		};
 
