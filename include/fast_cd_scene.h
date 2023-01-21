@@ -103,15 +103,19 @@ struct fast_cd_scene
 			printf("button %d \n", button);
 			if (igl::opengl::glfw::Viewer::MouseButton(button) == igl::opengl::glfw::Viewer::MouseButton::Right)  //if right click, we are placing handles
 			{
-				if (controllable_object_id >= 0)
-				{
-					scene_objects[controllable_object_id].controlled = false;
-					MatrixXd A = (A0.inverse() * viewer.guizmo->T).topRows(3).cast<double>();
-					scene_objects[controllable_object_id].transform_animation(A);
-				}
+				
+				int  old_controllable_object_id = controllable_object_id;
 				controllable_object_id = pick_scene_object(last_mouse);
-				if (controllable_object_id >= 0)
+				if (controllable_object_id >= 0 )
 				{
+
+					if (old_controllable_object_id >= 0 && controllable_object_id != old_controllable_object_id)
+					{
+						scene_objects[old_controllable_object_id].controlled = false;
+						MatrixXd A = (A0.inverse() * viewer.guizmo->T).topRows(3).cast<double>();
+						scene_objects[old_controllable_object_id].transform_animation(A);
+					}
+
 					scene_objects[controllable_object_id].controlled = true;
 					//initialize  A0
 					A0 = Matrix4f::Identity();
