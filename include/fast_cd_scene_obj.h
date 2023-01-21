@@ -39,6 +39,11 @@ struct fast_cd_scene_obj
     MatrixXi F_tex, FTC, FN;
     SparseMatrix<double> P;
 
+
+    bool controlled;
+    VectorXd p_controller;
+
+    SparseMatrix<double> J;
     fast_cd_scene_obj(std::string name, const MatrixXd& V, const MatrixXi& T, std::string rig_path, std::string rig_anim_path, fast_cd_subspace& sub, fast_cd_arap_sim& sim)
 	{
         this->name = name;
@@ -94,6 +99,8 @@ struct fast_cd_scene_obj
         anim_length = anim_P.cols();
 
         do_texture = false;
+
+        controlled = false;
 	}
 	
 
@@ -101,12 +108,20 @@ struct fast_cd_scene_obj
     {
         transform_rig_parameters_anim(anim_P, A);
     }
+
+
+
     /*
     Steps the fast cd animation for this object forward in time
     */
     virtual void step(VectorXd& p, VectorXd& z)
-    {   //get animation rig parameters
-        p = anim_P.col(timestep % anim_length);
+    {   
+        //get animation rig parameters
+        if (!controlled)
+            p = anim_P.col(timestep % anim_length);
+        else
+            p = p_controller;
+
         z = VectorXd::Zero(sub.W.cols()*12);
         if (loop)
         {
@@ -123,7 +138,8 @@ struct fast_cd_scene_obj
             z = sim.step(z, p, st, f_ext, bc);
             st.update(z, p);
         }
-        timestep += 1;
+        if (!controlled)
+            timestep += 1;
     }
 
 

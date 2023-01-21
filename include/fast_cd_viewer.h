@@ -42,6 +42,14 @@ public:
 		};
 	};
 
+	virtual void set_mouse_up_callback(std::function<void(int button, int modifier)>& callback_mouse_up) {
+		igl_v->callback_mouse_up = [&](igl::opengl::glfw::Viewer& v, int button, int modifier)->bool
+		{
+			callback_mouse_up(button, modifier);
+			return false;
+		};
+	};
+
 	virtual void set_mouse_down_callback(std::function<bool(igl::opengl::glfw::Viewer& viewer, int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = callback_mouse_down;
 	};

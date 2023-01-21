@@ -9,8 +9,9 @@
 
 
 #include <igl/writeOBJ.h>
-
+#include <igl/unproject_onto_mesh.h>
 #include <igl/readOBJ.h>
+#include <igl/ray_mesh_intersect.h>
 #include <filesystem>
 #include <functional>
 struct fast_cd_scene
@@ -32,6 +33,12 @@ struct fast_cd_scene
 
 	std::function<void()> pre_draw_callback;
 	std::function<void()> menu_callback;
+	std::function<void(int button, int modifie)> mouse_down_callback;
+	std::function<bool(unsigned int key, int modifier)> key_pressed_callback;
+	std::function<void(const Matrix4f& )> guizmo_callback;
+	//std::function<void()> mouse_up_callback;
+	//std::function<void()> mouse_pressed_callback;
+
 	ScalarRecorder totalt;
 	int num_v, num_t, num_obj;
 
@@ -39,6 +46,11 @@ struct fast_cd_scene
 	bool do_cd; //if this is on then overrides all objects do_cd
 
 	int max_anim_length;
+
+
+	int controllable_object_id;
+	VectorXd p_frozen;
+	Matrix4f A0;
 	fast_cd_scene(std::string vertex_shader, std::string fragment_shader, int num_primary_bones = 16, int num_secondary_bones = 16)
 	{
 		viewer = fast_cd_viewer_custom_shader(vertex_shader, fragment_shader, num_primary_bones, num_secondary_bones);
@@ -48,10 +60,87 @@ struct fast_cd_scene
 			step();
 		};
 
+		key_pressed_callback = [&](unsigned int key, int modifier)->bool
+		{
+			if (key == 'g')
+			{
+				if (ImGuizmo::TRANSLATE == viewer.get_guizmo_operation())
+				{
+					viewer.set_guizmo_operation(ImGuizmo::ROTATE);
+				}
+				else if (ImGuizmo::ROTATE == viewer.get_guizmo_operation())
+				{
+					viewer.set_guizmo_operation(ImGuizmo::TRANSLATE);
+				}
+			}
+
+			return false;
+		};
+
+		viewer.set_key_pressed_callback(key_pressed_callback);
+		A0.setIdentity();
+		guizmo_callback = [&](const Matrix4f& T)
+		{
+			MatrixXd A = (A0.inverse() * T).topRows(3).cast<double>();
+
+			VectorXd p_tmp = p_frozen;
+			transform_rig_parameters(p_tmp, A);
+			scene_objects[controllable_object_id].p_controller = p_tmp;
+		};
+		A0 = Matrix4f::Identity();
+		viewer.init_guizmo(false, A0, guizmo_callback, ImGuizmo::TRANSLATE);
+
+		mouse_down_callback = [&](int button, int modifier)
+		{
+			Eigen::RowVector3f last_mouse = Eigen::RowVector3f(
+				viewer.igl_v->current_mouse_x, viewer.igl_v->core().viewport(3) - viewer.igl_v->current_mouse_y, 0);
+			if (igl::opengl::glfw::Viewer::MouseButton(button) == igl::opengl::glfw::Viewer::MouseButton::Left)
+				printf("Left Click\n");
+
+			else if (igl::opengl::glfw::Viewer::MouseButton(button) == igl::opengl::glfw::Viewer::MouseButton::Right)
+				printf("Right Click \n");//
+
+			printf("button %d \n", button);
+			if (igl::opengl::glfw::Viewer::MouseButton(button) == igl::opengl::glfw::Viewer::MouseButton::Right)  //if right click, we are placing handles
+			{
+				if (controllable_object_id >= 0)
+				{
+					scene_objects[controllable_object_id].controlled = false;
+					MatrixXd A = (A0.inverse() * viewer.guizmo->T).topRows(3).cast<double>();
+					scene_objects[controllable_object_id].transform_animation(A);
+				}
+				controllable_object_id = pick_scene_object(last_mouse);
+				if (controllable_object_id >= 0)
+				{
+					scene_objects[controllable_object_id].controlled = true;
+					//initialize  A0
+					A0 = Matrix4f::Identity();
+					
+					//calculate the  center of mass. 
+					VectorXd u =
+						scene_objects[controllable_object_id].sim.params->B * scene_objects[controllable_object_id].st.z_curr +
+						scene_objects[controllable_object_id].sim.params->J * scene_objects[controllable_object_id].st.p_curr;
+
+					MatrixXd U = Map<MatrixXd>(u.data(), u.rows() / 3, 3);
+					RowVector3d center = U.colwise().mean();
+					A0.block(0, 3, 3, 1) = center.transpose().cast<float>();
+
+					p_frozen = scene_objects[controllable_object_id].st.p_curr;
+					//TODO what is p_frozen;
+					scene_objects[controllable_object_id].p_controller = p_frozen;;
+					set_guizmo_visible(true);
+					viewer.guizmo->T = A0;
+					printf("id %i, \n", controllable_object_id);
+				}
+			}
+		};
+
 		viewer.set_pre_draw_callback(pre_draw_callback);
+
+		viewer.set_mouse_down_callback(mouse_down_callback);
+
+
 		double full_t = 0, sim_t = 0;
-
-
 
 		num_obj = 0;
 		num_v = 0;
@@ -67,9 +156,48 @@ struct fast_cd_scene
 				num_t, num_obj, 1.0/totalt.mean(24));
 		};
 		viewer.set_menu_callback(menu_callback);
-
 	};
 	
+
+
+	int pick_scene_object(Eigen::RowVector3f& last_mouse)
+	{
+		// Find closest point on mesh to mouse position
+		int hit_id = -1;
+		for (int i = 0; i < scene_objects.size(); i++)
+		{
+			int fid;
+			Eigen::Vector3f bary;
+			VectorXd u =
+				scene_objects[i].sim.params->B * scene_objects[i].st.z_curr +
+				scene_objects[i].sim.params->J * scene_objects[i].st.p_curr;
+
+			MatrixXd U =  Map<MatrixXd>(u.data(), u.rows() / 3, 3);
+			
+			if (scene_objects[i].do_texture)
+				U = scene_objects[i].P* U;
+			MatrixXi F = viewer.igl_v->data_list[object_id[i]].F;
+			if (igl::unproject_onto_mesh(
+				last_mouse.head(2),
+				viewer.igl_v->core().view,
+				viewer.igl_v->core().proj,
+				viewer.igl_v->core().viewport,
+				U, F,
+				fid, bary))
+			{
+				hit_id = i;
+				break;
+			}
+		}
+
+		return hit_id;
+	}
+
+	void set_guizmo_visible(bool visibility)
+	{
+		viewer.guizmo->visible = visibility;
+	}
+
 	void set_do_cd(bool do_cd)
 	{
 		this->do_cd = do_cd;
