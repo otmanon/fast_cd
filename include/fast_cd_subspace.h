@@ -82,7 +82,7 @@ struct  fast_cd_subspace
 	debug - (bool) whether to save and store debug info 
 	output_dir - (string) output directory where we will write debug info
 	*/
-	fast_cd_subspace(int num_modes, string subspace_constraint_type, string& mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug = false,
+	fast_cd_subspace(int num_modes, string subspace_constraint_type, string mode_type, int num_clusters, int num_clustering_features, bool split_components, bool debug = false,
 		string output_dir = "")
 	{
 		params = fast_cd_subspace_parameters(num_modes, subspace_constraint_type, mode_type, num_clusters, num_clustering_features, split_components, debug, output_dir);
