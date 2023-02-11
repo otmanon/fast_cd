@@ -16,8 +16,6 @@ struct fast_cd_arap_sim_params : cd_sim_params
 		MatrixXd B;
 		VectorXi labels;
 		fast_cd_arap_sim_params() {};
-
-
 		fast_cd_arap_sim_params(const MatrixXd& X, const MatrixXi& T,
 			const MatrixXd& B, const VectorXi& l,
 			const SparseMatrix<double>& J, double mu,
@@ -144,7 +142,6 @@ struct fast_cd_arap_sim_params : cd_sim_params
 			assert(Aeq.cols() == X.rows() * X.cols());
 			
 		}
-
 
 
 		void set_equality_constraint(SparseMatrix<double>& Aeq)

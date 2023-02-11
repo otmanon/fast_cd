@@ -127,6 +127,8 @@ struct fast_cd_scene
 						scene_objects[controllable_object_id].sim.params->J * scene_objects[controllable_object_id].st.p_curr;
 
 					MatrixXd U = Map<MatrixXd>(u.data(), u.rows() / 3, 3);
+					if (scene_objects[controllable_object_id].do_texture)
+						U = scene_objects[controllable_object_id].P* U;
 					RowVector3d center = U.colwise().mean();
 					A0.block(0, 3, 3, 1) = center.transpose().cast<float>();
 
