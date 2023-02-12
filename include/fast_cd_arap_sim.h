@@ -72,6 +72,18 @@ public:
 		sol = new fast_cd_arap_local_global_solver(fcd_sp->BAB, fcd_sp->AeqB, solver_params);
 	};
 
+	fast_cd_arap_sim(fast_cd_arap_sim_params& sim_params)
+	{
+		params = &sim_params;
+		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(sim_params);
+		local_global_solver_params solver_params =  local_global_solver_params(false, 10, 1e-6);
+		sp = fcd_sp; // fast_cd_arap_static_precomp(sim_params);
+		dp = new fast_cd_arap_dynamic_precomp();
+
+		sol = new fast_cd_arap_local_global_solver(fcd_sp->BAB, fcd_sp->AeqB, solver_params);
+	};
+
+
 	fast_cd_arap_sim(fast_cd_arap_sim_params& params, fast_cd_arap_local_global_solver& solver, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp)
 	{
 		this->params = &params;

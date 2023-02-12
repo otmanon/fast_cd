@@ -2,9 +2,12 @@
 #include "cd_arap_local_global_solver.h"
 #include "fast_cd_arap_sim_params.h"
 #include "fast_cd_arap_precomp.h"
+#include <igl/cat.h>
 
-struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
+struct fast_cd_arap_local_global_solver 
 {
+	local_global_solver_params p;
+	VectorXd z;
 
 	LLT<MatrixXd> llt_solver;
 	LDLT<MatrixXd> ldlt_solver;
@@ -63,7 +66,15 @@ struct fast_cd_arap_local_global_solver : cd_arap_local_global_solver
 			max_iters, convergence_threshold);
 		VectorXi bI;
 		MatrixXd H;
-		augment_with_linear_constraints(A, Aeq, H);
+
+		MatrixXd top_row, bot_row, Z, AeqT;
+		Z = MatrixXd::Zero(Aeq.rows(), Aeq.rows());
+		AeqT = Aeq.transpose();
+		top_row = igl::cat(2, A, AeqT);
+		bot_row = igl::cat(2, Aeq, Z);
+		H = igl::cat(1, top_row, bot_row);
+
+		//augment_with_linear_constraints(A, Aeq, H);
 		if (Aeq.rows() > 0)
 			ldlt_solver.compute(H);
 		else
