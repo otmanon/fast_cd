@@ -9,7 +9,7 @@ option(LIBIGL_GLFW "Build target igl::glfw" ON)
 option(LIBIGL_IMGUI   "Build target igl::imgui" ON)
 option(LIBIGL_RESTRICTED_MATLAB   "Build target igl_restricted::matlab" ON)
 # libigl
-add_subdirectory(./deps/libigl/)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 
 
