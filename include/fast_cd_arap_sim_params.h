@@ -48,7 +48,6 @@ struct fast_cd_arap_sim_params : cd_sim_params
 			this->h = h;
 			this->invh2 = 1.0 / (h * h);
 			this->do_inertia = do_inertia;
-			this->sim_constraint_type = sim_constraint_type;
 
 			this->B = B;
 			this->labels = l;

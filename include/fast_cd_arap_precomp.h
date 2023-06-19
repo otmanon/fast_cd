@@ -137,7 +137,8 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 
 	bool write_to_cache(string& precomp_cache_dir)
 	{
-		namespace fs = std::filesystem;
+		return false;
+		/*namespace fs = std::filesystem;
 		if (!fs::exists(fs::path(precomp_cache_dir)))
 		{
 			fs::create_directories(fs::path(precomp_cache_dir));
@@ -164,7 +165,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		{
 			printf("Could not save fast_cd_arap precomp cache!");
 		}
-		return t;
+		return t;*/
 	}
 };
 

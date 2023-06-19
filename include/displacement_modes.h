@@ -11,6 +11,9 @@
 #include <igl/cat.h>
 #include <igl/blkdiag.h>
 #include <igl/repdiag.h>
+
+
+#include "compute_modes_spectra_standard.h"
 using namespace Eigen;
 
 void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const int num_modes,
@@ -56,7 +59,12 @@ void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double
     igl::blkdiag({ M2, Z }, MZ);
 
     Eigen::MatrixXd B2;
-    displacement_modes(Q, MZ, num_modes, B2, V);
 
+
+
+    //displacement_modes(Q, MZ, num_modes, B2, V);
+
+
+    compute_modes_spectra(Q, MZ, num_modes, B2, V);
     B = B2.block(0, 0, H.rows(), B2.cols());
 }

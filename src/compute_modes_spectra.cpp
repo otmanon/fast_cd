@@ -4,21 +4,18 @@
 #include <igl/get_seconds.h>
 #include "compute_modes_spectra.h"
 
-#ifdef FAST_CD_USE_SUITESPARSE
 #include <Eigen/UmfPackSupport>
 #include "UMFPACKSymShiftInvert.h"
-#include "CholModSymShiftInvert.h"
-#include <Eigen/CholmodSupport>
-#include "CholModSimplicialLDLTSymShiftInvert.h"
-#include "SimplicialLDLTSymShiftInvert.h"
+//#include "CholModSymShiftInvert.h"
+//#include <Eigen/CholmodSupport>
+//#include "CholModSimplicialLDLTSymShiftInvert.h"
+//#include "SimplicialLDLTSymShiftInvert.h"
 #include <Spectra/SymGEigsShiftSolver.h>
 
 using namespace Spectra;
-#endif
 
 void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<double>& B, int r, Eigen::MatrixXd& U, Eigen::VectorXd& S)
 {
-        #ifdef FAST_CD_USE_SUITESPARSE
         using OpType = UMFPACKSymShiftInvert;
         using BopType = MatProd;
 
@@ -75,8 +72,5 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
             printf("Mode computation failed!");
         }
         assert((geigs.info() == CompInfo::Successful) && "Eigendecomposition not succeeded");
-        #else
-//#error "FAST_CD_USE_SUITESPARSE should be defined."
-        #endif 
         
 }

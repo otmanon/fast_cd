@@ -40,8 +40,8 @@ public:
 				printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir.c_str());
 				printf(" Computing fast_cd_arap precomputations from scratch... \n", cache_dir.c_str());
 				fcd_sp = new fast_cd_arap_static_precomp(sim_params);
-				if (write_cache)
-					fcd_sp->write_to_cache(cache_dir);
+				/*if (write_cache)
+					fcd_sp->write_to_cache(cache_dir);*/
 			} 
 		}
 		else
