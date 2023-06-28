@@ -1,6 +1,6 @@
 #pragma once
 #include "cd_sim_params.h"
-#include "deformation_gradient_from_u_prefactorized_matrices.h"
+#include "deformation_jacobian.h"
 #include "cd_sim_state.h"
 
 #include <igl/massmatrix.h>
@@ -69,7 +69,7 @@ struct cd_arap_static_precomp
 		M = igl::repdiag(M, 3);
 		Eigen::VectorXd m = M.diagonal();
 		VectorXd Inull;
-		deformation_gradient_from_u_prefactorized_matrices(p.X, p.T, Inull, K, V);
+		deformation_jacobian(p.X, p.T, Inull, K, V);
 		Eigen::VectorXd v = V.diagonal();
 
 		igl::volume(p.X, p.T, tet_vols);

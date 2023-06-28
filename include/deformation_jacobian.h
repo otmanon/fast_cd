@@ -11,4 +11,4 @@ F = mat(f)
 Note that F is an integrated deformation gradient over all tets. To get the constant version just divide by volume of the tet.
 Assumes here that u^c is column order flattened, and same with F
 */
-void deformation_gradient_from_u_prefactorized_matrices(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, Eigen::VectorXd& H, Eigen::SparseMatrix<double>& K, Eigen::SparseMatrix<double>& M);
+void deformation_jacobian(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, Eigen::VectorXd& H, Eigen::SparseMatrix<double>& K, Eigen::SparseMatrix<double>& M);

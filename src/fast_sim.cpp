@@ -1,5 +1,5 @@
 #include "fast_sim.h"
-#include "deformation_gradient_from_u_prefactorized_matrices.h"
+#include "deformation_jacobian.h"
 #include "trace_matrix_operator.h"
 #include "grouping_matrix_from_clusters.h"
 #include "interweaving_matrix.h"
@@ -272,7 +272,7 @@ void FastSim::init_full_system_matrices(){
 	fmp.A = stiffness * C + do_inertia*(1.0 / (dt * dt))* fmp.M; //;
 
 	//flattened_deformation_gradient matrices. 
-	deformation_gradient_from_u_prefactorized_matrices(X, T, fmp.H, fmp.K, fmp.Vol_exp); 
+	deformation_jacobian(X, T, fmp.H, fmp.K, fmp.Vol_exp); 
 
 	Eigen::VectorXd vol;
 	igl::volume(X, T, vol);

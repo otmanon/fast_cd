@@ -1,5 +1,4 @@
 #pragma once
-#include "deformation_gradient_from_u_prefactorized_matrices.h"
 #include "igl/slice.h"
 #include <Eigen/Dense>
 #include "igl/volume.h"

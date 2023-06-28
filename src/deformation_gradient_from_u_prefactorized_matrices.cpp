@@ -1,4 +1,4 @@
-#include "deformation_gradient_from_u_prefactorized_matrices.h"
+#include "deformation_jacobian.h"
 #include "igl/slice.h"
 #include <Eigen/Dense>
 #include "igl/volume.h"
@@ -6,7 +6,7 @@
 #include "interweaving_matrix.h"
 #include "igl/repdiag.h"
 #include <iostream>
-void deformation_gradient_from_u_prefactorized_matrices(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, Eigen::VectorXd& H, Eigen::SparseMatrix<double>& K, Eigen::SparseMatrix<double>& M)
+void deformation_jacobian(const Eigen::MatrixXd& X, const Eigen::MatrixXi& T, Eigen::VectorXd& H, Eigen::SparseMatrix<double>& K, Eigen::SparseMatrix<double>& M)
 {
 
 	int k = T.rows();

@@ -1,6 +1,6 @@
 #pragma once
 #include "cd_sim_params.h"
-#include "deformation_gradient_from_u_prefactorized_matrices.h"
+#include "deformation_jacobian.h"
 #include "sim_state.h"
 #include "vector_gradient_operator.h"
 #include "repeat_for_each_entry.h"
