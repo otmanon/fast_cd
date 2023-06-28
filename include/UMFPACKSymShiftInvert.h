@@ -95,6 +95,7 @@ public:
 
     void set_shift(const double& sigma)
     {
+        // I don't remember what this function is used for... it seems useless given we have access to set_custom_shift
       //  C = m_matA + sigma * m_matB;
       //  m_solver->compute(C);
    //     const bool success = (m_solver->info() == Eigen::Success);

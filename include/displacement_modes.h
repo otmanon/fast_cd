@@ -16,28 +16,28 @@
 #include "compute_modes_spectra_standard.h"
 using namespace Eigen;
 
-void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const int num_modes,
-	MatrixXd& B, VectorXd& V, bool debug=false, string output_dir="")
-{
-    Engine* engine;
-    igl::matlab::mlinit(&engine);
-    igl::matlab::mlsetmatrix(&engine, "A", H);
-    igl::matlab::mlsetmatrix(&engine, "B", M);
-    igl::matlab::mlsetscalar(&engine, "r", num_modes);
-    igl::matlab::mleval(&engine, "tic");
-    igl::matlab::mleval(&engine, "[EV, S] = eigs(A, B, r,'sm')");
-    igl::matlab::mleval(&engine, "EV = real(EV)");
-    igl::matlab::mleval(&engine, "S = real(S)");
-    igl::matlab::mleval(&engine, "time = toc");
-    // igl::matlab::mleval(&engine, "save(\"aca_modes.mat\")");
-    igl::matlab::mlgetmatrix(&engine, "EV", B);
-    Eigen::MatrixXd S_mat;
-    double t;
-    igl::matlab::mlgetmatrix(&engine, "S", S_mat);
-    t = igl::matlab::mlgetscalar(&engine, "time");
-    printf("Total matlab::eigs decomposition time: %g... \n", t);
-    V = S_mat.diagonal(); // Eigen::Map<Eigen::VectorXd>(S_mat.data(), S_mat.rows(), 1);
-}
+//void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double>& M, const int num_modes,
+//	MatrixXd& B, VectorXd& V, bool debug=false, string output_dir="")
+//{
+//    Engine* engine;
+//    igl::matlab::mlinit(&engine);
+//    igl::matlab::mlsetmatrix(&engine, "A", H);
+//    igl::matlab::mlsetmatrix(&engine, "B", M);
+//    igl::matlab::mlsetscalar(&engine, "r", num_modes);
+//    igl::matlab::mleval(&engine, "tic");
+//    igl::matlab::mleval(&engine, "[EV, S] = eigs(A, B, r,'sm')");
+//    igl::matlab::mleval(&engine, "EV = real(EV)");
+//    igl::matlab::mleval(&engine, "S = real(S)");
+//    igl::matlab::mleval(&engine, "time = toc");
+//    // igl::matlab::mleval(&engine, "save(\"aca_modes.mat\")");
+//    igl::matlab::mlgetmatrix(&engine, "EV", B);
+//    Eigen::MatrixXd S_mat;
+//    double t;
+//    igl::matlab::mlgetmatrix(&engine, "S", S_mat);
+//    t = igl::matlab::mlgetscalar(&engine, "time");
+//    printf("Total matlab::eigs decomposition time: %g... \n", t);
+//    V = S_mat.diagonal(); // Eigen::Map<Eigen::VectorXd>(S_mat.data(), S_mat.rows(), 1);
+//}
 
 /// <summary>
 /// Computes normal linear displacement modes for an elastic energy with hessian H, and constraints described by J
@@ -60,11 +60,7 @@ void displacement_modes(const SparseMatrix<double>& H, const SparseMatrix<double
 
     Eigen::MatrixXd B2;
 
-
-
     //displacement_modes(Q, MZ, num_modes, B2, V);
-
-
     compute_modes_spectra(Q, MZ, num_modes, B2, V);
     B = B2.block(0, 0, H.rows(), B2.cols());
 }

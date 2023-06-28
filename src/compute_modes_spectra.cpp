@@ -6,10 +6,7 @@
 
 #include <Eigen/UmfPackSupport>
 #include "UMFPACKSymShiftInvert.h"
-//#include "CholModSymShiftInvert.h"
-//#include <Eigen/CholmodSupport>
-//#include "CholModSimplicialLDLTSymShiftInvert.h"
-//#include "SimplicialLDLTSymShiftInvert.h"
+
 #include <Spectra/SymGEigsShiftSolver.h>
 
 using namespace Spectra;
@@ -28,31 +25,28 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
 
         double total_start = igl::get_seconds();
         double t_start = igl::get_seconds();
+
         printf("Eigen::UMFPACKLU factorization beginning... \n");
-      //   ldlt_solver->setMode(Eigen::CholmodMode::CholmodLDLt);
         op.set_mat(A, B);
         Bop.set_mat(B);
-      //  op.set_solver(ldlt_solver);
         op.set_custom_shift(0);
         printf("Eigen::UMFPACKLU factorization succeeded in %g seconds ... \n", igl::get_seconds() - t_start);
 
-
         geigs.init();
         t_start = igl::get_seconds();
-       // int nconv = geigs_umf.compute(SortRule::LargestMagn);
         std::cout << "Computing eigenvalues/eigenvectors using shift invert mode..." << std::endl;
        int nconv = geigs.compute(SortRule::LargestMagn);
-        //B_spectra.resize(V.rows() * 3, 1);
-        //B_spectra.setZero();
+
         if (geigs.info() == CompInfo::Successful)
         {
             printf("Found Spectra eigenvectors in %g seconds ... \n", igl::get_seconds() - t_start);
             printf("Total Spectra decomposition time %g... \n", igl::get_seconds() - total_start);
             U = geigs.eigenvectors();
-          //  Eigen::VectorXd norms = (U.transpose() * B * U).diagonal();
-          //  std::cout << norms << std::endl;
+       
             S = geigs.eigenvalues();
+
             Eigen::MatrixXd S_mat = Eigen::MatrixXd(S.cwiseAbs());
+
             //sort these according to S.abs()
             Eigen::MatrixXi I;
             Eigen::MatrixXd S_sorted;
@@ -71,6 +65,6 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
         {
             printf("Mode computation failed!");
         }
-        assert((geigs.info() == CompInfo::Successful) && "Eigendecomposition not succeeded");
+        assert((geigs.info() == CompInfo::Successful) && "Eigendecomposition failed");
         
 }
