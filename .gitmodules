@@ -4,3 +4,9 @@
 [submodule "deps/spectra"]
 	path = deps/spectra
 	url = https://github.com/yixuan/spectra.git
+[submodule "deps/SuiteSparse"]
+	path = deps/SuiteSparse
+	url = https://github.com/sergiud/SuiteSparse.git
+[submodule "deps/OpenBLAS"]
+	path = deps/OpenBLAS
+	url = https://github.com/xianyi/OpenBLAS.git

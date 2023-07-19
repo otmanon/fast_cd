@@ -10,6 +10,54 @@
 #include <igl/sum.h>
 struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 {
+	/////////////////// FULL SPACE PRECOMP //////////////////
+	//cotan laplacian
+	SparseMatrix<double>  C;
+
+	//mass matrix
+	SparseMatrix<double>  M;
+
+	// Gradient matrix
+	SparseMatrix<double> K;
+
+	// tetrahedron volume matrix! This is NOT Vertex positions
+	SparseMatrix<double> V;
+
+	//system matrix
+	SparseMatrix<double> A;
+
+	//K*J, component of deformation gradient that comes from rig
+	SparseMatrix<double> KJ;
+	VectorXd Kx;
+
+	SparseMatrix<double> VK;
+	// VKJ mass weighed  per tet KJ
+	SparseMatrix<double> VKJ;
+	VectorXd VKx;
+
+	//M*J
+	SparseMatrix<double>  MJ;
+
+	//J'MJ
+	MatrixXd  JMJ;
+
+
+	//M*x
+	VectorXd Mx;
+	// vector here but really this is a scalar... only a vector for eigen consistence
+	VectorXd xMx;
+	//J'*M*x
+	VectorXd JMx;
+
+	//C*J
+	SparseMatrix<double> CJ;
+	VectorXd Cx;
+
+	// tet volumes
+	VectorXd tet_vols;
+
+
+	////////// SUBSPACE PRECOMP ///////////////////////
 	//reduced cotan laplacian (with heterogeneity inside)
 	MatrixXd BCB;
 
@@ -22,8 +70,6 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	//reduced equality constraint
 	MatrixXd AeqB;
 
-	
-
 	//mass, stiffness weighed reduced  gradient operator
 	MatrixXd GmKB;
 	MatrixXd GmKJ;
@@ -31,10 +77,8 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	
 	MatrixXd G1VKB;
 
-
 	MatrixXd BMJ;
 	VectorXd BMx;
-	
 
 	MatrixXd BCJ;
 	VectorXd BCx;
@@ -42,7 +86,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	fast_cd_arap_static_precomp() {};
 
 
-	fast_cd_arap_static_precomp(fast_cd_arap_sim_params& p) : cd_arap_static_precomp(p)
+	fast_cd_arap_static_precomp(fast_cd_arap_sim_params& p) 
 	{
 		init(p);
 	}	
@@ -51,6 +95,64 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 	
 	void init(fast_cd_arap_sim_params& p)
 	{
+
+		/////////////////// FULL SPACE PRECOMP ////////////////
+		VectorXd x = Map<VectorXd>(p.X.data(), p.X.rows() * p.X.cols());
+		igl::massmatrix(p.X, p.T, igl::MASSMATRIX_TYPE_BARYCENTRIC, M);
+		M = igl::repdiag(M, 3);
+		Eigen::VectorXd m = M.diagonal();
+		VectorXd Inull;
+		deformation_jacobian(p.X, p.T, Inull, K, V);
+		Eigen::VectorXd v = V.diagonal();
+
+		igl::volume(p.X, p.T, tet_vols);
+
+		SparseMatrix<double> Mu;
+		igl::diag(p.mu, Mu);
+		Mu = igl::repdiag(Mu, 9);
+
+		C = K.transpose() * Mu * V * K;
+		if (p.J.rows() > 0)
+			CJ = C * p.J;
+		else
+		{
+			CJ = SparseMatrix<double>(C.rows(), 0);
+			CJ.setZero();
+		}
+		Cx = C * x;
+		SparseMatrix<double> I = SparseMatrix<double>(C.rows(), C.cols());
+		I.setIdentity();
+		A = (p.do_inertia * p.invh2 * M + C + (!p.do_inertia) * 1e-9 * I);
+
+
+		if (p.J.rows() > 0)
+			KJ = K * p.J;
+		else
+		{
+			KJ = SparseMatrix<double>(K.rows(), 0);
+			KJ.setZero();
+		}
+		Kx = K * x;
+
+		VK = V * Mu * K;
+		VKJ = V * Mu * KJ;
+
+		VKx = V * Mu * Kx;
+
+		if (p.J.rows() > 0)
+			MJ = M * p.J;
+		else
+		{
+			MJ = SparseMatrix<double>(M.rows(), 0);
+			MJ.setZero();
+		}
+		Mx = M * x;
+
+		JMJ = p.J.transpose() * M * p.J;
+		JMx = p.J.transpose() * M * x;
+		xMx = x.transpose() * M * x;
+		
+		///////////////////////// SUBSPACE PRECOMP ////////////////////////
 		BCB = p.B.transpose() * C * p.B;
 		BMB = p.B.transpose() * M * p.B;
 		BAB = p.B.transpose() * A * p.B;

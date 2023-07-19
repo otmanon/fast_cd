@@ -12,3 +12,5 @@
 
 using namespace Eigen;
 void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, SparseMatrix<double>& J);
+
+void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, MatrixXd& J);

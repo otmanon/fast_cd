@@ -3,7 +3,14 @@ cmake_minimum_required(VERSION 3.1)
 file(GLOB SRC_FILES ./src/*)
 file(GLOB HEADER_FILES ./include/*)
 
+#add_subdirectory(./deps/OpenBLAS/)
 
+
+#set(BLA_VENDER OpenBLAS)
+#find_package(BLAS REQUIRED)
+#find_package(OpenBLAS REQUIRED)
+#add_subdirectory(./deps/SuiteSparse/)
+#find_package (SuiteSparse 5.12 NO_MODULE)
 # libigl
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 option(LIBIGL_PNG  "Build target igl::png"  ON)
@@ -23,9 +30,9 @@ target_include_directories(fast_cd PUBLIC ${FAST_CD_INCLUDE_DIRS})
 set_target_properties(fast_cd PROPERTIES LINKER_LANGUAGE CXX)
 set_property(TARGET fast_cd PROPERTY CXX_STANDARD 17)
 
-find_package(SuiteSparse)
+#find_package(SuiteSparse)
 
-set(FAST_CD_LIBRARIES igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab spectra SuiteSparse::umfpack)
+set(FAST_CD_LIBRARIES igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab spectra)# SuiteSparse::umfpack)
 
 target_link_libraries(fast_cd ${FAST_CD_LIBRARIES})
 

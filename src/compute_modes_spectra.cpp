@@ -1,3 +1,4 @@
+/*
 #include <iostream>
 #include <cassert>
 #include <igl/sort.h>
@@ -68,3 +69,4 @@ void compute_modes_spectra(Eigen::SparseMatrix<double>& A, Eigen::SparseMatrix<d
         assert((geigs.info() == CompInfo::Successful) && "Eigendecomposition failed");
         
 }
+*/
