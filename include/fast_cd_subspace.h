@@ -26,6 +26,7 @@ struct  fast_cd_subspace
 	MatrixXd W;    //skinning weights (if applicable)
 	VectorXi l;   // clusters
 
+	fast_cd_subspace() {};
 	fast_cd_subspace(std::string modes_dir, std::string clusters_dir, std::string mode_type, int num_modes, int num_clusters) {
 		this->mode_type = mode_type;
 		this->num_clusters = num_clusters;

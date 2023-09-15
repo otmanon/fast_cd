@@ -67,7 +67,7 @@ struct fast_cd_arap_sim_params
 	*/
 	fast_cd_arap_sim_params(const MatrixXd& X, const MatrixXi& T, 
 		const MatrixXd& B, const VectorXi&  l,
-		const SparseMatrix<double>& J, SparseMatrix<double>& Aeq, double mu,
+		const SparseMatrix<double>& J, const SparseMatrix<double>& Aeq, double mu,
 		 double h, bool do_inertia )
 	{
 		this->X = X;
@@ -102,8 +102,8 @@ struct fast_cd_arap_sim_params
 	*/
 	fast_cd_arap_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
-		const SparseMatrix<double>& J, SparseMatrix<double>& Aeq, VectorXd& mu,
-		double h, bool do_inertia)
+		const SparseMatrix<double>& J, const SparseMatrix<double>& Aeq, 
+		const VectorXd& mu, double h, bool do_inertia)
 	{
 		this->X = X;
 		this->T = T;
