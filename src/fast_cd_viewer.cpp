@@ -7,7 +7,8 @@
 #include <igl/png/readPNG.h>
 fast_cd_viewer::fast_cd_viewer()
 {
-	igl_v = new igl::opengl::glfw::Viewer();
+
+	igl_v = & this->v;
 
 	//while (igl_v->data_list.size() < 3) igl_v->append_mesh();
 
@@ -156,10 +157,3 @@ void fast_cd_viewer::set_pre_draw_callback(std::function<void()>& callback)
 	};
 }
 
-void fast_cd_viewer::set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed)
-{
-    igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
-    {
-        return callback_key_pressed(key, modifier);
-    };
-}

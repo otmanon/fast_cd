@@ -40,8 +40,8 @@ public:
 				printf(" cache dir %s, is either corrupt or outdated. please construct fast_cd_arap_sim differently \n", cache_dir.c_str());
 				printf(" Computing fast_cd_arap precomputations from scratch... \n", cache_dir.c_str());
 				fcd_sp = new fast_cd_arap_static_precomp(sim_params);
-				if (write_cache)
-					fcd_sp->write_to_cache(cache_dir);
+				/*if (write_cache)
+					fcd_sp->write_to_cache(cache_dir);*/
 			} 
 		}
 		else
@@ -71,6 +71,18 @@ public:
 
 		sol = new fast_cd_arap_local_global_solver(fcd_sp->BAB, fcd_sp->AeqB, solver_params);
 	};
+
+	fast_cd_arap_sim(fast_cd_arap_sim_params& sim_params)
+	{
+		params = &sim_params;
+		fast_cd_arap_static_precomp* fcd_sp = new fast_cd_arap_static_precomp(sim_params);
+		local_global_solver_params solver_params =  local_global_solver_params(false, 10, 1e-6);
+		sp = fcd_sp; // fast_cd_arap_static_precomp(sim_params);
+		dp = new fast_cd_arap_dynamic_precomp();
+
+		sol = new fast_cd_arap_local_global_solver(fcd_sp->BAB, fcd_sp->AeqB, solver_params);
+	};
+
 
 	fast_cd_arap_sim(fast_cd_arap_sim_params& params, fast_cd_arap_local_global_solver& solver, fast_cd_arap_dynamic_precomp& dp, fast_cd_arap_static_precomp& sp)
 	{

@@ -66,6 +66,7 @@ void skinning_modes(const MatrixXd& V, const SparseMatrix<double>& H, const Spar
     MatrixXi Im = MatrixXi(I.rows(), 1); //need to convert to matrix to pass to matlab... annoying
     Im = I;
 
+  
     //igl::slice(Weq, Im, 2, Jw);
     SparseMatrix<double> Jw= Jw_redundant.sparseView();
 

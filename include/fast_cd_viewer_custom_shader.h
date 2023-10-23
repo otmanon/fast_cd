@@ -108,7 +108,7 @@ struct fast_cd_gl
     {
         if (p_W.cols() > max_num_primary_bones)
         {
-            printf("num primary weights needs to be less than or equal to %i\n", max_num_primary_bones);
+            printf("num primary weights needs to be less than or equal to %i \n", max_num_primary_bones);
             // return;
         }
         //pad with 0 if not enough columns
@@ -201,7 +201,7 @@ struct fast_cd_gl
         //  g.v
         if (dirty_primary_weights)
         {
-            printf("Dirty primary weights \n");
+//            printf("Dirty primary weights \n");
             // glBindVertexBuffer(vertexBindingPoint, mesh.vbo, mesh.vboOffset, sizeof(Vertex));
             for (int i = 0; i < num_primary_vec4; i++)
             {
@@ -212,7 +212,7 @@ struct fast_cd_gl
         }
         if (dirty_secondary_weights)
         {
-            printf("Dirty primary weights \n");
+//            printf("Dirty primary weights \n");
             for (int i = 0; i < num_secondary_vec4; i++)//
             {
                 string name = "secondary_weights_" + std::to_string(i + 1);
@@ -289,8 +289,6 @@ struct fast_cd_viewer_custom_shader : public fast_cd_viewer
            printf("Maximum number of primary bones must be a multiple of 4 !\n");
        if (max_num_secondary_bones % 4 != 0)
            printf("Maximum number of secondary bones must be a multiple of 4 !\n");
-       printf("Assuming maximum number of bones is %i, please make sure vertex \
-            buffer has this value set in the primary_bones[n] uniform, where n==max_num_bones\n", max_num_primary_bones);
        num_primary_vec4 = max_num_primary_bones / 4;
        num_secondary_vec4 = max_num_secondary_bones / 4;
        fast_cd_gl f = fast_cd_gl(0, max_num_primary_bones, max_num_primary_bones);

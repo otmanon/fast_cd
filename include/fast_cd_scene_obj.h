@@ -1,12 +1,14 @@
 #pragma once
+#include <igl/boundary_facets.h>
+
 #include "fast_cd_arap_sim.h"
 #include "fast_cd_viewer_custom_shader.h"
 #include "fast_cd_subspace.h"
 #include "read_rig_from_json.h"
 #include "surface_to_volume_weights.h"
-#include "fit_rig_to_mesh.h"
 #include "read_rig_anim_from_json.h"
 #include "rig_parameters.h"
+#include "fit_rig_to_mesh.h"
 
 /*
 Helper class for one object of many in the fast cd scene
@@ -55,7 +57,7 @@ struct fast_cd_scene_obj
         this->V = V;
         this->T = T;
         this->Ws = sub.W;
-        boundary_facets(T, F);
+        igl::boundary_facets(T, F);
 
         //read rig from .json file. Only care about weights, P0, and PL
         VectorXi pI;

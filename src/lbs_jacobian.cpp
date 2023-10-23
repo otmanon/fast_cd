@@ -15,7 +15,8 @@
 /// J -> 3n x 12b linear blend skinning jacobian
 ///
 using namespace Eigen;
-void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, SparseMatrix<double>& J)
+
+void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, MatrixXd& J)
 {
 
 	assert(V.rows() == W.rows() && "Weights should have same number of rows as W!");
@@ -34,14 +35,18 @@ void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, SparseMatrix<double>& J)
 
 	MatrixXd W_exp;
 	MatrixXd ones_dp1 = MatrixXd::Ones(dim + 1, 1).transpose(); //row vector of d+1 ones
-	kron( W, ones_dp1,  W_exp);
+	kron(W, ones_dp1, W_exp);
 
 	Eigen::MatrixXd J_compact = U_exp.array() * W_exp.array();  //component wise product
 
-	Eigen::MatrixXd Jd = igl::repdiag(J_compact, dim); 
+	J = igl::repdiag(J_compact, dim);
 
+}
+
+
+void lbs_jacobian(const MatrixXd& V, const MatrixXd& W, SparseMatrix<double>& J)
+{
+	MatrixXd Jd;
+	lbs_jacobian(V, W, Jd);
 	J = Jd.sparseView(); // TODO: have a separate method for more quickly building the sparse matrix J
-
-
-
 }

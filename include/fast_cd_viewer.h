@@ -32,7 +32,14 @@ public:
 
 	virtual void set_pre_draw_callback(std::function<void()>& callback);
 
-	virtual void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed);
+	virtual void set_key_pressed_callback(std::function<bool(unsigned int, int)>& callback_key_pressed)
+	{
+        igl_v->callback_key_pressed = [&](igl::opengl::glfw::Viewer&, unsigned int key, int modifier)->bool
+        {
+            printf("Key Pressed");
+            return callback_key_pressed(key, modifier);
+        };
+    }
 
 	virtual void set_mouse_down_callback(std::function<void(int button, int modifier)>& callback_mouse_down) {
 		igl_v->callback_mouse_down = [&](igl::opengl::glfw::Viewer& v,  int button, int modifier)->bool
@@ -316,6 +323,7 @@ public:
 		set_show_lines(p.show_lines, id);
 	}
 public:
+    igl::opengl::glfw::Viewer v;
 	igl::opengl::glfw::Viewer* igl_v;
 	igl::opengl::glfw::imgui::ImGuizmoWidget* guizmo; //add guizmo
 	igl::opengl::glfw::imgui::ImGuiPlugin* imgui_plugin;

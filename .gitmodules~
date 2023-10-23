@@ -1,3 +1,0 @@
-[submodule "deps/libigl"]
-	path = deps/libigl
-	url = https://github.com/libigl/libigl.git
