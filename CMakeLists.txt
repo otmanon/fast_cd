@@ -9,14 +9,11 @@ add_compile_definitions(IGL_VIEWER_VIEWER_QUIET)
 option(LIBIGL_PNG  "Build target igl::png"  ON)
 option(LIBIGL_GLFW "Build target igl::glfw" ON)
 option(LIBIGL_IMGUI   "Build target igl::imgui" ON)
-option(LIBIGL_RESTRICTED_MATLAB   "Build target igl_restricted::matlab" ON)
+option(LIBIGL_RESTRICTED_MATLAB   "Build target igl_restricted::matlab" OFF)
 
 add_subdirectory(./deps/libigl/)
 
-# build spectra ourselves
-add_library(spectra INTERFACE)
-target_include_directories(spectra INTERFACE ./deps/spectra/include/)
-target_link_libraries(spectra INTERFACE Eigen3::Eigen)
+
 
 add_library(fast_cd ${SRC_FILES} ${HEADER_FILES})
 set(FAST_CD_INCLUDE_DIRS ./include/ ./deps/json/)
@@ -26,7 +23,7 @@ set_property(TARGET fast_cd PROPERTY CXX_STANDARD 17)
 
 #find_package(SuiteSparse)
 
-set(FAST_CD_LIBRARIES igl::core igl::glfw igl::imgui igl::png igl_restricted::matlab spectra)# SuiteSparse::umfpack)
+set(FAST_CD_LIBRARIES igl::core igl::glfw igl::imgui igl::png)# SuiteSparse::umfpack)
 
 target_link_libraries(fast_cd ${FAST_CD_LIBRARIES})
 
