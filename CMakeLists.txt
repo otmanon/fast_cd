@@ -9,7 +9,7 @@ add_compile_definitions(IGL_VIEWER_VIEWER_QUIET)
 option(LIBIGL_PNG  "Build target igl::png"  ON)
 option(LIBIGL_GLFW "Build target igl::glfw" ON)
 option(LIBIGL_IMGUI   "Build target igl::imgui" ON)
-#option(LIBIGL_RESTRICTED_MATLAB   "Build target igl_restricted::matlab" ON)
+option(LIBIGL_RESTRICTED_MATLAB   "Build target igl_restricted::matlab" OFF)
 
 add_subdirectory(./deps/libigl/)
 
