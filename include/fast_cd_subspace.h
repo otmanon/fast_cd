@@ -21,7 +21,7 @@ struct  fast_cd_subspace
 
 	int num_modes;
 	int num_clusters;
-	std::string mode_type;
+	std::string mode_type; // either "skinning" or "displacement"
 	MatrixXd B;    // final subspace
 	MatrixXd W;    //skinning weights (if applicable)
 	VectorXi l;   // clusters
@@ -32,6 +32,22 @@ struct  fast_cd_subspace
 		this->num_clusters = num_clusters;
 		this->num_modes = num_modes;
 		read_from_cache(modes_dir, clusters_dir);
+	};
+
+
+	fast_cd_subspace(const MatrixXd& B, const MatrixXd& W, const VectorXi& l, std::string mode_type) {
+		this->mode_type = mode_type;
+		this->num_clusters = l.maxCoeff() + 1;
+		if (mode_type == "skinning")
+		{
+				this->num_modes = B.cols()/ 12;
+		}else
+		{
+		    this->num_modes = B.cols();
+		}
+		this->B = B;
+	    this->W = W;
+	    this->l = l;
 	};
 
 

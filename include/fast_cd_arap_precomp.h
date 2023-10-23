@@ -122,7 +122,14 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		Cx = C * x;
 		SparseMatrix<double> I = SparseMatrix<double>(C.rows(), C.cols());
 		I.setIdentity();
-		A = (p.do_inertia * p.invh2 * M + C + (!p.do_inertia) * 1e-9 * I);
+
+		A = (p.rho * p.invh2 * M + C);
+		if (p.rho < 1e-12)
+		{
+		    A += 1e-9 * I;
+		}
+
+
 
 
 		if (p.J.rows() > 0)
@@ -239,8 +246,8 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 
 	bool write_to_cache(string& precomp_cache_dir)
 	{
-		return false;
-		/*namespace fs = std::filesystem;
+//		return false;
+		namespace fs = std::filesystem;
 		if (!fs::exists(fs::path(precomp_cache_dir)))
 		{
 			fs::create_directories(fs::path(precomp_cache_dir));
@@ -267,7 +274,7 @@ struct fast_cd_arap_static_precomp : cd_arap_static_precomp
 		{
 			printf("Could not save fast_cd_arap precomp cache!");
 		}
-		return t;*/
+		return t;
 	}
 };
 

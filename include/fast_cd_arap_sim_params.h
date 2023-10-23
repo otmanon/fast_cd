@@ -33,8 +33,8 @@ struct fast_cd_arap_sim_params
 	// linear rig jacobian! n*dim x b*dim*(dim+1)
 	SparseMatrix<double> J;
 
-	//whether to activate inertia or not. if false, will add a bit of regularization to quadratic term
-	bool do_inertia;
+	//density
+	double rho;
 
 	//Extra user defined quadratic term (like for mass springs or penalty constraints)
 	SparseMatrix<double> Q;
@@ -62,13 +62,13 @@ struct fast_cd_arap_sim_params
 	    Aeq - c x dn linear equality constraint matrix
 		mu - (double) first lame parameter
 		lambda - (double) second lame parameter
-		do_inertia - (bool) whether or not sim should have inertia 
-				(if no, then adds Tik. regularizer to laplacian
+		 rho - (double) density.
+				(if 0, then adds Tik. regularizer to laplacian
 	*/
 	fast_cd_arap_sim_params(const MatrixXd& X, const MatrixXi& T, 
 		const MatrixXd& B, const VectorXi&  l,
 		const SparseMatrix<double>& J, const SparseMatrix<double>& Aeq, double mu,
-		 double h, bool do_inertia )
+		 double h, double rho)
 	{
 		this->X = X;
 		this->T = T;
@@ -76,7 +76,7 @@ struct fast_cd_arap_sim_params
 		this->mu = mu * VectorXd::Ones(T.rows());
 		this->h = h;
 		this->invh2 = 1.0 / (h * h);
-		this->do_inertia = do_inertia;
+		this->rho = rho;
 
 		this->B = B;
 		this->labels = l;
@@ -103,7 +103,7 @@ struct fast_cd_arap_sim_params
 	fast_cd_arap_sim_params(const MatrixXd& X, const MatrixXi& T,
 		const MatrixXd& B, const VectorXi& l,
 		const SparseMatrix<double>& J, const SparseMatrix<double>& Aeq, 
-		const VectorXd& mu, double h, bool do_inertia)
+		const VectorXd& mu, double h, double rho)
 	{
 		this->X = X;
 		this->T = T;
@@ -111,7 +111,7 @@ struct fast_cd_arap_sim_params
 		this->mu = mu;
 		this->h = h;
 		this->invh2 = 1.0 / (h * h);
-		this->do_inertia = do_inertia;
+		this->rho = rho;
 
 		this->B = B;
 		this->labels = l;

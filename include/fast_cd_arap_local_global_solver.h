@@ -147,7 +147,7 @@ struct fast_cd_arap_local_global_solver
 
 		VectorXd arap_grad = dp.BCur + sp.BCx - sp.G1VKB.transpose() * r;
 
-		VectorXd g = params.invh2 * params.do_inertia * inertia_grad + arap_grad + dp.f_ext;
+		VectorXd g = params.invh2 * params.rho * inertia_grad + arap_grad + dp.f_ext;
 		VectorXd Y;
 
 		Eigen::VectorXd rhs = igl::cat(1, (- g).eval(), dp.bc);

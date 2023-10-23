@@ -5,18 +5,12 @@ file(GLOB HEADER_FILES ./include/*)
 
 #add_subdirectory(./deps/OpenBLAS/)
 
-
-#set(BLA_VENDER OpenBLAS)
-#find_package(BLAS REQUIRED)
-#find_package(OpenBLAS REQUIRED)
-#add_subdirectory(./deps/SuiteSparse/)
-#find_package (SuiteSparse 5.12 NO_MODULE)
-# libigl
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+add_compile_definitions(IGL_VIEWER_VIEWER_QUIET)
 option(LIBIGL_PNG  "Build target igl::png"  ON)
 option(LIBIGL_GLFW "Build target igl::glfw" ON)
 option(LIBIGL_IMGUI   "Build target igl::imgui" ON)
 option(LIBIGL_RESTRICTED_MATLAB   "Build target igl_restricted::matlab" ON)
+
 add_subdirectory(./deps/libigl/)
 
 # build spectra ourselves
